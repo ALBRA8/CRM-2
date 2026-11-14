@@ -43,6 +43,9 @@ export async function runDueJobs(opts?: { orgId?: string }): Promise<{ processed
           startedAt: { lt: cutoff },
           ...(orgId ? { organizationId: orgId } : {}),
         },
+        // Procesa primero los huérfanos más recientes: evita que runs antiguos
+        // ajenos al tick saturen el límite y dejen sin recuperar el run recién creado.
+        orderBy: { startedAt: 'desc' },
         take: 50,
       })
 
