@@ -484,3 +484,11 @@ Esta sección prevalece sobre observaciones anteriores de este documento cuando 
 - El commit `49eb6c8be4e813c46489f326dd8addf36daf0814` tiene CI push run `43632045559` concluido en `success`; el run pull_request asociado `43632040566` también concluyó en `success`.
 - Ese SHA es anterior a los cambios SMTP/Gmail, las pruebas añadidas y las últimas actualizaciones de documentación.
 - Para el HEAD posterior `baf18602f9cce21b7430923509f50eb6eda9c3c7`, el run `43632367085` quedó en cola/iniciado al registrar esta actualización. No declarar CI verde hasta verificar el resultado de ese SHA exacto.
+
+
+### Scheduler: recuperación adicional de runs sin pasos
+
+- Se añadió recuperación segura para un run durable con `stepLedgerVersion=1` que quedó stale antes de crear su primer registro de paso.
+- La condición exige cero filas en `WorkflowStepExecution` y ausencia de lease previo o lease ya expirado. El motor escribe el registro `started` del paso en la misma transacción que renueva/verifica el lease y solo después ejecuta el efecto; por eso cero pasos demuestra que no se inició un efecto de workflow.
+- Se amplió `tests/integration/scheduler-recovery.test.ts` para cubrir tanto crash antes del primer lease como crash después de reclamar un lease pero antes del primer paso.
+- El test sigue siendo SQLite y de un solo proceso; no sustituye la prueba PostgreSQL multiproceso.
