@@ -72,9 +72,9 @@ export async function runDueJobs(opts?: { orgId?: string }): Promise<{ processed
         // every step completed. Revoke ownership first; only then quarantine
         // started steps, so a racing heartbeat cannot be overwritten.
         // A durable run created atomically with a schedule claim may crash
-        // before its first workflow lease/step is created. With no lease
-        // generation and no step records, no side effect could have started;
-        // this is the one safe zero-step recovery case.
+        // before its first step is written. Workflow side effects are only
+        // executed after createStepWithLease commits, so a zero-step run with
+        // no lease yet or an expired lease is safe to reclaim.
         const noStepSideEffect = stale.stepLedgerVersion === 1
           && steps.length === 0
           && (
