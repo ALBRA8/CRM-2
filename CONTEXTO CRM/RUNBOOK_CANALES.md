@@ -242,3 +242,40 @@ La cobertura de WhatsApp/Instagram en outbox no implica validación de proveedor
 - La conexión canónica pasa de `pending` a `connected` cuando llega un webhook con firma Meta válida para la Página exacta y se renuevan las credenciales cifradas. Una conexión `disconnected` o `revoked` nunca se reactiva por webhook. Esto habilita la elegibilidad técnica de la outbox, no activa el worker ni envía mensajes por sí mismo.
 - Los eventos Messenger sin `mid` no tienen identidad durable; por seguridad no generan auto-respuesta canónica.
 - Las automatizaciones `message_received` siguen siendo una ruta separada; sus efectos externos no se vuelven atómicos con la outbox de auto-respuesta. Un fallo parcial puede exigir conciliación operativa.
+
+
+---
+
+## Reconciliación de runbook — estado de la rama revisada 2026-11-14
+
+Esta sección es la referencia vigente para los endpoints de envío; las notas históricas anteriores que indiquen que los endpoints manuales siguen enviando directamente están superadas por los bloqueos fail-closed añadidos a la PR #3.
+
+### Rutas manuales legacy ahora bloqueadas
+
+- `POST /api/whatsapp/daemon-proxy` con `path=/send`: verifica autenticación, RBAC y ownership de la sesión; después devuelve `409 LEGACY_SEND_DISABLED`. No llama al endpoint `/send` del daemon.
+- `POST /api/telegram/send`, `POST /api/instagram/send` y `POST /api/facebook/send`: endpoints legacy protegidos y fail-closed con `409 LEGACY_PROVIDER_SEND_DISABLED`; no invocan proveedor.
+- `POST /api/email/send`: fail-closed con `409 LEGACY_EMAIL_SEND_DISABLED`; no obtiene configuración SMTP ni llama Nodemailer.
+- `POST /api/google/gmail/send`: fail-closed con `409 LEGACY_GMAIL_SEND_DISABLED`; no obtiene token ni llama Gmail API.
+- `POST /api/tiktok/send`: crea intención en ChannelOutboundMessage; no envía directamente.
+- `POST /api/inbox/send`: solo permite los caminos canónicos expresamente soportados; las claves legacy se rechazan.
+- UI Inbox bloquea el composer de conversaciones legacy y no sugiere WhatsApp directo `wa-new`.
+
+### Despacho canónico actualmente implementado
+
+- Channel Outbox: WhatsApp Cloud, Instagram, Messenger y TikTok tienen adaptadores en el dispatcher canónico. TikTok usa `tiktok_business:tiktok`, el `conversation_id` real y preparación/rotación del token antes del envío.
+- Workflow Outbox: WhatsApp Baileys, Telegram y SMTP están soportados para acciones de workflow y auto-respuestas Telegram. Gmail todavía no está integrado al dispatcher.
+- Son dos outboxes con flags y secretos distintos. Ningún worker debe activarse por inferencia: Channel Outbox requiere `CHANNEL_OUTBOUND_DISPATCH_ENABLED=true`; Workflow Outbox requiere `WORKFLOW_OUTBOX_DISPATCH_ENABLED=true`.
+- La auto-respuesta interna de WhatsApp Baileys sigue siendo un camino independiente: requiere `INTERNAL_API_SECRET`, `CHANNEL_AUTOREPLY_ENABLED=true` y la preferencia del tenant. Mantenerlo apagado durante auditoría.
+- Las rutas manuales de correo SMTP/Gmail están deshabilitadas hasta que exista un contrato manual idempotente y, para Gmail, un adaptador canónico probado. Las acciones de workflow por SMTP no equivalen a que el endpoint manual de correo esté migrado.
+
+### Backfill y pruebas: interpretación correcta
+
+- El backfill de `ChannelConnection` es dry-run por defecto, no modifica ni borra Integration/WhatsAppConnection, y exige `--apply` más `BACKFILL_CHANNEL_CONNECTIONS_CONFIRM=1`; producción exige además un guard adicional.
+- El script crea inventario en estado `pending` para Messenger, Telegram y TikTok en los casos legacy indicados por sus comentarios; esto no significa que esos canales carezcan de dispatcher en el código actual ni que estén listos para envío. La elegibilidad real depende de credenciales válidas, conexión en estado connected y el adaptador exacto.
+- El runbook y esta PR no acreditan una ejecución real del backfill sobre staging ni una restauración PostgreSQL.
+
+### Restricciones operativas sin cambios
+
+- Mantener apagados `CHANNEL_OUTBOUND_DISPATCH_ENABLED`, `CHANNEL_AUTOREPLY_ENABLED`, `WORKFLOW_OUTBOX_DISPATCH_ENABLED` y `WHATSPOWER_ENABLED`.
+- No ejecutar envíos reales, no desplegar, no aplicar backfill en staging/producción y no hacer merge sin autorización expresa.
+- La validación automatizada actual es SQLite; PostgreSQL, sandbox externo, concurrencia multiproceso y backup/restauración siguen siendo puertas pendientes.
