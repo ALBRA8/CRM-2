@@ -19,6 +19,7 @@ let leasedId: string
 let waitingId: string
 let unclaimedAutomationId: string
 let unclaimedRunId: string
+let expiredPreStepRunId: string
 
 const minutesAgo = (n: number): Date => new Date(Date.now() - n * 60_000)
 
@@ -94,6 +95,18 @@ beforeAll(async () => {
       leaseExpiresAt: null,
     },
   })).id
+  expiredPreStepRunId = (await db.automationRun.create({
+    data: {
+      organizationId: FIX.orgA.id,
+      automationId: unclaimedAutomationId,
+      status: 'processing',
+      startedAt: minutesAgo(11),
+      stepLedgerVersion: 1,
+      fencingVersion: 1,
+      leaseToken: 'expired-before-first-step',
+      leaseExpiresAt: minutesAgo(2),
+    },
+  })).id
 
   waitingId = (
     await db.automationRun.create({
@@ -126,6 +139,12 @@ describe('runDueJobs — recuperación de runs huérfanos', () => {
     expect(preClaim?.status).toBe('success')
     expect(preClaim?.fencingVersion).toBe(1)
     expect(preClaim?.leaseToken).toBeTruthy()
+
+    const expiredBeforeStep = await db.automationRun.findUnique({ where: { id: expiredPreStepRunId } })
+    expect(expiredBeforeStep?.status).toBe('success')
+    expect(expiredBeforeStep?.fencingVersion).toBe(2)
+    expect(expiredBeforeStep?.leaseToken).toBeTruthy()
+    expect(expiredBeforeStep?.leaseToken).not.toBe('expired-before-first-step')
   })
 
   it('NO toca un run running reciente ni un waiting con DELAY futuro', async () => {
