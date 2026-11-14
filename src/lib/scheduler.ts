@@ -43,10 +43,10 @@ export async function runDueJobs(opts?: { orgId?: string }): Promise<{ processed
           startedAt: { lt: cutoff },
           ...(orgId ? { organizationId: orgId } : {}),
         },
-        // Procesa primero los huérfanos más recientes: evita que runs antiguos
-        // ajenos al tick saturen el límite y dejen sin recuperar el run recién creado.
-        orderBy: { startedAt: 'desc' },
-        take: 50,
+        // No limitar a 50: un lote lleno de huérfanos anteriores podía dejar
+        // ejecuciones elegibles fuera del barrido indefinidamente. La consulta
+        // excluye estados no recuperables arriba y procesa todos los candidatos
+        // vencidos de este tenant/tick.
       })
 
       for (const stale of staleRuns) {
