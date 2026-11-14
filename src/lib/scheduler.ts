@@ -75,19 +75,19 @@ export async function runDueJobs(opts?: { orgId?: string }): Promise<{ processed
         // before its first workflow lease/step is created. With no lease
         // generation and no step records, no side effect could have started;
         // this is the one safe zero-step recovery case.
-        const neverClaimed = stale.stepLedgerVersion === 1
-          && stale.fencingVersion === 0
-          && stale.leaseToken === null
-          && stale.leaseExpiresAt === null
+        const noStepSideEffect = stale.stepLedgerVersion === 1
           && steps.length === 0
-        const safeToResume = neverClaimed || (
-          stale.stepLedgerVersion === 1
+          && (
+            (stale.fencingVersion === 0 && stale.leaseToken === null && stale.leaseExpiresAt === null)
+            || (stale.fencingVersion > 0 && stale.leaseToken !== null && stale.leaseExpiresAt !== null && stale.leaseExpiresAt <= observedAt)
+          )
+        const completedStepsOnly = stale.stepLedgerVersion === 1
           && stale.fencingVersion > 0
           && stale.leaseExpiresAt !== null
           && stale.leaseExpiresAt <= observedAt
           && steps.length > 0
           && steps.every((step) => step.status === 'succeeded')
-        )
+        const safeToResume = noStepSideEffect || completedStepsOnly
         if (!safeToResume) {
           const failed = await db.automationRun.updateMany({
             where: staleSnapshotWhere,
