@@ -440,3 +440,47 @@ HEAD de esta actualización: `0a43d991819e37cf19896a4f2f35d90eba4e479d`.
 - El workflow `.github/workflows/ci.yml` ejecuta migraciones limpias SQLite únicamente. No hay servicio PostgreSQL ni una segunda configuración de Prisma para PostgreSQL.
 - Por tanto, la CI actual no demuestra compatibilidad PostgreSQL. No es correcto cambiar solo la URL de conexión: el proveedor Prisma y el historial SQL de migraciones también deben ser compatibles.
 - La validación PostgreSQL queda bloqueada hasta acordar una estrategia de migración de proveedor (schema/migration history), preparar una base aislada y probar desde cero y con datos anonimizados. No se modificó el proveedor en esta continuación para evitar convertir una PR de hardening en una migración de base de datos no ensayada.
+
+
+## Reconciliación de hallazgos con el HEAD actual — 2026-11-14
+
+Esta sección prevalece sobre observaciones anteriores de este documento cuando describían una versión más antigua de la rama.
+
+### TikTok y outbox canónica: avance ya presente en la rama
+
+- `src/lib/tiktok-channel-adapter.ts` implementa el adaptador `tiktok_business:tiktok` y utiliza el `conversation_id` de proveedor como destinatario.
+- `src/lib/channel-outbound-dispatcher.ts` incluye la preparación del access token TikTok mediante `prepareTikTokAccessTokenForSend`; no invoca el adaptador hasta que la rotación/persistencia del token devuelve éxito.
+- `src/app/api/tiktok/webhook/route.ts` extrae por separado `senderId` y `conversationId`, persiste la conversación canónica usando el ID de conversación del proveedor y no envía respuestas directamente.
+- `tests/integration/channel-outbox.test.ts` cubre despacho TikTok con el ID de conversación de proveedor, idempotencia, unknown, reconciliación y competencia por claim.
+- `tests/integration/tiktok-token-rotation.test.ts` cubre persistencia de ambos tokens, competencia concurrente, timeout/resultado incierto, invalid_grant y lease expirado no reclamable.
+- `tests/integration/tiktok-oauth-reconnect.test.ts` cubre reconexión, sustitución de credenciales y fencing de un worker antiguo.
+- Límite: estas pruebas corren en el entorno SQLite de CI y la competencia concurrente está simulada en un único proceso de test; no demuestra todavía concurrencia entre procesos independientes en PostgreSQL. No hay prueba de integración del handler webhook TikTok con fixture oficial/autorizada del proveedor en el árbol de tests revisado.
+
+### Scheduler y workflow leases: avance ya presente en la rama
+
+- `src/lib/workflow-engine.ts` implementa claim de lease en base de datos con token aleatorio, `fencingVersion` monotónico, expiración y renovación en checkpoints.
+- Las escrituras de run, pasos y outbox validan el token/fencing vigente mediante operaciones condicionales y transacciones.
+- `src/lib/scheduler.ts` conserva un mutex local como optimización, pero los claims de schedules usan compare-and-swap sobre `nextRunAt` y crean el run durable en la misma transacción. La recuperación de runs compara el snapshot de lease antes de modificarlo.
+- `tests/integration/workflow-run-lease.test.ts` cubre deduplicación, fencing obsoleto y recuperación de lease expirado.
+- `tests/integration/scheduler-recovery.test.ts` cubre recuperación de stale runs, protección de leases vigentes e idempotencia.
+- Límite: la evidencia es de pruebas de integración contra SQLite; faltan pruebas con instancias/procesos independientes sobre PostgreSQL y fallos de proceso reales.
+
+### Outbox de canales y workflows
+
+- `tests/integration/channel-outbox.test.ts` incluye dos claims concurrentes y exige que solo uno obtenga la intención, resultados inciertos no reintentables, conexión desconectada, reconciliación concurrente y despacho TikTok.
+- `tests/integration/workflow-outbox-dispatcher.test.ts` incluye claim concurrente, resultado incierto, quarantining y kill-switch apagado para auto-respuestas Telegram.
+- `src/app/api/internal/channel-outbox/route.ts` requiere secreto de worker y `CHANNEL_OUTBOUND_DISPATCH_ENABLED=true`.
+- `src/app/api/internal/workflow-outbox/route.ts` requiere secreto de worker y `WORKFLOW_OUTBOX_DISPATCH_ENABLED=true`.
+- Esto demuestra controles de código y pruebas de DB SQLite; no demuestra disponibilidad, alertas ni comportamiento de múltiples procesos en infraestructura real.
+
+### Envío manual de correo
+
+- `/api/email/send` y `/api/google/gmail/send` se han puesto fail-closed con HTTP 409. Las pruebas añadidas verifican que no se llama a las funciones de proveedor.
+- No se declara migración completa: el worker workflow actual soporta email SMTP para acciones persistidas; Gmail no está implementado en ese dispatcher y el envío manual no tiene todavía una API de intención idempotente.
+- La funcionalidad de correo manual queda temporalmente deshabilitada hasta implementar y probar su ruta canónica. Esto es deliberado para impedir el bypass, pero requiere decisión funcional antes de staging.
+
+### Estado CI por SHA
+
+- El commit `49eb6c8be4e813c46489f326dd8addf36daf0814` tiene CI push run `43632045559` concluido en `success`; el run pull_request asociado `43632040566` también concluyó en `success`.
+- Ese SHA es anterior a los cambios SMTP/Gmail, las pruebas añadidas y las últimas actualizaciones de documentación.
+- Para el HEAD posterior `baf18602f9cce21b7430923509f50eb6eda9c3c7`, el run `43632367085` quedó en cola/iniciado al registrar esta actualización. No declarar CI verde hasta verificar el resultado de ese SHA exacto.
