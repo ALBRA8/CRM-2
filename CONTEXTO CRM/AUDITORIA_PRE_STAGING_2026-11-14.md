@@ -432,3 +432,11 @@ HEAD de esta actualización: `0a43d991819e37cf19896a4f2f35d90eba4e479d`.
 - No hubo merge, despliegue, activación de workers ni envíos reales.
 - Mantener desactivados `CHANNEL_OUTBOUND_DISPATCH_ENABLED`, `CHANNEL_AUTOREPLY_ENABLED`, `WORKFLOW_OUTBOX_DISPATCH_ENABLED` y `WHATSPOWER_ENABLED`.
 - Decisión: **NO APTO PARA STAGING** hasta completar PostgreSQL, backfill, scheduler/worker multiinstancia, auditoría multitenant integral, sandbox y backup/restauración, además de CI verde sobre el HEAD definitivo.
+
+
+### Bloqueo específico de PostgreSQL
+
+- `prisma/schema.prisma` declara actualmente `provider = "sqlite"`; el propio encabezado del esquema identifica SQLite como proveedor de preview.
+- El workflow `.github/workflows/ci.yml` ejecuta migraciones limpias SQLite únicamente. No hay servicio PostgreSQL ni una segunda configuración de Prisma para PostgreSQL.
+- Por tanto, la CI actual no demuestra compatibilidad PostgreSQL. No es correcto cambiar solo la URL de conexión: el proveedor Prisma y el historial SQL de migraciones también deben ser compatibles.
+- La validación PostgreSQL queda bloqueada hasta acordar una estrategia de migración de proveedor (schema/migration history), preparar una base aislada y probar desde cero y con datos anonimizados. No se modificó el proveedor en esta continuación para evitar convertir una PR de hardening en una migración de base de datos no ensayada.
