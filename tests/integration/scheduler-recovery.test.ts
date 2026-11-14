@@ -17,6 +17,8 @@ let staleId: string
 let freshId: string
 let leasedId: string
 let waitingId: string
+let unclaimedAutomationId: string
+let unclaimedRunId: string
 
 const minutesAgo = (n: number): Date => new Date(Date.now() - n * 60_000)
 
@@ -68,6 +70,31 @@ beforeAll(async () => {
     })
   ).id
 
+  const unclaimedAutomation = await db.automation.create({
+    data: {
+      organizationId: FIX.orgA.id,
+      name: 'Auto — scheduler pre-claim recovery',
+      triggerType: 'client_created',
+      isActive: true,
+      actions: '[]',
+    },
+  })
+  unclaimedAutomationId = unclaimedAutomation.id
+  unclaimedRunId = (await db.automationRun.create({
+    data: {
+      organizationId: FIX.orgA.id,
+      automationId: unclaimedAutomationId,
+      status: 'running',
+      startedAt: minutesAgo(11),
+      stepLedgerVersion: 1,
+      // Simulates a committed schedule claim whose process crashed before
+      // claimWorkflowRun created a lease or the first write-ahead step.
+      fencingVersion: 0,
+      leaseToken: null,
+      leaseExpiresAt: null,
+    },
+  })).id
+
   waitingId = (
     await db.automationRun.create({
       data: {
@@ -82,8 +109,8 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await db.automationRun.deleteMany({ where: { automationId } })
-  await db.automation.deleteMany({ where: { id: automationId } })
+  await db.automationRun.deleteMany({ where: { automationId: { in: [automationId, unclaimedAutomationId] } } })
+  await db.automation.deleteMany({ where: { id: { in: [automationId, unclaimedAutomationId] } } })
   await db.$disconnect()
 })
 
@@ -94,6 +121,11 @@ describe('runDueJobs — recuperación de runs huérfanos', () => {
     expect(stale?.status).toBe('failed')
     expect(String(stale?.error)).toContain('interrumpido')
     expect(stale?.finishedAt).not.toBeNull()
+
+    const preClaim = await db.automationRun.findUnique({ where: { id: unclaimedRunId } })
+    expect(preClaim?.status).toBe('success')
+    expect(preClaim?.fencingVersion).toBe(1)
+    expect(preClaim?.leaseToken).toBeTruthy()
   })
 
   it('NO toca un run running reciente ni un waiting con DELAY futuro', async () => {
