@@ -1,4 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
+
+vi.unmock('@/lib/workflow-engine')
+
 import { runDueJobs } from '@/lib/scheduler'
 import { db } from '@/lib/db'
 import { FIX } from '../helpers'
