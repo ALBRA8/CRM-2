@@ -71,12 +71,23 @@ export async function runDueJobs(opts?: { orgId?: string }): Promise<{ processed
         // Fail closed after lease expiry unless the write-ahead ledger proves
         // every step completed. Revoke ownership first; only then quarantine
         // started steps, so a racing heartbeat cannot be overwritten.
-        const safeToResume = stale.stepLedgerVersion === 1
+        // A durable run created atomically with a schedule claim may crash
+        // before its first workflow lease/step is created. With no lease
+        // generation and no step records, no side effect could have started;
+        // this is the one safe zero-step recovery case.
+        const neverClaimed = stale.stepLedgerVersion === 1
+          && stale.fencingVersion === 0
+          && stale.leaseToken === null
+          && stale.leaseExpiresAt === null
+          && steps.length === 0
+        const safeToResume = neverClaimed || (
+          stale.stepLedgerVersion === 1
           && stale.fencingVersion > 0
           && stale.leaseExpiresAt !== null
           && stale.leaseExpiresAt <= observedAt
           && steps.length > 0
           && steps.every((step) => step.status === 'succeeded')
+        )
         if (!safeToResume) {
           const failed = await db.automationRun.updateMany({
             where: staleSnapshotWhere,
