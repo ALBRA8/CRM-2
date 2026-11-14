@@ -279,3 +279,8 @@ Esta sección es la referencia vigente para los endpoints de envío; las notas h
 - Mantener apagados `CHANNEL_OUTBOUND_DISPATCH_ENABLED`, `CHANNEL_AUTOREPLY_ENABLED`, `WORKFLOW_OUTBOX_DISPATCH_ENABLED` y `WHATSPOWER_ENABLED`.
 - No ejecutar envíos reales, no desplegar, no aplicar backfill en staging/producción y no hacer merge sin autorización expresa.
 - La validación automatizada actual es SQLite; PostgreSQL, sandbox externo, concurrencia multiproceso y backup/restauración siguen siendo puertas pendientes.
+
+
+### Corrección scheduler — recuperación antes del primer paso (2026-11-14)
+
+La nota histórica que indicaba que una ocurrencia podía perderse entre avanzar `nextRunAt` y crear el run no describe el código actual: ambas operaciones están dentro de una misma transacción. El caso real de crash es después de confirmar esa transacción y antes de completar el primer paso del workflow. El sweeper ahora puede reclamar de forma segura runs nuevos con ledger habilitado y cero pasos registrados, tanto si todavía no tuvieron lease como si el lease inicial expiró. La seguridad depende de que el motor persiste `WorkflowStepExecution.started` antes de ejecutar el efecto. Los runs históricos sin ledger y los pasos `started/unknown` continúan sin reejecución automática. La cobertura añadida se ejecuta en SQLite; falta repetirla con PostgreSQL y procesos independientes.
