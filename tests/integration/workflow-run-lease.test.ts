@@ -111,6 +111,35 @@ describe('distributed workflow run leases', () => {
     expect(runs[0].leaseExpiresAt).not.toBeNull()
   })
 
+  it('allows only one database winner when identical triggers arrive concurrently', async () => {
+    const eventId = `lease-parallel-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const event = {
+      orgId: FIX.orgA.id,
+      type: 'client_created' as const,
+      payload: { id: eventId },
+      automationId: triggerAutomationId,
+    }
+
+    const { runWorkflowsForTrigger } = await import('@/lib/workflow-engine')
+    const [left, right] = await Promise.all([
+      runWorkflowsForTrigger(event),
+      runWorkflowsForTrigger(event),
+    ])
+    const outcomes = [...left, ...right]
+    expect(outcomes.filter((result) => result.status === 'success')).toHaveLength(1)
+    expect(outcomes.filter((result) => result.status === 'deduplicated')).toHaveLength(1)
+
+    const runs = await db.automationRun.findMany({
+      where: {
+        automationId: triggerAutomationId,
+        idempotencyKey: `client_created:${eventId}`,
+      },
+    })
+    expect(runs).toHaveLength(1)
+    expect(runs[0].status).toBe('success')
+    expect(runs[0].fencingVersion).toBe(1)
+  })
+
   it('rejects durable outbound writes from an older fencing generation', async () => {
     await expect(enqueueWorkflowOutboundMessage({
       organizationId: FIX.orgA.id,
