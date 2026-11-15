@@ -3,6 +3,7 @@
 **Repositorio:** `ALBRA8/CRM-ALBRA`  
 **PR:** #3  
 **Rama:** `fix/migration-safety-audit`  
+**Base de datos del proyecto:** SQLite (decisión de alcance; PostgreSQL queda excluido).  
 **Regla:** no marcar una casilla sin evidencia asociada al HEAD exacto que se pretende validar.
 
 ## Seguridad operativa
@@ -19,8 +20,7 @@
 - [ ] Secret scan aprobado sobre HEAD exacto.
 - [ ] Prisma validate/generate aprobado.
 - [ ] Migración limpia SQLite aprobada.
-- [ ] Migración limpia PostgreSQL aprobada.
-- [ ] Migración de datos representativos PostgreSQL aprobada.
+- [ ] Migración de datos representativos SQLite aprobada, si hay cambios de esquema/datos.
 - [ ] TypeScript aprobado.
 - [ ] ESLint aprobado.
 - [ ] Tests unitarios e integración aprobados.
@@ -32,15 +32,15 @@
 - [ ] Diagnóstico de backfill ejecutado en dry-run.
 - [ ] Duplicados y conflictos revisados.
 - [ ] Backfill idempotente demostrado con dos ejecuciones.
-- [ ] Rollback probado en copia aislada.
-- [ ] Backup PostgreSQL creado.
-- [ ] Restauración en instancia independiente verificada.
+- [ ] Rollback probado en copia aislada de SQLite.
+- [ ] Backup remoto de SQLite creado.
+- [ ] Restauración en una instancia independiente verificada.
 - [ ] Integridad relacional y credenciales cifradas verificadas.
 - [ ] RPO/RTO medidos y documentados.
 
 ## OAuth y canales
 
-- [ ] TikTok refresh probado con dos workers independientes en PostgreSQL.
+- [ ] Refresh de TikTok probado con workers independientes usando el almacenamiento SQLite soportado por el proyecto.
 - [ ] Rotación de access/refresh token y fencing comprobados.
 - [ ] Estados uncertain/invalid_grant y reconexión probados.
 - [ ] Callback OAuth valida tenant y persiste ambas representaciones.
@@ -56,8 +56,8 @@
 - [ ] Matriz de acceso cruzado por API route completada.
 - [ ] Consultas Prisma y relaciones revisadas por organizationId.
 - [ ] Webhooks con IDs ausentes/repetidos no producen efectos duplicados.
-- [ ] Scheduler usa lease/fencing distribuido en todas las escrituras de estado.
-- [ ] Dos o más workers no procesan el mismo run/outbound simultáneamente.
+- [ ] Scheduler usa lease/fencing en todas las escrituras de estado, conforme a las garantías reales de SQLite.
+- [ ] Dos o más workers no procesan el mismo run/outbound simultáneamente bajo la configuración soportada.
 - [ ] Crashes, expiración de lease, ACK tardío y estado unknown probados.
 - [ ] Reconciliación no reintenta envíos ambiguos automáticamente.
 - [ ] Alertas y procedimientos de pausa/recuperación comprobados.
@@ -70,6 +70,6 @@
 - [ ] Autorización explícita separada para staging.
 - [ ] Autorización explícita separada para merge/deploy/activación de workers/envíos reales.
 
-## Estado al crear este documento
+## Estado
 
-**NO APTO PARA STAGING.** Las validaciones PostgreSQL, backfill, concurrencia multiinstancia, auditoría multitenant integral, sandbox y backup/restauración siguen pendientes. SMTP y Gmail manuales se mantienen bloqueados hasta su integración idempotente en el pipeline canónico.
+Este checklist define criterios de aceptación; sus casillas deben actualizarse únicamente con evidencia del HEAD evaluado. No constituye por sí solo un diagnóstico del estado actual. PostgreSQL no forma parte del alcance ni es requisito para staging. SMTP y Gmail manuales deben permanecer explícitamente deshabilitados hasta integrarse al pipeline idempotente canónico.
