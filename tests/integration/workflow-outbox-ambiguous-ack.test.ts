@@ -3,15 +3,22 @@ import { db } from '@/lib/db'
 import { enqueueWorkflowOutboundMessage, dispatchWorkflowOutboundMessage } from '@/lib/workflow-outbox'
 import { FIX } from '../setup/seed-data'
 
+const ACK_FAILURE_TRIGGER = 'test_fail_workflow_outbox_sent_ack'
+
 describe('workflow WhatsApp ambiguous provider acknowledgement', () => {
   const outboundIds: string[] = []
   let automationId: string | undefined
   let runId: string | undefined
+  let triggerInstalled = false
   const previousDaemonUrl = process.env.WHATSAPP_DAEMON_URL
   const previousInternalSecret = process.env.INTERNAL_API_SECRET
 
   afterEach(async () => {
     vi.restoreAllMocks()
+    if (triggerInstalled) {
+      await db.$executeRawUnsafe(`DROP TRIGGER IF EXISTS "${ACK_FAILURE_TRIGGER}"`)
+      triggerInstalled = false
+    }
     if (previousDaemonUrl === undefined) delete process.env.WHATSAPP_DAEMON_URL
     else process.env.WHATSAPP_DAEMON_URL = previousDaemonUrl
     if (previousInternalSecret === undefined) delete process.env.INTERNAL_API_SECRET
@@ -47,18 +54,23 @@ describe('workflow WhatsApp ambiguous provider acknowledgement', () => {
     })
     outboundIds.push(intent.id)
 
-    // The daemon accepts the message. Simulate the database failing precisely
-    // when the dispatcher tries to persist that positive acknowledgement.
+    // Use a SQLite trigger instead of spying on Prisma's dynamic delegate.
+    // This fails the real UPDATE statement that tries to persist status=sent.
+    await db.$executeRawUnsafe(`
+      CREATE TRIGGER "${ACK_FAILURE_TRIGGER}"
+      BEFORE UPDATE OF "status" ON "WorkflowOutboundMessage"
+      WHEN NEW."status" = 'sent'
+      BEGIN
+        SELECT RAISE(ABORT, 'simulated ACK persistence failure');
+      END;
+    `)
+    triggerInstalled = true
+
+    // The daemon is fully mocked: no network request or real WhatsApp send.
     const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(new Response(
       JSON.stringify({ success: true, messageId: 'provider-accepted-123' }),
       { status: 200 },
     ))
-    const originalUpdateMany = db.workflowOutboundMessage.updateMany.bind(db.workflowOutboundMessage)
-    const updateSpy = vi.spyOn(db.workflowOutboundMessage, 'updateMany')
-      .mockImplementationOnce((args) => {
-        if (args.data.status === 'sent') throw new Error('simulated ACK persistence failure')
-        return originalUpdateMany(args)
-      })
 
     expect(await dispatchWorkflowOutboundMessage(intent.id)).toEqual({ status: 'unknown' })
     expect(fetchSpy).toHaveBeenCalledTimes(1)
@@ -73,6 +85,5 @@ describe('workflow WhatsApp ambiguous provider acknowledgement', () => {
 
     expect(await dispatchWorkflowOutboundMessage(intent.id)).toEqual({ status: 'not_claimed' })
     expect(fetchSpy).toHaveBeenCalledTimes(1)
-    expect(updateSpy).toHaveBeenCalled()
   })
 })
