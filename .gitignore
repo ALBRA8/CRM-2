@@ -107,3 +107,18 @@ scripts/*-key.txt
 *.e2e-token
 credentials*.json
 *credentials*.txt
+
+# Artefactos operativos viejos (no versionar nunca)
+*.pid
+scripts/logs/
+scripts/backups/
+scripts/qa-page-*.png
+scripts/twenty_*
+scripts/e2e-results-*.txt
+scripts/e2e-demo-resp.json
+scripts/e2e-wp-demo.json
+scripts/quote-items-backup.json
+scripts/*.pdf
+scripts/cover-cierre.html
+albra-final/e2e/*.pid
+.zscripts/
