@@ -26,7 +26,7 @@ describe('workflow WhatsApp ambiguous provider acknowledgement', () => {
 
   it('quarantines an accepted send when persisting the provider ACK fails, and never sends it again', async () => {
     process.env.WHATSAPP_DAEMON_URL = 'http://daemon.test'
-    process.env.INTERNAL_API_SECRET = 'test-internal-secret-0123456789'
+    process.env.INTERNAL_API_SECRET = 'test-internal-secret-0123456789' // scan-secrets:allow — valor ficticio exclusivo de esta prueba
 
     const automation = await db.automation.create({
       data: { organizationId: FIX.orgA.id, name: 'Ambiguous WhatsApp ACK', triggerType: 'manual', isActive: true, actions: '[]' },
