@@ -109,3 +109,12 @@ Ambas líneas de trabajo se conservan en el historial:
 - Prueba añadida: tras cambiar a org B, `/api/auth/me` devuelve org B; se conserva org A como organización base persistida.
 - Head final `5c1e73e0c99c488c843d42aff6fe8cef6928bf23`; CI run `43380198626` **success**, 64 archivos y 580 pruebas aprobadas, build incluido.
 - No merge, no despliegue. Pendiente verificación visual/manual en staging y prueba de regreso al panel Super Admin.
+
+
+## 2026-11-15 — Plan documentado para prueba de lease fencing del worker antiguo
+
+- Se registró en `CONTEXTO CRM/PENDIENTES.md` el siguiente ciclo: worker A reclama; vence su lease; worker B recupera con token/generación nuevos; A intenta modificar un paso y finalizar la ejecución con el token antiguo; ambas escrituras deben rechazarse y los datos de B deben permanecer intactos.
+- Criterio: prueba de integración focalizada sobre SQLite temporal, ejecutada por GitHub Actions; corregir solo defectos reproducibles y volver a ejecutar las pruebas afectadas.
+- **Estado al documentar:** prueba aún pendiente de implementación/ejecución; no se declara aprobada ni se afirma preparación 100% para producción.
+- Evidencia previa de concurrencia básica/CI #1476 se mantiene limitada al escenario ya probado; no demuestra por sí sola este caso de fencing.
+- Restricciones: sin producción, sin envíos reales, sin merge ni deploy; SQLite se conserva.
