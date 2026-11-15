@@ -307,7 +307,7 @@ describe('normalizeNotifyPhone', () => {
   })
 
   it('un nacional de 10 dígitos hereda el código de país del teléfono del negocio', () => {
-    expect(normalizeNotifyPhone('3001234567', '573163301286')).toBe('573001234567')
+    expect(normalizeNotifyPhone('3001234567', '573000000002')).toBe('573001234567')
   })
 
   it('sin teléfono de referencia deja el nacional tal cual', () => {
@@ -332,7 +332,7 @@ describe('createHandoffNotifyPhonesLoader', () => {
         },
       }),
     }
-    const load = createHandoffNotifyPhonesLoader(db, { getBusinessPhone: () => '573163301286' })
+    const load = createHandoffNotifyPhonesLoader(db, { getBusinessPhone: () => '573000000002' })
     expect(load('org-a')).toEqual(['573001234567', '573159876543'])
     expect(load('org-a')).toEqual(['573001234567', '573159876543'])
     expect(queries).toBe(1)

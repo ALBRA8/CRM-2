@@ -1180,7 +1180,7 @@ Work Log:
 - Token: 401 Bad credentials consistente (copia byte-idéntica a la que autenticó como ALBRA8 horas antes) → el valor fue invalidado en GitHub durante la edición (regeneración/revocación). PUSH BLOQUEADO hasta recibir el valor vigente.
 - Parches re-aplicados íntegramente (8 puntos): WP server.ts x5 (webhookSecret, verifyHmac, /qr/data 503, POST 401, DELETE 401), CP-11 env-based, ULTRA execute-pilot gate <24 exit(1), 2 tests env-based, README placeholder.
 - Commits nuevos: WP a94815d, ULTRA e6ef56d (los SHAs f213386/4509b70 murieron con el reciclaje; contenido equivalente). Barrido: 0 valores publicados / 0 PATs.
-- Regresiones pre-push: WP npm test 22/22 PASS (CP-08 HMAC + CP-11 fail-closed incluidos); ULTRA npm test 19/19 PASS; bajas-circuit (integración con 2A vivo en :3003, stub audit_repos recreado) 5/5 PASS; pilot-safeguards 4/5 — test 5 (OPERATOR_PHONE_MISSING) INCONSISTENCIA PREEXISTENTE: PILOT_SUPERVISED_CONFIG.operatorPhoneCanonical hardcodeado truthy ('573017543786') hace inalcanzable el blocker; demostrado también en worktree prístino 08a0bb3. No introducido por PRO-02.
+- Regresiones pre-push: WP npm test 22/22 PASS (CP-08 HMAC + CP-11 fail-closed incluidos); ULTRA npm test 19/19 PASS; bajas-circuit (integración con 2A vivo en :3003, stub audit_repos recreado) 5/5 PASS; pilot-safeguards 4/5 — test 5 (OPERATOR_PHONE_MISSING) INCONSISTENCIA PREEXISTENTE: PILOT_SUPERVISED_CONFIG.operatorPhoneCanonical hardcodeado truthy ('573000000001') hace inalcanzable el blocker; demostrado también en worktree prístino 08a0bb3. No introducido por PRO-02.
 - Stub audit_repos/CRM-ALBRA/src/lib/agentic-2a-bridge.ts recreado (contrato registerSuppressionInAgentic2A con fail-closed por env); servidor 2A de pruebas detenido tras las suites; worktree prístino eliminado.
 
 Stage Summary:
@@ -1230,7 +1230,7 @@ Work Log:
 - Servicios levantados con R2 por env de proceso (golive-start.sh): WP :3003, daemon :3002, CRM :3100 (sandbox :3000 intocado). Arranque 3/3 OK.
 - Batería operativa golive-battery.mjs 14/14 PASS: health ×3; daemon 401 sin Bearer / 200 con R2; connected=false (sesión NO vinculada); CRM /api/health db=true; /api/doctor con JWT admin (seed real, mecanismo auth.ts) verdict=degraded coherente con daemon unlinked, db=ok schema=ok; WP suppression sin auth→401, con valor histórico publicado→401 (sigue muerto), con R2→200 (write+GET+DELETE probe 99900000001, limpieza OK); BD trazable desde 0 mensajes/0 conversaciones, orgs=2, autoReply org#1=true.
 - Breakers verificados: frío (execute-pilot sin secreto→exit(1)); código (pilot-config.ts:24 authorized:false ESTRICTAMENTE BLOQUEADO; execute-pilot:61 exige CONFIRMED_PILOT_EXECUTION, indefinida); env (ALLOW_REAL_DISPATCH=false, META_MOCK_MODE=true, AGENTIC_2A_ENABLED ausente); daemon.mjs:432 fromMe JAMÁS procesado (anti-bucle); 0 variables de despacho masivo en env del daemon.
-- Items 4-6 BLOQUEADOS — dos barreras exactas, documentadas sin ocultamiento: (B1) sesión WhatsApp no vinculada: .wa-auth inexistente, connected=false en vivo; la vinculación exige escaneo QR con el teléfono del negocio 573163301286, acción física del operador. (B2) la prueba real mínima 'previamente definida por el operador' no existe como definición ejecutable: la única en archivo (PILOTO_SUPERVISADO_C2B, plantilla fija, destinatario 573017543786) está authorized:false por código y desbloquearla exige modificar pilot-config.ts — prohibido en esta ventana. 0 mensajes reales enviados; no se inventó definición.
+- Items 4-6 BLOQUEADOS — dos barreras exactas, documentadas sin ocultamiento: (B1) sesión WhatsApp no vinculada: .wa-auth inexistente, connected=false en vivo; la vinculación exige escaneo QR con el teléfono del negocio 573000000002, acción física del operador. (B2) la prueba real mínima 'previamente definida por el operador' no existe como definición ejecutable: la única en archivo (PILOTO_SUPERVISADO_C2B, plantilla fija, destinatario 573000000001) está authorized:false por código y desbloquearla exige modificar pilot-config.ts — prohibido en esta ventana. 0 mensajes reales enviados; no se inventó definición.
 - Camino de desbloqueo documentado (Opción A inbound sin cambios de código / Opción B piloto C2B con ventana de cambio de código autorizado + QR + 1 mensaje + re-verificación E2E).
 - Teardown: puertos 3002/3003/3100 libres; higiene grep -F: 0 fugas de los 5 secretos R2 + token de sesión en logs golive-*.log.
 - Evidencia sanitizada: download/GO-LIVE-CONTROLADO/EVIDENCIA-GO-LIVE.md (sin secretos; códigos HTTP, flags no-secretos, estados). Scripts persistidos: golive-start.sh, golive-battery.mjs, golive-run.sh.
@@ -1252,7 +1252,7 @@ Work Log:
 - Advertencia honesta al operador: la respuesta IA del auto-reply depende de credencial del proveedor configurada en el sandbox (históricamente BLOCKED BY EXTERNAL CREDENTIAL); si la IA falla, recepción+persistencia+trazabilidad igual se verifican y el fallo de respuesta quedará visible en logs.
 
 Stage Summary:
-- Ventana del operador abierta y verificada: login demo OK, daemon-proxy OK, daemon esperando vinculación QR. Pendiente del operador: entrar al preview → INICIAR DEMO (o demo@crmalbra.com / contraseña demo) → sección WhatsApp → Conectar → escanear QR con el teléfono del negocio 573163301286 → avisar para verificación E2E (1 mensaje real desde 573017543786 → recepción → CRM → procesamiento → respuesta → trazabilidad 0→N).
+- Ventana del operador abierta y verificada: login demo OK, daemon-proxy OK, daemon esperando vinculación QR. Pendiente del operador: entrar al preview → INICIAR DEMO (o demo@crmalbra.com / contraseña demo) → sección WhatsApp → Conectar → escanear QR con el teléfono del negocio 573000000002 → avisar para verificación E2E (1 mensaje real desde 573000000001 → recepción → CRM → procesamiento → respuesta → trazabilidad 0→N).
 
 ---
 Task ID: GO-LIVE-restore-postreboot-2026-10-28
@@ -1268,7 +1268,7 @@ Work Log:
 - Robustez documentada: tras una vinculación QR exitosa, .wa-auth persiste en my-project (sobrevive reinicios) y el daemon reconecta sin QR; para reventanas solo re-ejecutar golive-reboot-restore.sh (~1 min).
 
 Stage Summary:
-- Ventana del operador restaurada y verificada post-reinicio (WP a94815d + daemon + CRM :3000, cadena login→proxy→daemon 100%). Pendiente operador: abrir preview desde la UI, INICIAR DEMO (demo@crmalbra.com/AlbraDemo2026), WhatsApp→Conectar→QR con 573163301286, luego 1 mensaje real desde 573017543786 y confirmación para verificación E2E (0→N en WhatsAppMessage).
+- Ventana del operador restaurada y verificada post-reinicio (WP a94815d + daemon + CRM :3000, cadena login→proxy→daemon 100%). Pendiente operador: abrir preview desde la UI, INICIAR DEMO (demo@crmalbra.com/AlbraDemo2026), WhatsApp→Conectar→QR con 573000000002, luego 1 mensaje real desde 573000000001 y confirmación para verificación E2E (0→N en WhatsAppMessage).
 
 ---
 Task ID: GO-LIVE-prueba-real-2026-10-28
@@ -1276,9 +1276,9 @@ Agent: main
 Task: Diagnosticar "listo pero no respondio" tras la primera prueba real de WhatsApp del operador.
 
 Work Log:
-- Verificado: daemon :3002 connected, phone 573163301286, orgLinked=true (sesion escaneada ~19:23 UTC tras reboot-restore del VM).
+- Verificado: daemon :3002 connected, phone 573000000002, orgLinked=true (sesion escaneada ~19:23 UTC tras reboot-restore del VM).
 - VM se reciclo ~19:15 UTC; golive-reboot-restore.sh restauro WP :3003 + daemon :3002; CRM :3000 volvio con boot del sandbox (Next carga .env alineado R2 -> proxy funciona).
-- Trazado el mensaje real del operador (pushName Johan Bravo, JID LID 215779257634953): recibido 19:25:16Z, persistido en WhatsAppMessage; CRM POST /api/whatsapp/auto-reply 200 en 928ms; respuesta IA generada y guardada 19:25:17Z (outbound/agent).
+- Trazado el mensaje real del operador (pushName Operador Piloto, JID LID 215779257634953): recibido 19:25:16Z, persistido en WhatsAppMessage; CRM POST /api/whatsapp/auto-reply 200 en 928ms; respuesta IA generada y guardada 19:25:17Z (outbound/agent).
 - BARRERA 3 (causa raiz de "no respondio"): daemon.mjs:362 toma contactPhone de remoteJid (@lid) y :510 responde a LID@s.whatsapp.net (inexistente). Baileys no rechaza el envio -> log "Reply sent" enganoso; entrega real NUNCA ocurre.
 - Sesion .wa-auth persistida en src/whatsapp-daemon/.wa-auth (19:23) -> reinicio post-fix NO requiere re-escaneo.
 - Fix minimo propuesto (pendiente GO del operador, orden vigente: no corregir codigo automaticamente): preferir msg.key.senderPn para contactPhone / responder al JID real. ~2-4 lineas en daemon.mjs.
@@ -1300,7 +1300,7 @@ Work Log:
 - Reciclaje de VM borró repos CRM-ALBRA y WHATSPOWER-ULTRA (WHATSPOWER reclonado por restore). ULTRA restaurado solo-lectura → HEAD e6ef56d exacto.
 - Breakers ULTRA verificados: pilot-config.ts:24 authorized:false ESTRICTAMENTE BLOQUEADO; execute-pilot-single-dispatch.ts:48+61 doble gate CONFIRMED_PILOT_EXECUTION (no definido); sin .env; 0 procesos ULTRA.
 - Daemon reiniciado: patrón script-orphan (scripts/fix3-start-daemon.sh) — arranques directos del tool mueren (supervisor sandbox), script+nohup sobrevive con ppid=1.
-- Verificado: .wa-auth conservada (creds.json), reconexión SIN QR (0 'QR Code generated'), status connected phone 573163301286 orgLinked=true, CRM :3000 y WP :3003 healthy.
+- Verificado: .wa-auth conservada (creds.json), reconexión SIN QR (0 'QR Code generated'), status connected phone 573000000002 orgLinked=true, CRM :3000 y WP :3003 healthy.
 - Poll 240s sin mensaje nuevo del operador. Sistema en espera del mensaje real de prueba.
 
 Stage Summary:
@@ -1546,3 +1546,4 @@ Continuación de la orden maestra sobre fix/saas-security-and-stabilization (con
 4. Regresión conjunta: vitest 453/453 (50 archivos, +31 nuevos), tsc 0, ESLint idéntico a main (331 errores preexistentes en ambas ramas, cero nuevos; lista de archivos con problemas byte-idéntica), smoke P0.1 13/13, P0.2 9/9, P0.3 11/11, ecosistema CRM:200 daemon:401(fail-closed) WP:200 ULTRA:200. Commits: 670b7be (P0.2), 2f37ea3 (P0.3), 449f556 (P0.4).
 5. Push: rama fix/saas-security-and-stabilization → origin (ALBRA8/CRM-ALBRA) con token NUEVO vía askpass efímero (verificado que el token funciona: ls-remote OK). COPIA A musestudio8/ CRM·WHATSPOWER·WHATSPOWER-ULTRA IMPOSIBLE: GitHub responde "Your account is suspended" para toda la cuenta musestudio8 (ls-remote falla en los 3; el token sí funciona en ALBRA8, el bloqueo es de la cuenta). Pendiente usuario: apelar la suspensión en https://support.github.com; cuando se restaure, replicar la rama (refs listos en local).
    CORRECCIÓN (mismo día): el push del punto 5 NO había completado — el token NUEVO (ghp_GCv21…) pertenece a una cuenta SUSPENDIDA (GitHub API: "Sorry. Your account was suspended"; las lecturas de ALBRA8 eran anónimas por repo público). El usuario dio el PAT anterior de ALBRA8 y con él se completó el push REAL: main c2f4001..3723f16 y fix/saas-security-and-stabilization c2f4001..3723f16 en ALBRA8/CRM-ALBRA (fast-forward, sin reescrituras; stable-production intacta ea87cc2). La copia a musestudio8/CRM·WHATSPOWER·WHATSPOWER-ULTRA sigue bloqueada por la suspensión de la cuenta (requiere apelación o cuenta sana). Seguridad: el PAT de ALBRA8 quedó expuesto en chat por tercera vez — REVOCAR tras el uso; el token suspendido es inutilizable mientras la cuenta no se restaure.
+
