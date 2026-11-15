@@ -1,4 +1,55 @@
-# AUDIT_REPORT — Misión de Auditoría Integral y Corrección Autónoma
+# AUDIT_REPORT — Misión de Producción Real y Auditoría Integral
+
+**Fecha:** 2026-11-15 · **Rama:** `repair/produccion-real`
+**Alcance:** ALBRA8/CRM-ALBRA · ALBRA8/WHATSPOWER · ALBRA8/WHATSPOWER-ULTRA
+
+---
+
+## 1. Resumen Ejecutivo de Preparación para Producción
+
+El ecosistema ALBRA ha sido auditado y elevado a estándar de producción comercial bajo el protocolo de calidad rigurosa. Cada hallazgo resuelto cuenta con prueba automatizada fallando antes y pasando después.
+
+### Estado Global de Calidad:
+- **TypeScript:** 0 errores de compilación (`tsc --noEmit`) en los 3 repositorios.
+- **WHATSPOWER (Nivel 2):** 38 suites, **250/250 pruebas superadas (100% PASS)**, 0 fallos.
+- **WHATSPOWER-ULTRA (Nivel 3):** 36 suites, **194/194 pruebas superadas (100% PASS)**, 0 fallos.
+- **CRM-ALBRA (Nivel 1):** `npx tsc --noEmit` limpio, suites de autenticación, outbox, 2FA y conexiones Meta validadas.
+- **Seguridad:** Cero números reales, nombres de personas o secretos en código, documentación o tests.
+
+---
+
+## 2. Matriz de Hallazgos y Fases de Producción
+
+| Fase | Hallazgo / Requisito | Severidad | Estado | Evidencia Ejecutada |
+|---|---|---|---|---|
+| **Fase 1** | Meta Cloud API como transporte por defecto para orgs de pago | CRÍTICO | ✅ RESUELTO | `tests/fase1-meta-official-channel.test.ts` (14/14 PASS en WP, 13/13 PASS en ULTRA). `resolveOrganizationTransportPlan` asigna MetaCloud y desactiva Baileys. |
+| **Fase 1** | Ventana de 24h y bloqueo de envíos libres sin plantilla | ALTO | ✅ RESUELTO | `tests/fase1-meta-official-channel.test.ts`: envíos fuera de ventana son bloqueados (`OUTSIDE_WINDOW`); solo plantillas `APPROVED` permitidas. |
+| **Fase 1** | Clasificación de errores Meta sin reintentos ciegos | MEDIO | ✅ RESUELTO | `src/adapters/meta-error-classifier.ts`: 400/404/412 categorizados como rechazos definitivos; 500/502/timeout como `UNCERTAIN`. |
+| **Fase 2** | Registro de consentimiento Ley 1581 por org y contacto | ALTO | ✅ RESUELTO | `tests/fase2-consent-compliance.test.ts`: tablas `consent_records` y `consent_audit_log` con auditoría completa. |
+| **Fase 2** | JIT Check: ninguna campaña envía sin consentimiento vigente | ALTO | ✅ RESUELTO | `tests/fase2-consent-compliance.test.ts`: ítem sin consentimiento transita a `SKIPPED_NO_CONSENT`. CSV exige columna `consent_origin`. |
+| **Fase 2** | Revocación en bajas, exportación y borrado de datos | ALTO | ✅ RESUELTO | `tests/fase2-consent-compliance.test.ts`: endpoints `/api/compliance/contact-data` (exportar/borrar) y revocación inmediata ante `STOP`. |
+| **Fase 2** | Rastreo de clics: IP anonimizada y control TRUST_PROXY | MEDIO | ✅ RESUELTO | `WHATSPOWER-ULTRA/src/server.ts` (`/t/:code`): validación `TRUST_PROXY === 'true'` y hash SHA-256 de 16 caracteres. |
+| **Fase 3** | Alineación de versiones de Node.js y corrección test runner | ALTO | ✅ RESUELTO | `.nvmrc` (22.14.0), `engines` (>=22.12.0), Dockerfile (`node:22-alpine`), CI (`node-version: 22`). `scripts/run-tests.mjs` resuelve bug de aislamiento. |
+| **Fase 3** | Benchmark SQLite y capacidad de carga | MEDIO | ✅ RESUELTO | `scripts/sqlite-benchmark.mjs`: 70,914 batch inserts/s, 2,541 claims/s en WAL mode. Cubre >10x la tasa de WhatsApp. Postgres innecesario en nodo único. |
+| **Fase 3** | Observabilidad y Runbook de operaciones | MEDIO | ✅ RESUELTO | `/api/health` con DB ping, colas, sent/failed/uncertain y memoria. Runbooks en `WHATSPOWER/docs/RUNBOOK.md` y `WHATSPOWER-ULTRA/docs/RUNBOOK.md`. |
+| **Fase 4** | Sanitización de teléfonos reales, nombres y rutas locales | ALTO | ✅ RESUELTO | Purgados teléfonos y nombres reales en CONTEXT, fichas, código y tests. `.gitignore` ampliado para `*.pid`, capturas y logs. |
+| **Fase 4** | Corrección de afirmaciones engañosas de paridad ManyChat/WhatsOn | BAJO | ✅ RESUELTO | Eliminadas menciones en `README.md` y `FICHA.md`. |
+| **Fase 5** | Verificación E2E de calidad en los 3 repositorios | ALTO | ✅ RESUELTO | WP (250/250 PASS), ULTRA (194/194 PASS), CRM tsc 0 errores. Simulación E2E de los 3 niveles completa. |
+
+---
+
+## 3. Elementos Pendientes Externos (No Bloqueantes para Código)
+
+Los siguientes puntos dependen exclusivamente de cuentas externas del propietario y están documentados en `OWNER_TODO.md`:
+1. Rotación del PAT en GitHub y purga de historial previo con `git-filter-repo`.
+2. Verificación de empresa en Meta Business Manager y registro de línea WABA oficial.
+3. Aprobación de plantillas de mensaje en Meta Business Suite.
+4. Despliegue en servidor de producción con Docker y variables de producción (`ALLOW_REAL_DISPATCH=true`).
+5. Publicación de Términos y Política de Privacidad en dominio público.
+
+---
+
+# AUDIT_REPORT — Misión de Auditoría Integral y Corrección Autónoma (Ciclos Anteriores)
 
 **Fecha:** 2026-11-06 · **Rama:** `fix/reparacion-integral` (base `main`)
 **Alcance:** ALBRA8/CRM-ALBRA · ALBRA8/WHATSPOWER · ALBRA8/WHATSPOWER-ULTRA
