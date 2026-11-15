@@ -315,3 +315,32 @@ Las entradas anteriores que indicaban que la outbox de workflows no existía son
 - [x] Push CI `43525779708` y PR CI `43525787021`: ambos success. Secret scan, Prisma generate/migrations, TypeScript, lint, suite completa (78 archivos / 660 tests) y build de producción.
 - [ ] Ejecutar la validación de staging: backup restaurable, dry-run backfill, pruebas con sandbox/destinatarios consentidos y ensayo de rollback. Requiere acceso y credenciales del entorno; no se ejecutó desde este entorno.
 - [ ] Configurar monitorización/alertas y scheduler externo únicamente tras la validación de staging y autorización operativa.
+
+
+## Lease fencing del workflow scheduler — siguiente ciclo (2026-11-15)
+
+**Estado: pendiente de prueba específica; no declarar cerrado ni listo para producción.**
+
+### Objetivo
+Demostrar con SQLite de pruebas que un worker antiguo no puede modificar una ejecución después de que su lease haya vencido y otro worker la haya recuperado con un fencing token/generación nuevos.
+
+### Secuencia de aceptación
+1. Worker A reclama una ejecución y conserva su token/generación.
+2. Se deja vencer el lease de A.
+3. Worker B recupera la misma ejecución y obtiene un token/generación nuevos.
+4. A intenta modificar un paso con el token antiguo: la operación debe rechazarse.
+5. A intenta finalizar o modificar el resultado de la ejecución con el token antiguo: también debe rechazarse.
+6. Se comprueba que los pasos y el resultado válidos de B permanecen intactos y que no hay efectos duplicados.
+
+### Trabajo autorizado en la rama
+- Añadir pruebas de integración focalizadas para las operaciones de paso y finalización, usando una SQLite temporal aislada.
+- Ejecutar esas pruebas mediante GitHub Actions; no repetir la suite completa salvo que el workflow lo exija o el cambio afecte su alcance.
+- Si una aserción reproduce un defecto, corregir la protección transaccional/fencing y volver a ejecutar las pruebas afectadas.
+- Registrar aquí y en AUDITORIAS.md el commit, run de CI, casos ejecutados y resultado real.
+
+### Límites y estado
+- A la fecha de esta anotación, la prueba específica de worker antiguo contra modificación de pasos/finalización **no está demostrada**. La existencia de helpers de lease o de tests de recuperación aislados no sustituye esta prueba conjunta.
+- Los resultados previos de concurrencia básica y los 732 tests mencionados en el historial de trabajo se conservan como evidencia de sus escenarios concretos; no se extrapolan a este escenario nuevo.
+- No afirmar que el CRM está 100% listo para producción. CI verde no sustituye staging, pruebas operativas, backup/restauración, revisión de integraciones ni autorización de despliegue.
+- SQLite se mantiene según la decisión vigente en esta rama/contexto; no introducir PostgreSQL como requisito de este ciclo.
+- No tocar producción, no activar envíos reales, no hacer merge ni deploy sin autorización expresa.
