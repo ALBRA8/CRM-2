@@ -30,6 +30,7 @@ import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
 import { authDirFor, planBootRestore, decideUnscopedSend, validateOrgId } from './session-registry.mjs'
+import { ensureIdempotencyTable, reserveDaemonSend, markDaemonSendDone, markDaemonSendFailed } from './idempotency.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const AUTH_ROOT = join(__dirname, '.wa-auth') // raíz: una carpeta por organización dentro
@@ -148,6 +149,8 @@ let db = null
 try {
   db = new Database(DB_PATH)
   db.pragma('journal_mode = WAL')
+  // B2 residual: tabla aditiva de idempotencia para /send (sin DDL destructivo).
+  ensureIdempotencyTable(db)
   console.log(`[DB] Connected to: ${DB_PATH}`)
 } catch (err) {
   console.error('[DB] Failed to connect:', err.message)
@@ -771,13 +774,41 @@ const server = createServer(async (req, res) => {
       const orgId = resolveOrgForWrite(body, res)
       if (!orgId) return
 
+      // B2 residual (producción real F6): idempotencia PERSISTENTE por organización.
+      // La clave llega en body.idempotencyKey o en el header X-Correlation-Id.
+      // Reserva ANTES del envío; claves en curso/vencidas jamás reenvían.
+      const idemKey = body.idempotencyKey || req.headers['x-correlation-id'] || null
+      if (idemKey && db) {
+        const reservation = reserveDaemonSend(db, orgId, idemKey, Date.now())
+        if (reservation.action === 'in_flight') {
+          jsonResponse(res, { status: 'IN_FLIGHT', message: 'Envío equivalente en curso con esta clave; no se reenvía.' }, 409)
+          return
+        }
+        if (reservation.action === 'uncertain') {
+          jsonResponse(res, { status: 'UNCERTAIN', message: 'Resultado previo desconocido (lease vencido); requiere reconciliación. No se reenvía automáticamente.', messageId: reservation.messageId ?? null }, 409)
+          return
+        }
+        if (reservation.action === 'done') {
+          jsonResponse(res, { success: true, messageId: reservation.messageId, orgId, deduplicated: true })
+          return
+        }
+      }
+
       const s = sessions.get(orgId)
       if (!s || s.status !== 'connected') {
+        if (idemKey && db) markDaemonSendFailed(db, orgId, idemKey, Date.now())
         jsonResponse(res, { error: `WhatsApp no conectado para la organización (${orgId.slice(-6)})` }, 400)
         return
       }
 
-      const sent = await sendWhatsAppMessage(orgId, to, text)
+      let sent
+      try {
+        sent = await sendWhatsAppMessage(orgId, to, text)
+      } catch (sendErr) {
+        if (idemKey && db) markDaemonSendFailed(db, orgId, idemKey, Date.now())
+        throw sendErr
+      }
+      if (idemKey && db) markDaemonSendDone(db, orgId, idemKey, sent?.key?.id ?? null, Date.now())
 
       // Persistencia del saliente (P0): las respuestas manuales de la bandeja
       // deben aparecer en el hilo. Antes /send enviaba y NO guardaba → el
