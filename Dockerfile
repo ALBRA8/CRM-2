@@ -26,7 +26,7 @@
 # ------------------------------------------------------------
 # Etapa 1 · deps — dependencias con toolchain nativo
 # ------------------------------------------------------------
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 # libc6-compat: binarios precompilados que esperan glibc (SWC/sharp en Alpine)
 # python3 + make + g++: compila better-sqlite3 si no hay prebuild para musl
 # openssl: binarios de Prisma (targets *-openssl-3.0.x)
@@ -50,7 +50,7 @@ RUN if [ -f package-lock.json ]; then \
 # ------------------------------------------------------------
 # Etapa 2 · builder — prisma generate + next build
 # ------------------------------------------------------------
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 RUN apk add --no-cache libc6-compat openssl
 
 WORKDIR /app
@@ -82,7 +82,7 @@ RUN npx prisma generate
 # ------------------------------------------------------------
 # Etapa 3 · runner — imagen mínima, usuario no-root
 # ------------------------------------------------------------
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 # libc6-compat + openssl para los binarios nativos de runtime
 # (query/schema-engine de Prisma). wget viene con busybox (healthcheck).
 RUN apk add --no-cache libc6-compat openssl
