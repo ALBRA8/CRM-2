@@ -1,5 +1,18 @@
 # CHANGELOG — Ecosistema ALBRA
 
+## [repair/produccion-real] 2026-11-15 (sesión sandbox) — Verificación total, E2E de 3 servicios y B2 residual
+
+### Corregido (con prueba que falla antes y pasa después)
+- **B2 residual — idempotencia del daemon Baileys:** `/send` leía solo `to`/`text` (ventana real de duplicación). Ahora reserva `idempotencyKey`/`X-Correlation-Id` en tabla aditiva `DaemonSendIdempotency` ANTES del envío: en curso → 409 IN_FLIGHT; lease vencido → 409 UNCERTAIN (jamás reenvío automático); DONE responde messageId original; FAILED permite reintento. 6 pruebas nuevas (`tests/unit/daemon-idempotency.test.ts`).
+- **Escáner de historial en verde:** +319 pares (commit,huella) verificados uno a uno como fixtures dummy (0 secretos reales).
+- **Artefactos retirados del árbol (38 archivos):** pids, logs, PDFs, capturas, backups + `.gitignore` anti-reintroducción. Historial sin purgar (regla).
+- **Credenciales demo:** ya no se versionan (`DEMO_PASSWORD` fail-fast).
+
+### Verificación ejecutada
+- Suite **736/736 (92 archivos)** · tsc 0 · eslint 0/0 · `npm audit` 0 vulnerabilidades · `security:scan[:history]` exit 0.
+- **E2E de los 3 servicios reales juntos** (`scripts/e2e-3-servicios.mjs`, 18/18 PASS): webhook Meta firmado → CRM → puente → WP flujo → crm_action → cliente creado en CRM real; lock IN_FLOW_2A; campaña ULTRA: LOCK_EXCLUDED / SKIPPED_NO_CONSENT / salvaguarda con SENT=0.
+- Studios en navegador real (Playwright 11/11): addNode funcional en Flow Studio, Historial y métricas en Campaign Studio, móvil 390px sin desbordamiento.
+
 ## [repair/produccion-real] 2026-11-15 — Preparación para Producción Real
 
 ### Fase 1 — Canal Oficial de WhatsApp

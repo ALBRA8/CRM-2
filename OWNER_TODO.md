@@ -1,73 +1,41 @@
-# ACCIONES PENDIENTES DEL DUEÑO (OWNER_TODO)
-## Ecosistema ALBRA: CRM-ALBRA × WHATSPOWER × WHATSPOWER-ULTRA
+# OWNER_TODO — Acciones que SOLO el dueño puede ejecutar
 
-Este documento reúne las acciones que **no pueden automatizarse con código ni simularse con mocks**, y que requieren credenciales reales, pagos, verificaciones de terceros o decisiones legales/comerciales por parte del propietario del negocio antes del lanzamiento a producción real con clientes de pago.
+**Actualizado:** 2026-11-15 · **Rama:** `repair/produccion-real`
+Este archivo lista lo que NO se puede automatizar desde el entorno de trabajo:
+requiere cuentas externas, decisiones de negocio o acceso físico al PC/despliegue.
+Nada de lo siguiente se simuló ni se fingió completado.
 
----
+## 1. Credenciales y seguridad (prioridad máxima)
+- [ ] **Rotar el PAT de GitHub usado en esta sesión** (`ghp_M9w5…` se compartió en chat para poder operar los repos). Tras el merge de las ramas `repair/produccion-real`, revocarlo y generar uno nuevo con alcance mínimo (repo + workflow).
+- [ ] **Purgar el historial git con `git filter-repo`** (secretos históricos: 82 entradas del baseline con estado `ROTACION-PENDIENTE` + artefactos E2E antiguos). Requiere force-push y coordinación de clones: decisión del dueño. El escáner (`npm run security:scan:history`) queda en verde para hallazgos NUEVOS; el historial NO se purgó (regla de la misión: reportar sin purgar).
+- [ ] Rotar cualquier credencial real que haya aparecido en chats de sesiones anteriores (API keys de WP/ULTRA históricas ya verificadas muertas; rotación preventiva recomendada).
 
-### 1. Seguridad de Cuentas y Limpieza de Historial Git
-- [ ] **Rotación Inmediata de GitHub Personal Access Tokens (PAT):**
-  - Generar un nuevo token en GitHub Settings > Developer Settings > Personal Access Tokens.
-  - Revocar cualquier token previo utilizado en las máquinas de desarrollo.
-- [ ] **Purga de Historial Git:**
-  - Correr `git-filter-repo` o `BFG Repo-Cleaner` sobre los repositorios si hubo tokens o números históricos en commits antiguos antes de la sanitización actual.
-  - Asegurarse de coordinar con el equipo antes de forzar la actualización de ramas protegidas.
+## 2. Canal oficial de WhatsApp (FASE 1)
+- [ ] Crear la **cuenta Meta Business** + verificar el negocio.
+- [ ] Registrar el **número oficial** en Meta Cloud API (el número personal actual NO puede usarse como remitente oficial).
+- [ ] Crear la app Meta (tipo Business) y obtener `phone_number_id`, WABA id y token de sistema con permisos `whatsapp_business_messaging`.
+- [ ] Cargar y obtener **aprobación de las plantillas** (fase 1 ya modela el registro `TemplateRegistry` con estados; sin plantillas aprobadas no hay envíos fuera de ventana 24 h).
+- [ ] Configurar el webhook de Meta apuntando al CRM/WP con el appSecret real.
 
----
+## 3. Piloto y datos reales
+- [ ] Definir y autorizar por escrito la **prueba real mínima** (destinatario, plantilla, ventana) — el bloqueo `authorized:false` de `PILOTO_SUPERVISADO_C2B` existe a propósito; desbloquearlo es decisión del dueño.
+- [ ] Proveer el CSV inicial de contactos **con columna de origen del consentimiento** (exigida por el importador).
+- [ ] Escanear el QR real para vincular la sesión Baileys de la organización (acción física; solo plan básico).
 
-### 2. Infraestructura y Meta Business Official
-- [ ] **Verificación de Meta Business Manager:**
-  - Completar la verificación de empresa en [business.facebook.com](https://business.facebook.com).
-  - Subir cámara de comercio (RUT / NIT) y certificado bancario de la empresa.
-- [ ] **Número de WhatsApp Oficial (WABA):**
-  - Adquirir y registrar la línea telefónica oficial para la cuenta de WhatsApp Business API.
-  - Completar el registro de nombre para mostrar (Display Name) y aprobación de perfil comercial.
-- [ ] **Plantillas de Mensajes (Meta Message Templates):**
-  - Redactar y enviar a aprobación en el Business Manager las plantillas requeridas para iniciar conversaciones o enviar fuera de la ventana de 24 horas (utilidad, autenticación y marketing).
-  - Configurar las variables dinámicas en `WHATSPOWER/src/safety/template-registry.ts` con los nombres aprobados por Meta.
+## 4. Despliegue (PC del dueño)
+- [ ] Ejecutar el **build y arranque con Docker (`docker compose up --build`)** en el PC: el entorno de trabajo remoto no tiene Docker instalado, así que esta prueba de la FASE 3 NO se ejecutó (los Dockerfile/compose existen en los 3 repos).
+- [ ] `npx prisma migrate deploy` contra la BD real (respaldo previo; migraciones aditivas con rollback documentado en `docs/MIGRACIONES.md`).
+- [ ] Definir `.env` reales por servicio con secretos nuevos (`openssl rand -hex 32`), jamás los de prueba de este repo.
+- [ ] Configurar respaldo nocturno (`scripts/backup-nightly.sh`) y probar `backup-restore-drill.sh` una vez.
+- [ ] Revisar `docs/RUNBOOK.md` (WP/ULTRA) y poner el número de emergencia del operador.
 
----
+## 5. Legal (Ley 1581)
+- [ ] Publicar **Términos y Condiciones** y **Política de Privacidad** (el CRM ya sirve diálogos legales en el landing; el texto definitivo requiere revisión del dueño).
+- [ ] Designar responsable de tratamiento de datos ante suplantaciones/quejas (canal de bajas ya implementado y auditado).
 
-### 3. Pasarelas de Pago y Facturación
-- [ ] **Activación de Credenciales de Producción en Pasarela (Wompi / PayU / Stripe):**
-  - Reemplazar las credenciales de prueba (`SANDBOX_SECRET`) por las llaves de producción en `.env` seguro.
-  - Configurar las URLs de webhook en el panel de la pasarela:
-    - Webhook CRM: `https://app.tu-dominio.com/api/billing/webhook`
-    - Webhook WhatsPower: `https://wp.tu-dominio.com/api/payments/webhook`
-  - Comprobar la firma HMAC con un pago real de prueba ($1.000 COP) y verificar la transición automática a `APPROVED`.
+## 6. Merge de las ramas `repair/produccion-real`
+- [ ] Revisar los diff de las 3 ramas y abrir/aceptar los PR hacia `main` (no se hizo merge ni force-push: regla de la misión).
+- [ ] Tras el merge, crear tag de versión y desplegar en staging antes de producción.
 
----
-
-### 4. Cumplimiento Legal y Privacidad (Ley 1581 de 2012 / Habeas Data)
-- [ ] **Publicación de Política de Privacidad y Tratamiento de Datos:**
-  - Redactar y hospedar la Política de Privacidad oficial en `https://app.tu-dominio.com/privacidad`.
-  - Asegurar que la URL sea pública y accesible para la verificación de la app de Meta.
-- [ ] **Términos y Condiciones del Servicio:**
-  - Publicar los Términos de Servicio en `https://app.tu-dominio.com/terminos`, incluyendo el descargo de responsabilidad sobre el uso de la API de WhatsApp, límites de anti-spam y revocación de servicio ante conductas abusivas.
-- [ ] **Protocolo de Atención a Peticiones de Habeas Data:**
-  - Designar al Oficial de Protección de Datos (DPO) que gestionará las solicitudes que ingresen a los endpoints `/api/compliance/contact-data` (exportación y borrado).
-
----
-
-### 5. Despliegue en Servidor de Producción (VPS / Cloud)
-- [ ] **Aprovisionamiento de Servidor:**
-  - Servidor Linux (Ubuntu 24.04 LTS o Debian 12), mínimo 4 vCPU y 8 GB RAM.
-  - Instalar Docker Engine y Docker Compose (versión 24+).
-  - Instalar Nginx / Caddy como reverse proxy con terminación SSL (Let's Encrypt / Certbot).
-- [ ] **Configuración de Variables de Entorno en Servidor:**
-  - Crear los archivos `.env` de producción en cada contenedor asegurando:
-    - `NODE_ENV=production`
-    - `ALLOW_REAL_DISPATCH=true` (solo tras aprobar pruebas en staging)
-    - Secretos criptográficos robustos de al menos 32 caracteres generados con `openssl rand -hex 32`.
-- [ ] **Estrategia de Copias de Seguridad (Backups):**
-  - Programar cron jobs para backup nightly de los archivos SQLite (`custom.db`, `agentic.db`, `broadcast.db`) usando `VACUUM INTO` hacia almacenamiento externo seguro (S3 / Cloud Storage).
-
----
-
-### 6. Piloto Real Controlado
-- [ ] **Prueba de Humo con Número de Prueba:**
-  - Despachar un único mensaje de prueba real a un número de control interno del dueño.
-  - Validar que el mensaje llega al dispositivo y que la respuesta entrante abre la ventana de 24 horas y actualiza el CRM.
-- [ ] **Piloto Limitado con Primer Cliente de Pago:**
-  - Configurar la organización del primer cliente en modo piloto con cuota restringida (ej. máx 50 envíos/día).
-  - Supervisar en vivo métricas en `/api/health` y logs del worker persistente.
+## 7. Notas de la sesión sandbox 2026-11-15
+- [ ] Migrar o eliminar los scripts E2E antiguos (`scripts/e2e-wp-main.mjs`, `e2e-wp-bridge.mjs`, `e2e-wp-ultra.mjs`): contienen rutas de otra máquina y secretos literales ya usados solo en pruebas; el flujo E2E oficial es `scripts/e2e-3-servicios.mjs` (fail-fast, sin secretos versionados).

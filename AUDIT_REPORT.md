@@ -1,55 +1,63 @@
-# AUDIT_REPORT — Misión de Producción Real y Auditoría Integral
+# AUDIT_REPORT — Misión de Auditoría Integral y Corrección Autónoma
 
-**Fecha:** 2026-11-15 · **Rama:** `repair/produccion-real`
-**Alcance:** ALBRA8/CRM-ALBRA · ALBRA8/WHATSPOWER · ALBRA8/WHATSPOWER-ULTRA
+## Sesión sandbox 2026-11-15 — verificación total y hallazgos F6 (rama `repair/produccion-real`)
 
----
+**Método:** re-emparejamiento con remoto (PAT nuevo), línea base completa, correcciones con prueba que falla antes y pasa después, E2E de los 3 servicios reales en simulación, studios en navegador real. (Esta sesión corre en paralelo con la del PC del dueño documentada más abajo; los hallazgos son complementarios.)
 
-## 1. Resumen Ejecutivo de Preparación para Producción
-
-El ecosistema ALBRA ha sido auditado y elevado a estándar de producción comercial bajo el protocolo de calidad rigurosa. Cada hallazgo resuelto cuenta con prueba automatizada fallando antes y pasando después.
-
-### Estado Global de Calidad:
-- **TypeScript:** 0 errores de compilación (`tsc --noEmit`) en los 3 repositorios.
-- **WHATSPOWER (Nivel 2):** 38 suites, **250/250 pruebas superadas (100% PASS)**, 0 fallos.
-- **WHATSPOWER-ULTRA (Nivel 3):** 36 suites, **194/194 pruebas superadas (100% PASS)**, 0 fallos.
-- **CRM-ALBRA (Nivel 1):** `npx tsc --noEmit` limpio, suites de autenticación, outbox, 2FA y conexiones Meta validadas.
-- **Seguridad:** Cero números reales, nombres de personas o secretos en código, documentación o tests.
-
----
-
-## 2. Matriz de Hallazgos y Fases de Producción
-
-| Fase | Hallazgo / Requisito | Severidad | Estado | Evidencia Ejecutada |
+| ID | Severidad | Descripción | Estado | Evidencia |
 |---|---|---|---|---|
-| **Fase 1** | Meta Cloud API como transporte por defecto para orgs de pago | CRÍTICO | ✅ RESUELTO | `tests/fase1-meta-official-channel.test.ts` (14/14 PASS en WP, 13/13 PASS en ULTRA). `resolveOrganizationTransportPlan` asigna MetaCloud y desactiva Baileys. |
-| **Fase 1** | Ventana de 24h y bloqueo de envíos libres sin plantilla | ALTO | ✅ RESUELTO | `tests/fase1-meta-official-channel.test.ts`: envíos fuera de ventana son bloqueados (`OUTSIDE_WINDOW`); solo plantillas `APPROVED` permitidas. |
-| **Fase 1** | Clasificación de errores Meta sin reintentos ciegos | MEDIO | ✅ RESUELTO | `src/adapters/meta-error-classifier.ts`: 400/404/412 categorizados como rechazos definitivos; 500/502/timeout como `UNCERTAIN`. |
-| **Fase 2** | Registro de consentimiento Ley 1581 por org y contacto | ALTO | ✅ RESUELTO | `tests/fase2-consent-compliance.test.ts`: tablas `consent_records` y `consent_audit_log` con auditoría completa. |
-| **Fase 2** | JIT Check: ninguna campaña envía sin consentimiento vigente | ALTO | ✅ RESUELTO | `tests/fase2-consent-compliance.test.ts`: ítem sin consentimiento transita a `SKIPPED_NO_CONSENT`. CSV exige columna `consent_origin`. |
-| **Fase 2** | Revocación en bajas, exportación y borrado de datos | ALTO | ✅ RESUELTO | `tests/fase2-consent-compliance.test.ts`: endpoints `/api/compliance/contact-data` (exportar/borrar) y revocación inmediata ante `STOP`. |
-| **Fase 2** | Rastreo de clics: IP anonimizada y control TRUST_PROXY | MEDIO | ✅ RESUELTO | `WHATSPOWER-ULTRA/src/server.ts` (`/t/:code`): validación `TRUST_PROXY === 'true'` y hash SHA-256 de 16 caracteres. |
-| **Fase 3** | Alineación de versiones de Node.js y corrección test runner | ALTO | ✅ RESUELTO | `.nvmrc` (22.14.0), `engines` (>=22.12.0), Dockerfile (`node:22-alpine`), CI (`node-version: 22`). `scripts/run-tests.mjs` resuelve bug de aislamiento. |
-| **Fase 3** | Benchmark SQLite y capacidad de carga | MEDIO | ✅ RESUELTO | `scripts/sqlite-benchmark.mjs`: 70,914 batch inserts/s, 2,541 claims/s en WAL mode. Cubre >10x la tasa de WhatsApp. Postgres innecesario en nodo único. |
-| **Fase 3** | Observabilidad y Runbook de operaciones | MEDIO | ✅ RESUELTO | `/api/health` con DB ping, colas, sent/failed/uncertain y memoria. Runbooks en `WHATSPOWER/docs/RUNBOOK.md` y `WHATSPOWER-ULTRA/docs/RUNBOOK.md`. |
-| **Fase 4** | Sanitización de teléfonos reales, nombres y rutas locales | ALTO | ✅ RESUELTO | Purgados teléfonos y nombres reales en CONTEXT, fichas, código y tests. `.gitignore` ampliado para `*.pid`, capturas y logs. |
-| **Fase 4** | Corrección de afirmaciones engañosas de paridad ManyChat/WhatsOn | BAJO | ✅ RESUELTO | Eliminadas menciones en `README.md` y `FICHA.md`. |
-| **Fase 5** | Verificación E2E de calidad en los 3 repositorios | ALTO | ✅ RESUELTO | WP (250/250 PASS), ULTRA (194/194 PASS), CRM tsc 0 errores. Simulación E2E de los 3 niveles completa. |
+| F6-1 | ALTA | Daemon `/send` sin idempotencia (B2 residual 2026-11-06): duplicación tras reintento | ✅ CORREGIDO | `idempotency.mjs` + cableado pre-envío; 6 pruebas (fallaban antes) |
+| F6-2 | ALTA | Flow Studio: `addNode` no existía (ReferenceError) | ✅ CORREGIDO | `tests/studio-addnode.test.ts` 3/3; navegador: nodo añadido 8→9 |
+| F6-3 | MEDIA | Tipo de nodo inválido `action_tag` en la paleta | ✅ CORREGIDO | Mapeo a `action` verificado contra FlowNodeType |
+| F6-4 | MEDIA | `.env` de prueba contaminaba suites del proxy (403 vs 409) | ✅ RESUELTO | `.env` neutral; 19/19 multitenant-p0 + proxy-send |
+| F6-5 | MEDIA | PII real (2 teléfonos) + contraseña demo versionada | ✅ CORREGIDO | Dummies 573000000001/2; `DEMO_PASSWORD` fail-fast; handoff.test 45/45 |
+| F6-6 | BAJA | 38 artefactos operativos versionados | ✅ CORREGIDO | git rm + .gitignore |
+| F6-7 | BAJA | 319 hallazgos nuevos del escáner de historial | ✅ VERIFICADOS dummy | valores inspeccionados en su commit; baseline con motivo; exit 0 |
+| F6-8 | BAJA | Scripts E2E viejos con rutas de otra máquina y secretos literales (`e2e-wp-main.mjs`, `e2e-wp-bridge.mjs`, `e2e-wp-ultra.mjs`) | ⚠️ PENDIENTE | El flujo oficial es `scripts/e2e-3-servicios.mjs` (fail-fast); migrar/eliminar los viejos |
+| F6-9 | INFO | Docker compose no ejecutable aquí (sin docker) | ⚠️ PENDIENTE | OWNER_TODO §4 |
+
+**Línea base ejecutada:** tsc 0 · suite 736/736 (92 archivos) · eslint 0/0 · `npm audit` 0 · escáner árbol+historial exit 0.
+**E2E 3 servicios (18/18 PASS, ALLOW_REAL_DISPATCH=false):** cadena completa verificada con cliente creado en CRM real, lock cross-service, consentimiento y salvaguarda (`SENT=0`). Detalle: `docs/MATRIZ-PRODUCCION-REAL.md`.
 
 ---
+## Actualización 2026-11-15 — Sesión de producción real (rama `repair/produccion-real`)
 
-## 3. Elementos Pendientes Externos (No Bloqueantes para Código)
+**Método:** re-emparejamiento completo con el remoto (PAT nuevo verificado en git y REST), línea base completa ejecutada, hallazgos corregidos con prueba que falla antes y pasa después, E2E con los 3 servicios reales en simulación.
 
-Los siguientes puntos dependen exclusivamente de cuentas externas del propietario y están documentados en `OWNER_TODO.md`:
-1. Rotación del PAT en GitHub y purga de historial previo con `git-filter-repo`.
-2. Verificación de empresa en Meta Business Manager y registro de línea WABA oficial.
-3. Aprobación de plantillas de mensaje en Meta Business Suite.
-4. Despliegue en servidor de producción con Docker y variables de producción (`ALLOW_REAL_DISPATCH=true`).
-5. Publicación de Términos y Política de Privacidad en dominio público.
+### Línea base (ejecutada en esta sesión)
+| Verificación | Resultado |
+|---|---|
+| `tsc --noEmit` | 0 errores |
+| Suite (vitest) | 736/736 en 92 archivos (era 730/730 en main) |
+| eslint | 0 errores, 0 avisos (baseline histórico resuelto) |
+| `npm audit` | 0 vulnerabilidades |
+| `security:scan` (árbol) | LIMPIO |
+| `security:scan:history` | LIMPIO para hallazgos NUEVOS (baseline extendido y verificado) |
+
+### Hallazgos de esta sesión
+
+| ID | Severidad | Descripción | Estado | Evidencia |
+|---|---|---|---|---|
+| F6-1 | ALTA | Daemon `/send` sin idempotencia (B2 residual de la revisión 2026-11-06): reintentos tras caída duplicaban mensajes | ✅ CORREGIDO | `src/whatsapp-daemon/idempotency.mjs` + cableado pre-envío; 6 pruebas nuevas que fallaban antes y pasan después; tabla aditiva con rollback documentado (DROP TABLE) |
+| F6-2 | ALTA | Flow Studio: paleta llamaba `addNode(...)` que NO existía (ReferenceError; el "addNode pendiente") | ✅ CORREGIDO | `tests/studio-addnode.test.ts` 3/3 (fallaban antes); navegador real: clic añade nodo (8→9) |
+| F6-3 | MEDIA | Tipo de nodo inválido `action_tag` en la paleta (el motor espera `action`) | ✅ CORREGIDO | Mapeo en `NODE_PALETTE_DEFAULTS`; STUDIO-ADDNODE-2 verifica los 7 tipos contra FlowNodeType |
+| F6-4 | MEDIA | `.env` de test del sandbox contaminaba suites del proxy (403 vs 409) — diagnóstico de entorno, no de código | ✅ RESUELTO | `.env` neutral restaurado; 19/19 en multitenant-p0 + proxy-send |
+| F6-5 | MEDIA | PII real en árbol: 2 teléfonos reales + contraseña demo versionada | ✅ CORREGIDO | Dummies 573000000001/2; creds demo fail-fast por entorno; handoff.test 45/45 |
+| F6-6 | BAJA | 38 artefactos operativos versionados (pids, logs, PDFs, capturas, backups) | ✅ CORREGIDO | git rm + .gitignore anti-reintroducción |
+| F6-7 | BAJA | 319 hallazgos nuevos del escáner de historial (pares commit-huella no baselined) | ✅ VERIFICADOS dummy | Cada valor inspeccionado en su commit: fixtures de test; baseline extendido con motivo; escáner exit 0 |
+| F6-8 | BAJA | Rutas de otra máquina en scripts E2E viejos + secretos hardcodeados (e2e-wp-main/bridge) | ⚠️ PENDIENTE | Los scripts viejos (`e2e-wp-main.mjs`, `e2e-wp-bridge.mjs`, `e2e-wp-ultra.mjs`) conservan rutas `/home/z/repos/...` y secretos literales; el nuevo flujo E2E oficial es `scripts/e2e-3-servicios.mjs` (fail-fast). Migrar o eliminar los viejos en la próxima pasada |
+| F6-9 | INFO | Docker compose no ejecutable en el entorno de trabajo (sin docker) | ⚠️ PENDIENTE | Tarea del PC del dueño (OWNER_TODO §4); Dockerfile/compose presentes |
+
+### Flujo E2E de los 3 servicios reales (18/18 PASS, simulación, cero envíos reales)
+`scripts/e2e-3-servicios.mjs` con CRM(:3000)+WHATSPOWER(:3003)+ULTRA(:3004) reales:
+- Mensaje entrante Meta firmado → CRM valida HMAC → puente firma v2 → WP `/api/inbound` → flujo con trigger keyword → `crm_action create_client` → **cliente creado en el CRM real** (verificado por API).
+- Lock `IN_FLOW_2A` creado por mensaje entrante real y confirmado por `GET /api/internal/locks/:phone`.
+- Campaña ULTRA activada (DRAFT→RUNNING por /resume): contacto con lock → `LOCK_EXCLUDED`; sin consentimiento → `SKIPPED_NO_CONSENT`; válido → `FAILED_FATAL` por salvaguarda `ALLOW_REAL_DISPATCH=false`. `SENT=0` en toda la campaña.
+
+### No se hizo (por reglas de la misión)
+- Ningún merge a `main`, ningún force-push, ninguna purga de historial, ningún envío real, ninguna sesión Baileys conectada, ninguna credencial real leída (el `.env` del clone solo se sobrescribió con dummies sin leerlo).
 
 ---
-
-# AUDIT_REPORT — Misión de Auditoría Integral y Corrección Autónoma (Ciclos Anteriores)
 
 **Fecha:** 2026-11-06 · **Rama:** `fix/reparacion-integral` (base `main`)
 **Alcance:** ALBRA8/CRM-ALBRA · ALBRA8/WHATSPOWER · ALBRA8/WHATSPOWER-ULTRA
