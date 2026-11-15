@@ -188,7 +188,7 @@ export function parseHandoffNotifyPhones(raw) {
 /**
  * Normaliza un teléfono a JID-intl de WhatsApp: solo dígitos, y si parece
  * nacional (≤ 10 dígitos) le antepone el código de país inferido del teléfono
- * conectado del negocio (ej. negocio 573000000002 → nacional 3001234567 →
+ * conectado del negocio (ej. negocio 573000000001 → nacional 3001234567 →
  * 573001234567). Sin teléfono de referencia no infiere nada.
  * Devuelve null si no quedan dígitos.
  *

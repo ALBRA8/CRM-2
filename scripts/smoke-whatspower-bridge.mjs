@@ -40,12 +40,17 @@ function readEnvKey(file, key) {
   return line.slice(key.length + 1).trim()
 }
 
+if (!process.env.DEMO_PASSWORD) {
+  console.error('DEMO_PASSWORD no definida: exporta DEMO_EMAIL/DEMO_PASSWORD antes de ejecutar este smoke.')
+  process.exit(1)
+}
+
 async function main() {
   // ── Setup: login demo + config WhatsApp de la org (appSecret sandbox) ──
   const loginRes = await fetch(`${CRM}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: 'demo@crmalbra.com', password: 'AlbraDemo2026' }),
+    body: JSON.stringify({ email: process.env.DEMO_EMAIL || 'demo@crmalbra.com', password: process.env.DEMO_PASSWORD || '' }),
   })
   const login = await loginRes.json()
   const jwt = login.token || login.accessToken
