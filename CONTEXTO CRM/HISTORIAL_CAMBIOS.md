@@ -109,3 +109,9 @@ Ambas líneas de trabajo se conservan en el historial:
 - Prueba añadida: tras cambiar a org B, `/api/auth/me` devuelve org B; se conserva org A como organización base persistida.
 - Head final `5c1e73e0c99c488c843d42aff6fe8cef6928bf23`; CI run `43380198626` **success**, 64 archivos y 580 pruebas aprobadas, build incluido.
 - No merge, no despliegue. Pendiente verificación visual/manual en staging y prueba de regreso al panel Super Admin.
+
+## 2026-11-15 — Memoria técnica y operativa del Webinar oficial de WhatsON
+- Transcripción y análisis íntegro del webinar de Roberto Valverde (`rcvalverde.com`) documentados en `CONTEXTO CRM/INGENIERIA_INVERSA_WHATSON_WEBINAR.md`.
+- Documentadas reglas antispam de WhatsApp: umbral de 5 bloqueos en <20 min, bloqueo de enlaces en frío, warm-up de chips, y la estrategia "Saludos múltiples y respuesta única".
+- Parámetros técnicos del motor de WhatsON mapeados: Spintax combinatorio 5×5×5×5 (625 variantes), rotación multi-cuenta con emuladores, pacing con jitter, control de lotes y automatización de listas de difusión.
+- Tabla comparativa de paridad y modernización hacia el ecosistema SaaS multi-tenant ALBRA (Capa 1 CRM, Capa 2A WhatsPower, Capa 2B WhatsPower-Ultra).

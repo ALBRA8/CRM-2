@@ -13,6 +13,7 @@ Memoria documental del repositorio **ALBRA8/CRM-ALBRA**. Esta carpeta pertenece 
 - [Auditorías](AUDITORIAS.md)
 - [Pendientes](PENDIENTES.md)
 - [Runbook operativo de canales](RUNBOOK_CANALES.md)
+- [Ingeniería inversa y lecciones operativas de WhatsON (Webinar oficial)](INGENIERIA_INVERSA_WHATSON_WEBINAR.md)
 
 ## Reglas
 1. Diferenciar hechos verificados en código, declaraciones del README, decisiones, propuestas y pendientes.
