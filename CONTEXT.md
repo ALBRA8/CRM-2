@@ -27,7 +27,9 @@ El ecosistema ALBRA opera como un producto SaaS unificado de 3 capas para gesti�
   - Node.js 22 + SQLite privado en WAL mode (`db/broadcast.db`).
   - Dashboard operativo completo en `/` y `/campaigns`: 10 pantallas operativas (Resumen, Chat en vivo, Contactos CRUD/CSV/export, Embudo Kanban con movimiento idempotente, Campañas con monitor, Respuestas rápidas, Etiquetas, Agentes, Integraciones con test de conexión real, y Ajustes). Autenticación con cookie `HttpOnly` en `/login`.
   - Campaign Studio histórico disponible y preservado en `/studio`.
-  - Panel SPA complementario en `/app/` y sitio web público en `/sitio/` servido de forma nativa desde `build/` (generado por `npm run build`) con fallback a `web/`.
+  - Toggle global de tema claro/oscuro con persistencia en `localStorage` (`wp-theme` y `sitio-theme`) aplicado uniformemente en login, dashboard y sitio público, con favicon SVG hexagonal esmeralda.
+  - Sitio web público de referencia en `/sitio/` (5 páginas estáticas: inicio, planes, FAQ con tabs interactivos y CSS ::after para acordeón, alianza IA y demo) servido de forma nativa desde `build/` (generado por `npm run build`) o fuentes en `web/sitio/` y `web/site/`.
+  - Contrato de ingesta de mensajes por webhook HMAC v2 (`docs/WEBHOOK-MENSAJES.md`) con ventana de tolerancia de 5 minutos e idempotencia.
   - 10 tablas aditivas en base de datos (`contacts`, `tags`, `contact_tags`, `quick_replies`, `agents`, `conversations`, `messages`, `pipeline_stages`, `org_transport_config`, `org_settings`).
   - Motor de cola persistente (`PersistentBroadcastWorker`) con claim atómico, pacing durable por organización y enfriamiento de lotes.
   - Integración contractual con Capa 2A: pre-filtrado y comprobación JIT de locks y supresiones por organización (`X-Org-Id`).
@@ -79,6 +81,26 @@ El ecosistema ALBRA opera como un producto SaaS unificado de 3 capas para gesti�
 - **WHATSPOWER:** `npm run tsc` limpio (0 errores); 38 suites, 304 pruebas ejecutadas, 304 superadas (0 fallos).
 - **WHATSPOWER-ULTRA:** `npm run tsc` limpio (0 errores); 46 suites, 222 pruebas ejecutadas, 222 superadas (0 fallos).
 - Simulación E2E de los 3 niveles: mensaje entrante ➔ evaluación de flujo en 2A ➔ creación de oportunidad en CRM ➔ bloqueo de despacho outbound por lock/supresión.
+
+### Fase 6 — Paridad WhatsOn Completa, Theme Toggle Global y Webhook v2 (ULTRA)
+- **Theme Toggle Global Claro/Oscuro:**
+  - Login (`/login`): conmutador 🌙/☀️ con variables CSS completas (`html[data-theme=light]`) y persistencia en `localStorage` (`wp-theme`).
+  - Dashboard (`/` y `/campaigns`): botón en topbar, mapeo dinámico de variables para fondos, tarjetas, paneles, tablas, bordes y skeletons.
+  - Sitio Público (`/sitio/`): botón flotante fijo en esquina inferior (44px touch target) con soporte dark (`html[data-theme=dark]`) y persistencia (`sitio-theme`).
+  - Favicon SVG hexagonal esmeralda unificado en login, dashboard y sitio web.
+- **Sitio Público de Referencia en `/sitio/`:**
+  - 5 páginas estáticas de alta fidelidad: `/sitio/index.html` (Inicio), `/sitio/planes.html` (Planes), `/sitio/faq.html` (FAQ con acordeón accesible mediante `role=tab`, `aria-expanded` y signo `+` exclusivo en CSS `::after`), `/sitio/alianza-ia.html` (Alianza IA) y `/sitio/demo.html` (Demo).
+  - Hoja de estilos compartida `web/sitio/site.css` con responsive adaptativo en 3 breakpoints y paleta original.
+  - Servido seguro con resolución estática `serveStaticWeb`, enlaces amigables (`/sitio`, `/inicio`, `/panel`, `/app`), y mitigación estricta de directory traversal.
+- **Contrato de Ingesta Webhook HMAC v2 (`docs/WEBHOOK-MENSAJES.md`):**
+  - Endpoint `POST /api/audiences/webhook-message` para recepción segura de mensajes inbound.
+  - Firma HMAC-SHA256 (`X-Signature`), ventana de tolerancia de 5 minutos (`X-Timestamp`) e identidad obligatoria por organización (`X-Org-Id`).
+  - Idempotencia estricta por `message_id`, trazabilidad en `audit_log` y comportamiento fail-closed ante falta de firma o secretos.
+- **Mejoras de Resiliencia y Usabilidad UI (B1, B6, B8, B9):**
+  - B1: Toast de errores de chat protegido con `word-break: break-word` y recorte elíptico a 200 caracteres.
+  - B6: Auto-refresco en segundo plano del panel de resumen cada 15 segundos (`_summaryTimer`), con cancelación limpia al cambiar de vista.
+  - B8: Adaptación responsive integral para pantallas pequeñas (<380px) en el creador de campañas (padding compacto, métricas adaptadas y scroll horizontal táctil en tablas).
+  - B9: Transición estandarizada del menú lateral móvil a 200ms con delay seguro de 350ms para capturas y tests.
 
 ---
 
