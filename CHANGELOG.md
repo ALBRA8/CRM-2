@@ -1,49 +1,24 @@
-# CHANGELOG — Ecosistema ALBRA
+# CHANGELOG
 
-## [repair/produccion-real] 2026-11-15 (sesión sandbox) — Verificación total, E2E de 3 servicios y B2 residual
+## 2026-11-15 — Producción real: higiene, E2E de 3 servicios y B2 residual (rama repair/produccion-real)
 
-### Corregido (con prueba que falla antes y pasa después)
-- **B2 residual — idempotencia del daemon Baileys:** `/send` leía solo `to`/`text` (ventana real de duplicación). Ahora reserva `idempotencyKey`/`X-Correlation-Id` en tabla aditiva `DaemonSendIdempotency` ANTES del envío: en curso → 409 IN_FLIGHT; lease vencido → 409 UNCERTAIN (jamás reenvío automático); DONE responde messageId original; FAILED permite reintento. 6 pruebas nuevas (`tests/unit/daemon-idempotency.test.ts`).
-- **Escáner de historial en verde:** +319 pares (commit,huella) verificados uno a uno como fixtures dummy (0 secretos reales).
-- **Artefactos retirados del árbol (38 archivos):** pids, logs, PDFs, capturas, backups + `.gitignore` anti-reintroducción. Historial sin purgar (regla).
-- **Credenciales demo:** ya no se versionan (`DEMO_PASSWORD` fail-fast).
+### Corregido (cada ítem con su prueba ejecutada)
+- **B2 residual — idempotencia del daemon Baileys:** `/send` del daemon leía solo `to`/`text` (ventana real de duplicación). Ahora reserva `idempotencyKey`/`X-Correlation-Id` en tabla aditiva `DaemonSendIdempotency` ANTES del envío: claves en curso → 409 IN_FLIGHT sin reenvío; lease vencido → 409 UNCERTAIN permanente (jamás reenvío automático); DONE responde el messageId original sin reenviar; FAILED permite reintento. Pruebas `tests/unit/daemon-idempotency.test.ts` (6, fallaban antes del fix, pasan después).
+- **Higiene PII:** teléfonos reales del negocio/destinatario sustituidos por dummies 573000000001/2 en `worklog.md`, `handoff.mjs` y `handoff.test.ts` (45/45 en verde); contraseña demo ya no se versiona (`DEMO_PASSWORD` fail-fast en 2 scripts).
+- **Artefactos retirados del árbol (38 archivos):** pids, logs, PDFs, capturas, backups y respuestas E2E viejos + `.gitignore` anti-reintroducción. Historial NO purgado (regla).
+- **Versiones:** `engines.node >=22.12.0` + `.nvmrc` 22.14 (igual que WP/ULTRA; CI ya usaba Node 22).
+- **Baseline de secretos del historial:** +319 pares (commit,huella) verificados uno a uno como fixtures dummy de test (0 secretos reales) → `security:scan` y `security:scan:history` en verde (exit 0).
 
-### Verificación ejecutada
-- Suite **736/736 (92 archivos)** · tsc 0 · eslint 0/0 · `npm audit` 0 vulnerabilidades · `security:scan[:history]` exit 0.
-- **E2E de los 3 servicios reales juntos** (`scripts/e2e-3-servicios.mjs`, 18/18 PASS): webhook Meta firmado → CRM → puente → WP flujo → crm_action → cliente creado en CRM real; lock IN_FLOW_2A; campaña ULTRA: LOCK_EXCLUDED / SKIPPED_NO_CONSENT / salvaguarda con SENT=0.
-- Studios en navegador real (Playwright 11/11): addNode funcional en Flow Studio, Historial y métricas en Campaign Studio, móvil 390px sin desbordamiento.
+### Pruebas y evidencia
+- Suite: **736/736 (92 archivos)** · tsc 0 errores · eslint 0/0 · `npm audit` 0 vulnerabilidades.
+- **E2E de los 3 servicios reales juntos** (`scripts/e2e-3-servicios.mjs`, 18/18 PASS, ALLOW_REAL_DISPATCH=false): webhook Meta firmado → CRM valida → puente → WP procesa → flujo ejecuta crm_action → CLIENTE creado en el CRM real; lock IN_FLOW_2A verificado en WP; campaña ULTRA con contacto con lock (LOCK_EXCLUDED), sin consentimiento (SKIPPED_NO_CONSENT) y válido (FAILED_FATAL por salvaguarda, jamás SENT; SENT=0).
+- Studios probados en navegador real (Playwright/Chromium 11/11): Flow Studio carga, paleta 7 nodos, addNode añade nodo al lienzo (nodos 8→9), Campaign Studio con Historial y métricas, vista móvil 390px sin desbordamiento.
 
-## [repair/produccion-real] 2026-11-15 — Preparación para Producción Real
+### Límites honestos
+- Docker compose NO se ejecutó (sin docker en el entorno de trabajo; tarea del PC en OWNER_TODO).
+- El flujo E2E corre con servicios reales en simulación: ningún mensaje real, ninguna sesión Baileys conectada.
 
-### Fase 1 — Canal Oficial de WhatsApp
-- **Meta Cloud API por defecto:** Integración de Meta Cloud API como transporte principal para organizaciones de pago.
-- **Ventana de 24 horas y Plantillas:** Control estricto de la ventana de 24 horas (`MessagingWindowStore`) y bloqueo de envíos fuera de ventana sin plantilla aprobada.
-- **Clasificación de Errores Meta:** Clasificación explícita de errores (límites, calidad de número, plantilla rechazada) y aislamiento de estados `UNCERTAIN` sin reintentos ciegos.
-
-### Fase 2 — Consentimiento y Cumplimiento Normativo (Ley 1581)
-- **Almacenamiento de Consentimiento:** Registro auditable de autorización previa por organización y teléfono (`consent_records` y `consent_audit_log`).
-- **Validación JIT:** Bloqueo automático (`SKIPPED_NO_CONSENT`) para cualquier contacto sin consentimiento previo vigente.
-- **Importación CSV:** Requisito obligatorio de columna `consent_origin` en importador de audiencias.
-- **Bajas y Habeas Data:** Revocación automática de consentimiento ante bajas/STOP; endpoints `/api/compliance/contact-data` para exportación y borrado de datos.
-- **Rastreo de Clics Seguro:** Validación estricta `TRUST_PROXY === 'true'` y almacenamiento de IP anonimizada con hash SHA-256 de 16 caracteres.
-
-### Fase 3 — Estabilidad, Versiones y Operaciones
-- **Alineación de Entorno:** Node aligned a `>=22.12.0` (engines), `.nvmrc` (`22.14.0`), Dockerfiles (`node:22-alpine`) y CI (`node-version: 22`).
-- **Runner de Pruebas Multiplataforma:** `scripts/run-tests.mjs` en WHATSPOWER y ULTRA para evitar cuelgues por `--test-isolation=process` en Windows/Node 22+.
-- **Observabilidad Operativa:** Endpoints `/api/health` ampliados con métricas de base de datos, colas, despachos y memoria.
-- **Benchmark SQLite:** Capacidad validada de 70,914 inserts/s (batch) y 2,541 claims/s (cola), demostrando soporte para producción en nodo único sin requerir PostgreSQL.
-- **Runbooks:** Guías operativas paso a paso en `WHATSPOWER/docs/RUNBOOK.md` y `WHATSPOWER-ULTRA/docs/RUNBOOK.md`.
-
-### Fase 4 — Higiene y Sanitización
-- Purgados todos los datos personales sensibles (teléfonos reales, nombres) de CONTEXT, fichas, scripts y tests.
-- Retiradas afirmaciones engañosas de paridad 100% ManyChat/WhatsOn.
-- Exclusión de binarios residuales, logs y dumps en `.gitignore`.
-
-### Fase 5 — Calidad y Verificación
-- TypeScript compilation: 0 errores en CRM-ALBRA, WHATSPOWER y WHATSPOWER-ULTRA.
-- Suites de pruebas: 250/250 en WHATSPOWER y 194/194 en WHATSPOWER-ULTRA superadas al 100%.
-
----
+# CHANGELOG — Reparación Integral 2026-11-06
 
 ## [fix/reparacion-integral] CRM-ALBRA
 
