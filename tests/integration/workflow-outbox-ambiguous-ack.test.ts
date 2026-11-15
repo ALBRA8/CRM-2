@@ -55,7 +55,7 @@ describe('workflow WhatsApp ambiguous provider acknowledgement', () => {
     ))
     const originalUpdateMany = db.workflowOutboundMessage.updateMany.bind(db.workflowOutboundMessage)
     const updateSpy = vi.spyOn(db.workflowOutboundMessage, 'updateMany')
-      .mockImplementationOnce(async (args) => {
+      .mockImplementationOnce((args) => {
         if (args.data.status === 'sent') throw new Error('simulated ACK persistence failure')
         return originalUpdateMany(args)
       })
