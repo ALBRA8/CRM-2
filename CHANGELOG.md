@@ -1,5 +1,37 @@
 # CHANGELOG
 
+## [repair/produccion-real] 2026-11-15 — Preparación para Producción Real
+
+### Fase 1 — Canal Oficial de WhatsApp
+- **Meta Cloud API por defecto:** Integración de Meta Cloud API como transporte principal para organizaciones de pago.
+- **Ventana de 24 horas y Plantillas:** Control estricto de la ventana de 24 horas (`MessagingWindowStore`) y bloqueo de envíos fuera de ventana sin plantilla aprobada.
+- **Clasificación de Errores Meta:** Clasificación explícita de errores (límites, calidad de número, plantilla rechazada) y aislamiento de estados `UNCERTAIN` sin reintentos ciegos.
+
+### Fase 2 — Consentimiento y Cumplimiento Normativo (Ley 1581)
+- **Almacenamiento de Consentimiento:** Registro auditable de autorización previa por organización y teléfono (`consent_records` y `consent_audit_log`).
+- **Validación JIT:** Bloqueo automático (`SKIPPED_NO_CONSENT`) para cualquier contacto sin consentimiento previo vigente.
+- **Importación CSV:** Requisito obligatorio de columna `consent_origin` en importador de audiencias.
+- **Bajas y Habeas Data:** Revocación automática de consentimiento ante bajas/STOP; endpoints `/api/compliance/contact-data` para exportación y borrado de datos.
+- **Rastreo de Clics Seguro:** Validación estricta `TRUST_PROXY === 'true'` y almacenamiento de IP anonimizada con hash SHA-256 de 16 caracteres.
+
+### Fase 3 — Estabilidad, Versiones y Operaciones
+- **Alineación de Entorno:** Node aligned a `>=22.12.0` (engines), `.nvmrc` (`22.14.0`), Dockerfiles (`node:22-alpine`) y CI (`node-version: 22`).
+- **Runner de Pruebas Multiplataforma:** `scripts/run-tests.mjs` en WHATSPOWER y ULTRA para evitar cuelgues por `--test-isolation=process` en Windows/Node 22+.
+- **Observabilidad Operativa:** Endpoints `/api/health` ampliados con métricas de base de datos, colas, despachos y memoria.
+- **Benchmark SQLite:** Capacidad validada de 70,914 inserts/s (batch) y 2,541 claims/s (cola), demostrando soporte para producción en nodo único sin requerir PostgreSQL.
+- **Runbooks:** Guías operativas paso a paso en `WHATSPOWER/docs/RUNBOOK.md` y `WHATSPOWER-ULTRA/docs/RUNBOOK.md`.
+
+### Fase 4 — Higiene y Sanitización
+- Purgados todos los datos personales sensibles (teléfonos reales, nombres) de CONTEXT, fichas, scripts y tests.
+- Retiradas afirmaciones engañosas de paridad 100% ManyChat/WhatsOn.
+- Exclusión de binarios residuales, logs y dumps en `.gitignore`.
+
+### Fase 5 — Calidad y Verificación
+- TypeScript compilation: 0 errores en CRM-ALBRA, WHATSPOWER y WHATSPOWER-ULTRA.
+- Suites de pruebas: 250/250 en WHATSPOWER y 194/194 en WHATSPOWER-ULTRA superadas al 100%.
+
+---
+
 ## 2026-11-15 — Producción real: higiene, E2E de 3 servicios y B2 residual (rama repair/produccion-real)
 
 ### Corregido (cada ítem con su prueba ejecutada)
