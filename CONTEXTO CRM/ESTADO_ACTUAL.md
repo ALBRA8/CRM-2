@@ -231,3 +231,7 @@ No preparar ni abrir los PR todavía. Cerrar B2 primero: el daemon debe recibir 
 - CI run `43384116466`: success sobre commit de código `268a124ce8ee2d3a06d33978d3cc31a509efa8a8`; 65/65 archivos, 587/587 pruebas, TypeScript, lint, migraciones Prisma, escáner de secretos y build aprobados.
 - Preparación SaaS: `CONTEXTO CRM/PREPARACION_SAAS.md`. Brechas principales: multicuenta general de canales no-WA, más de una sesión Baileys por org, invitación por enlace/verificación de email, billing/entitlements, PostgreSQL y pruebas operativas en staging.
 - PR #3 continúa abierta/en draft, sin merge ni despliegue.
+
+## Sesión 2026-11-15 — Producción real (rama `repair/produccion-real`)
+
+Re-emparejamiento con el remoto (PAT nuevo verificado en git y REST), línea base completa (tsc 0, 736/736, lint 0/0, audit 0, escáner árbol+historial en verde), corrección del B2 residual (idempotencia del daemon `/send`, 6 pruebas), higiene PII/artefactos, E2E de los 3 servicios reales en simulación (18/18) y studios probados en navegador (11/11). Detalle completo en `AUDIT_REPORT.md` y `docs/MATRIZ-PRODUCCION-REAL.md`; tareas del dueño en `OWNER_TODO.md`.
