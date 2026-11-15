@@ -31,10 +31,19 @@ Evitar auditorías, pruebas y comprobaciones repetidas sin una causa nueva. Este
 
 La consulta de jobs confirmó que la suite y el build finalizaron con conclusión `success`. **No se registró aquí un número exacto de tests**; no inventar ni repetir un conteo anterior como si perteneciera a esta ejecución.
 
+### Prueba de concurrencia ya existente — commit `9731ee6`
+
+- Archivo: `tests/integration/workflow-run-lease.test.ts`.
+- El test `allows only one database winner when identical triggers arrive concurrently` lanza dos llamadas concurrentes con `Promise.all` y comprueba un único run, un resultado `success`, uno `deduplicated` y `fencingVersion = 1`.
+- **Alcance exacto:** ambas llamadas se ejecutan dentro del mismo proceso y usan el mismo módulo/cliente Prisma. Esto prueba la carrera entre dos invocaciones y la unicidad/idempotencia en la base de datos; no prueba por sí solo dos procesos/workers independientes.
+- `src/lib/scheduler.ts` también tiene un guard local de módulo (`let running = false`) que evita solapamiento dentro de un proceso. Ese guard no coordina procesos separados; la coordinación entre procesos debe depender del claim/transacción persistido en SQLite.
+- Por tanto, no volver a contar el test de `Promise.all` como prueba de dos workers. La única brecha de evidencia identificada aquí es un test focalizado con dos procesos independientes que compartan el mismo archivo SQLite y compitan por el mismo trabajo. No se ha confirmado todavía un defecto de implementación.
+- No se ejecutó una prueba nueva en esta actualización; no afirmar que la concurrencia entre procesos está validada.
+
 ### Regla para no repetir CI
 
-- Este CI verde es evidencia válida para el commit `23f1e18`, no una afirmación automática sobre commits posteriores.
-- No volver a ejecutar ni solicitar de nuevo toda la batería solo para reconfirmar lo ya aprobado en ese mismo commit.
+- El CI verde es evidencia válida para el SHA exacto al que pertenece, no una afirmación automática sobre commits posteriores.
+- No volver a ejecutar toda la batería solo para reconfirmar lo ya aprobado en el mismo SHA.
 - Repetir una prueba únicamente cuando: cambie el código o configuración relevante; aparezca un fallo/regresión; cambie el entorno o dependencia; exista una solicitud explícita; o una validación previa no cubra el riesgo concreto.
 - Para cambios pequeños, ejecutar primero las pruebas afectadas y dejar que el CI normal valide el nuevo commit cuando corresponda.
 - Si el HEAD avanzó, comparar los cambios desde el commit validado y seleccionar pruebas según el alcance del diff. No asumir que todo está sin probar ni que el CI antiguo cubre código nuevo.
