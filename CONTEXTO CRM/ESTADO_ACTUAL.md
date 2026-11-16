@@ -235,3 +235,26 @@ No preparar ni abrir los PR todavía. Cerrar B2 primero: el daemon debe recibir 
 ## Sesión 2026-11-15 — Producción real (rama `repair/produccion-real`)
 
 Re-emparejamiento con el remoto (PAT nuevo verificado en git y REST), línea base completa (tsc 0, 736/736, lint 0/0, audit 0, escáner árbol+historial en verde), corrección del B2 residual (idempotencia del daemon `/send`, 6 pruebas), higiene PII/artefactos, E2E de los 3 servicios reales en simulación (18/18) y studios probados en navegador (11/11). Detalle completo en `AUDIT_REPORT.md` y `docs/MATRIZ-PRODUCCION-REAL.md`; tareas del dueño en `OWNER_TODO.md`.
+
+## Sesión 2026-11-16 — Cierre de Paridad WhatsON & WATI en WhatsPower-Ultra (Capa 2B)
+
+- **Repositorio:** `ALBRA8/WHATSPOWER-ULTRA`.
+- **Estado de ramas:** `repair/produccion-real` y `main` actualizadas en commit `6a68b86` (remoto `origin` sincronizado).
+- **Paridad 100% WhatsON alcanzada:** Implementación y validación del escudo anti-ban de 5 niveles (throttler, enfriamiento por lotes `PAUSED_COOLDOWN`, fatiga, spintax recursivo con semilla por contacto y JIT check contra Capa 2A).
+- **Consolidación en Dashboard Único:**
+  - Retiro completo de páginas estáticas de venta (`web/site/` y `web/sitio/`).
+  - La raíz `/` y `/campaigns` sirven el Dashboard SPA reactivo.
+  - Redirección 302 defensiva para rutas legadas (`/app`, `/panel`, `/sitio`, `/inicio`).
+  - `build-site` genera paquete mínimo de producción.
+- **Detalles de Código Implementados:**
+  - Paginación histórica de chat con botón *"Cargar mensajes anteriores"*.
+  - Tooltip con causa real de fallo en el icono de error `✗` de mensajes salientes.
+  - Salto directo a página específica en la tabla de Contactos.
+  - Buscador reactivo en el tablero Kanban (`pkSearch`).
+- **Verificación Automatizada (4 Puertas en Verde):**
+  - **Pruebas:** 239/239 pruebas aprobadas (50 suites, 0 fallos).
+  - **TypeScript:** 0 errores en `npm run tsc`.
+  - **Seguridad:** 0 secretos expuestos en `scan-secrets.mjs`.
+  - **Build:** `build-site.mjs` completado satisfactoriamente.
+- **Documento de referencia:** `CONTEXTO CRM/PARIDAD_WHATSON_WHATSPOWER_ULTRA.md`.
+

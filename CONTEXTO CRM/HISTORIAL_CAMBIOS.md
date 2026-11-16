@@ -115,3 +115,22 @@ Ambas líneas de trabajo se conservan en el historial:
 - Documentadas reglas antispam de WhatsApp: umbral de 5 bloqueos en <20 min, bloqueo de enlaces en frío, warm-up de chips, y la estrategia "Saludos múltiples y respuesta única".
 - Parámetros técnicos del motor de WhatsON mapeados: Spintax combinatorio 5×5×5×5 (625 variantes), rotación multi-cuenta con emuladores, pacing con jitter, control de lotes y automatización de listas de difusión.
 - Tabla comparativa de paridad y modernización hacia el ecosistema SaaS multi-tenant ALBRA (Capa 1 CRM, Capa 2A WhatsPower, Capa 2B WhatsPower-Ultra).
+
+## 2026-11-16 — Cierre de Paridad 100% WhatsON & WATI, Retiro de Páginas de Venta y Dashboard Único en WhatsPower-Ultra (Capa 2B)
+- **Repositorio:** `ALBRA8/WHATSPOWER-ULTRA`.
+- **Ramas actualizadas:** `repair/produccion-real` y `main` sincronizadas en commit `6a68b86`.
+- **Cierre de Paridad WhatsON & WATI:** Alcanzada paridad técnica al 100% y superioridad arquitectónica SaaS frente al software de escritorio WhatsON monousuario. Implementado escudo anti-ban de 5 capas (throttler, enfriamiento por lotes `PAUSED_COOLDOWN`, fatiga, spintax recursivo determinista y chequeos JIT contra Capa 2A).
+- **Retiro de Páginas de Venta:** Eliminadas las carpetas `web/site/` y `web/sitio/` del árbol de código (archivadas en backup seguro fuera del repo).
+- **Dashboard Único:** La raíz `/` y `/campaigns` sirven exclusivamente el Dashboard SPA interactivo. Rutas legadas (`/app`, `/panel`, `/sitio`, `/inicio`) redirigen con HTTP 302 hacia `/`.
+- **4 Detalles de Remate Implementados:**
+  1. Paginación de hilo de chat con botón *"Cargar mensajes anteriores"* (`limit` y `before`).
+  2. Tooltip con motivo real de fallo de entrega en el icono de error `✗`.
+  3. Salto directo de página ("Ir a página N") en la tabla de Contactos.
+  4. Buscador instantáneo con debounce en el tablero Kanban (`pkSearch`).
+- **Verificación de Calidad (4 Puertas en Verde):**
+  - Pruebas unitarias y de integración: 239/239 pasadas (50 suites, 0 fallos).
+  - TypeScript: 0 errores (`tsc --noEmit`).
+  - Seguridad: Escáner de secretos limpio (0 secretos expuestos).
+  - Build: Generación de bundle de producción con salida limpia.
+- **Documentación:** Creado `CONTEXTO CRM/PARIDAD_WHATSON_WHATSPOWER_ULTRA.md`.
+

@@ -315,3 +315,16 @@ Las entradas anteriores que indicaban que la outbox de workflows no existía son
 - [x] Push CI `43525779708` y PR CI `43525787021`: ambos success. Secret scan, Prisma generate/migrations, TypeScript, lint, suite completa (78 archivos / 660 tests) y build de producción.
 - [ ] Ejecutar la validación de staging: backup restaurable, dry-run backfill, pruebas con sandbox/destinatarios consentidos y ensayo de rollback. Requiere acceso y credenciales del entorno; no se ejecutó desde este entorno.
 - [ ] Configurar monitorización/alertas y scheduler externo únicamente tras la validación de staging y autorización operativa.
+
+## Cierre de Paridad WhatsPower-Ultra (Capa 2B) — 2026-11-16
+- [x] Paridad técnica 100% con WhatsON & WATI implementada y verificada (Spintax recursivo multinivel, variaciones infinitas, normalización E.164 deduplicada).
+- [x] Escudo anti-ban de 5 capas operativo: Throttler con jitter humano, enfriamiento durable por lotes (`PAUSED_COOLDOWN`), control de fatiga/horario, rotación de números y verificación JIT contra supresión y locks en Capa 2A.
+- [x] Retiro y desacople definitivo de páginas de venta (`web/site/` y `web/sitio/`).
+- [x] Unificación del Dashboard SPA en `/` y `/campaigns` con redirección defensiva 302 desde rutas legadas.
+- [x] Paginación histórica en hilos de chat con botón interactivo de carga hacia atrás.
+- [x] Tooltip con causa real de fallo de transporte en icono de error `✗`.
+- [x] Salto de página directo en tabla de Contactos.
+- [x] Filtro de búsqueda en tiempo real con debounce en columnas del Kanban (`pkSearch`).
+- [x] 4 Puertas de calidad superadas: 239/239 tests verdes en 50 suites, `tsc` limpio, 0 secretos expuestos y build exitoso.
+- [x] Cambios integrados y sincronizados en ramas `repair/produccion-real` y `main` (commit `6a68b86`).
+
