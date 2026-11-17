@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## 2026-11-17 — Acceso directo al ecosistema (SSO de un solo uso)
+
+- **`feat(ecosystem)` (9276e22)**: el botón **Ecosistema** del sidebar (desktop y móvil) abre
+  WhatsPower (capa 2A) y WhatsPower-Ultra (capa 2B) con sesión de operador, sin repetir
+  credenciales y también desde la sesión demo:
+  - `GET /api/auth/ecosystem/links` (autenticado): emite un enlace por capa con token
+    `v1.<payload>.<hmac>` — HMAC-SHA256 con `ECOSYSTEM_SSO_SECRET` compartido, TTL 90 s,
+    `jti` de un solo uso, verificación timing-safe en el receptor.
+  - Fail-closed: sin `ECOSYSTEM_SSO_SECRET` o sin `WHATSPOWER_STUDIO_URL`/`ULTRA_STUDIO_URL`
+    el enlace se declara `available:false` y JAMÁS se emite token.
+  - Receptores: `GET /studio/login-ecosystem` en 2A y 2B (canje único, 302 con cookie HttpOnly;
+    404 sin secreto, 403 inválido/expirado/reutilizado).
+  - El login-demo anónimo y los logins clásicos de cada studio quedan intactos.
+  - Pruebas: `tests/integration/ecosystem-links.test.ts` (9 casos). Suite: **773/773**.
+  - Docs: README §Ecosistema, `.env.example` (`ECOSYSTEM_SSO_SECRET`, URLs de studios).
+
+
 ## 2026-11-17 — Reparación de producción real (FASE 1.C + higiene + FASE 5)
 
 ### Seguridad — Daemon de WhatsApp (Baileys)

@@ -42,6 +42,16 @@ Detalle completo de capacidades, permisos, estados, errores y operaciones destru
 
 Cada organización tiene sus propios clientes, oportunidades, automatizaciones, plantillas y configuraciones (modelo `Organization` + `organizationId` en toda la capa de datos). La IA del CRM (auto-respuesta de canales, sugerencias) y los hosts se configuran por organización.
 
+## Ecosistema: acceso directo desde el CRM (2A y 2B)
+
+El botón **Ecosistema** del sidebar (visible en cualquier sesión autenticada, incluida la demo) abre
+**WhatsPower** (capa 2A, Flow Studio) y **WhatsPower-Ultra** (capa 2B, campañas y difusión) con
+sesión de operador, sin repetir credenciales: el CRM emite un enlace firmado de UN SOLO USO
+(`ECOSYSTEM_SSO_SECRET` compartido por los tres servicios, HMAC-SHA256, TTL 90 s) y cada capa lo
+canjea en `GET /studio/login-ecosystem` (302 con cookie HttpOnly). Sin el secreto o la URL del
+servicio configurados, el acceso se muestra deshabilitado (fail-closed: jamás se emite un token
+que nadie puede canjear). Pruebas: `tests/integration/ecosystem-links.test.ts`.
+
 ## Requisitos
 
 - Node.js 20 o superior (también funciona con Bun)

@@ -168,3 +168,13 @@ Ejecución del encargo de reparación técnica en las tres capas del ecosistema,
 ### Publicación
 - Las tres ramas `repair/produccion-real` se envían a `origin` al cierre de esta sesión con un PAT nuevo provisto por el dueño (push por rama; `main` intacto; verificación posterior con `ls-remote` registrada en AUDITORIAS A-007).
 
+## 2026-11-17 (bis) — Acceso directo al ecosistema desde el "demo" (SSO de un solo uso, 3 repositorios)
+
+A petición del dueño: el acceso demo ahora abre el ECOSISTEMA COMPLETO (CRM + WhatsPower + WhatsPower-Ultra), no solo el CRM. Implementado como SSO firmado de un solo uso entre las tres capas, sin debilitar las puertas endurecidas de la reparación:
+
+- **CRM (capa 1, commit `9276e22`)**: botón **Ecosistema** en el sidebar (desktop y móvil) visible en cualquier sesión autenticada — incluida la demo. `GET /api/auth/ecosystem/links` emite un enlace por capa con token `v1.<payload>.<hmac>` (HMAC-SHA256 con `ECOSYSTEM_SSO_SECRET` compartido, TTL 90 s, `jti` de un solo uso). Fail-closed: sin secreto o sin `WHATSPOWER_STUDIO_URL`/`ULTRA_STUDIO_URL` el enlace se declara `available:false` y JAMÁS se emite token. Prueba: `tests/integration/ecosystem-links.test.ts` (9). Suite: **773/773** (95 archivos).
+- **WHATSPOWER (capa 2A, commit `84d7232`)**: `GET /studio/login-ecosystem` canjea el enlace (verificación timing-safe, jti único, rate limit compartido con el login del studio) y concede la sesión del Studio con cookie HttpOnly (302 a `/`). Sin secreto → 404 (la ruta NO existe). Prueba: `tests/ecosystem-login.test.ts` (8). Suite: **318/318**.
+- **WHATSPOWER-ULTRA (capa 2B, commit `9c00ad2`)**: misma ruta de canje hacia el dashboard `/`. SSO CONSCIENTE del dueño: funciona en producción SOLO con el secreto configurado; el login-demo ANÓNIMO conserva su bloqueo total en producción (regla H-2 intacta). Prueba: `tests/ecosystem-login.test.ts` (9). Suite: **278/278**.
+- **Contrato compartido**: módulo `ecosystem-sso.ts` idéntico en los tres repos (formato, TTL, jti); documentado en los tres README y `.env.example`. `ALLOW_REAL_DISPATCH=false`, Baileys como canal principal y todas las reglas del encargo siguen intactas.
+- **Verificación pre-subida (commit CRM `bb2bd1c`)**: reejecución de las tres suites completas antes de subir. WP 318/318 y ULTRA 278/278 verdes a la primera; CRM detectó que la allowlist de higiene de `.env.example` (test P0.4-H3) no reconocía los dos puertos locales nuevos del SSO (`127.0.0.1:3003`/`3004`) — corrección en la allowlist del test (las URLs loopback son legítimamente no-secretas según el propio contrato del test). Suite final CRM: **773/773**. Los tres repos verificados con `git ls-remote`: SHA remoto = SHA local en `repair/produccion-real`.
+

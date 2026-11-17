@@ -266,3 +266,10 @@ Re-emparejamiento con el remoto (PAT nuevo verificado en git y REST), línea bas
 - Estado honesto: sin despliegue ni staging; `docker compose build` pendiente del PC del dueño; merge a `main` y rotación de PAT son tareas del dueño.
 - Auditoría consolidada: [AUDITORIAS.md](AUDITORIAS.md) A-007. Historial de commits: [HISTORIAL_CAMBIOS.md](HISTORIAL_CAMBIOS.md) (2026-11-17). Tareas del dueño: [PENDIENTES.md](PENDIENTES.md).
 
+## Acceso directo al ecosistema — 2026-11-17 (bis)
+
+- A petición del dueño, el acceso demo abre el ecosistema completo: el botón **Ecosistema** del CRM (sidebar, cualquier sesión autenticada incluida la demo) abre WhatsPower (2A) y WhatsPower-Ultra (2B) con sesión de operador vía SSO firmado de UN SOLO USO (`ECOSYSTEM_SSO_SECRET` compartido, HMAC-SHA256, TTL 90 s, canje único en `/studio/login-ecosystem`).
+- Commits: CRM `9276e22`, WHATSPOWER `84d7232`, ULTRA `9c00ad2`. Puertas: CRM 773/773, WP 318/318, ULTRA 278/278; TypeScript y escáner de secretos limpios en los tres.
+- Las puertas endurecidas quedan intactas: login-demo anónimo 403 en producción, `ALLOW_REAL_DISPATCH=false`, Baileys canal principal. Configuración del dueño en [PENDIENTES.md](PENDIENTES.md).
+
+
