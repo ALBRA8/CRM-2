@@ -118,15 +118,25 @@ export function json(data: unknown, init?: ResponseInit) {
  * y 7 días de vida = TTL del JWT (signToken). El Bearer en memoria sigue
  * siendo válido (modo dual), pero tras F5 la cookie autentica sin exponer el
  * token a JavaScript (mitiga robo de sesión por XSS).
+ *
+ * (2026-11-17) Secure condicional con escape explícito del dueño:
+ *  - Por defecto: Secure SOLO en producción (en http://localhost los
+ *    navegadores la aceptan; con IP de red LAN NO la guardan → "la demo no entra").
+ *  - SESSION_COOKIE_SECURE=false (decisión EXPLÍCITA en .env, jamás por
+ *    defecto) omite Secure para servir por IP de red sin HTTPS. NUNCA usar
+ *    con el servidor expuesto a internet: sin Secure la cookie viaja en
+ *    texto claro por HTTP.
  */
 export function jsonWithSession(data: unknown, token: string): NextResponse {
   const res = NextResponse.json(data)
+  const secureCookie =
+    process.env.SESSION_COOKIE_SECURE === 'false' ? false : process.env.NODE_ENV === 'production'
   res.cookies.set({
     name: SESSION_COOKIE,
     value: token,
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: secureCookie,
     path: '/',
     maxAge: 7 * 24 * 60 * 60,
   })

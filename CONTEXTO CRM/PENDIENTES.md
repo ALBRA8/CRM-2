@@ -349,3 +349,22 @@ El botón **Ecosistema** del CRM (visible también tras entrar en demo) abre Wha
 - [ ] En el CRM: `WHATSPOWER_STUDIO_URL` (ej. `http://127.0.0.1:3003`) y `ULTRA_STUDIO_URL` (ej. `http://127.0.0.1:3004`) alcanzables desde el navegador del operador.
 - [ ] En 2A/2B: la ruta de canje `GET /studio/login-ecosystem` solo existe con el secreto configurado (fail-closed 404). Sin la configuración, el botón muestra el acceso como no disponible.
 
+## Configuración del dueño y ruta de uso del ecosistema (2026-11-17)
+
+Tras la corrección de la sesión 2026-11-17 (SSO del ecosistema + pantalla de acceso + arranque):
+
+### Configuración del dueño (en su máquina Windows, D:\PROYECTOS\AGENTES CON IA\CRM ALBRA)
+- Los tres `.env` (CRM, WHATSPOWER, WHATSPOWER-ULTRA) ya tienen `ECOSYSTEM_SSO_SECRET` con EL MISMO valor (termina en ...549c), `WHATSPOWER_STUDIO_URL=http://127.0.0.1:3003` y `ULTRA_STUDIO_URL=http://127.0.0.1:3004` en el CRM, `DEMO_MODE=true` en ULTRA y `NODE_ENV=development` en ambos studios. **El `.env` NUNCA se commitea** (está en .gitignore de los tres repos).
+- En los studios, `CRM_BASE_URL` apunta al CRM (por defecto `http://127.0.0.1:3000`) para los enlaces "Volver al CRM".
+- Recordar: con `NODE_ENV=production` en un studio, `POST /studio/login-demo` responde 403 POR DISEÑO (la entrada demo es solo para desarrollo local; en producción se entra por el SSO del CRM o por el secreto clásico).
+
+### Ruta exacta de uso (verificada en navegador y con curl)
+1. Abrir `http://localhost:3000` → botón **INICIAR DEMO** (sin registro).
+2. En el sidebar pulsar **Ecosistema**.
+3. Pulsar **Abrir** en WhatsPower (capa 2A, puerto 3003) o WhatsPower-Ultra (capa 2B, puerto 3004).
+4. La capa abre con sesión de operador, SIN pedir secreto ni organización. Cada enlace dura 90 s y abre UNA sola vez; si caduca, volver al CRM y pulsar Ecosistema de nuevo.
+
+### Pendiente por decisión del dueño (queda abierto, no bloquea)
+- [ ] **Cookie Secure con IP de red (H)**: la cookie `albra_session` lleva Secure solo en producción; con `http://localhost` funciona, pero abriendo el CRM por IP de red LAN sin HTTPS el navegador NO la guarda ("la demo no entra"). Existe el escape explícito `SESSION_COOKIE_SECURE=false` en el `.env` del CRM (documentado en README y .env.example): usarlo SOLO si el servidor no está expuesto a internet. Decidir si se prefiere eso o servir el CRM por HTTPS/local.
+- [ ] **Entrada demo directa de 2A fuera del CRM**: ya existe `POST /studio/login-demo` en 2A con el mismo endurecimiento de 2B (403 en producción, rate limit compartido, cookie HttpOnly); decide el dueño si además quiere un botón demo público en la landing de 2A o mantener 2A entrando solo desde el CRM/pantalla de acceso.
+- [ ] ACL de Windows: el "Acceso denegado" al crear .log dentro de WHATSPOWER/WHATSPOWER-ULTRA es de permisos heredados de esas subcarpetas (el código arranca limpio en Linux); los .bat nuevos evitan el problema al no escribir archivos de log.

@@ -52,6 +52,21 @@ canjea en `GET /studio/login-ecosystem` (302 con cookie HttpOnly). Sin el secret
 servicio configurados, el acceso se muestra deshabilitado (fail-closed: jamás se emite un token
 que nadie puede canjear). Pruebas: `tests/integration/ecosystem-links.test.ts`.
 
+### Arranque del ecosistema completo en Windows
+`INICIAR_ECOSISTEMA.bat` arranca en orden daemon 3002 → CRM 3000 → WhatsPower 3003 →
+WhatsPower-Ultra 3004, ESPERA la salud de cada capa (max ~60 s) y abre el navegador solo cuando
+todo responde; si una capa falla, lo dice en pantalla (los logs quedan en la ventana de cada
+capa: nunca se redirigen a archivos dentro de las subcarpetas, que en Windows pueden dar
+"Acceso denegado" por ACL). `DIAGNOSTICO_ECOSISTEMA.bat` imprime puertos, códigos HTTP y el
+estado de `ECOSYSTEM_SSO_SECRET`/URLs de los tres `.env` (jamás imprime el valor del secreto).
+
+### Cookie de sesión y apertura por IP de red (SESSION_COOKIE_SECURE)
+La cookie `albra_session` es HttpOnly + SameSite=Lax con Secure SOLO en producción. Con
+`http://localhost` los navegadores la aceptan; si el CRM se abre por IP de red LAN sin HTTPS
+la cookie NO se guarda y "la demo no entra". El escape `SESSION_COOKIE_SECURE=false` en `.env`
+(decisión EXPLÍCITA del dueño, jamás por defecto) omite Secure para ese caso; nunca usarlo con
+el servidor expuesto a internet. Pruebas: `tests/unit/session-cookie-flags.test.ts`.
+
 ## Requisitos
 
 - Node.js 20 o superior (también funciona con Bun)
