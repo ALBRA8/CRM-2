@@ -122,3 +122,8 @@ scripts/*.pdf
 scripts/cover-cierre.html
 albra-final/e2e/*.pid
 .zscripts/
+
+# Artefactos y residuos (reparación 2026-11-17, FASE 2)
+*.pdf
+backups/
+storage/temp/
