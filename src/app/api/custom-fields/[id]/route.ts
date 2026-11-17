@@ -22,7 +22,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if ('isRequired' in body) data.isRequired = bool(body.isRequired, field.isRequired)
     if ('order' in body) data.order = numOrNull(body.order) ?? field.order
 
-    const updated = await db.customField.update({ where: { id }, data })
+    // (FASE 5 defensa en profundidad) WHERE id = ? AND organization_id = ?
+    const updatedCount = await db.customField.updateMany({ where: { id, organizationId: auth.orgId }, data })
+    if (updatedCount.count !== 1) throw new HttpError(404, 'Campo no encontrado')
+    const updated = await db.customField.findUniqueOrThrow({ where: { id } })
     await auditAndTimeline({
       orgId: auth.orgId,
       userId: auth.userId,
@@ -43,7 +46,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const field = await db.customField.findFirst({ where: { id, organizationId: auth.orgId }, select: { id: true, name: true } })
     if (!field) throw new HttpError(404, 'Campo no encontrado')
 
-    await db.customField.delete({ where: { id } })
+    // (FASE 5 defensa en profundidad) DELETE con filtro de organización explícito
+    const deleted = await db.customField.deleteMany({ where: { id, organizationId: auth.orgId } })
+    if (deleted.count !== 1) throw new HttpError(404, 'Campo no encontrado')
     await auditAndTimeline({
       orgId: auth.orgId,
       userId: auth.userId,

@@ -50,7 +50,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
     if ('isActive' in body) data.isActive = Boolean(body.isActive)
 
-    const entry = await db.knowledge.update({ where: { id }, data })
+    // (FASE 5 defensa en profundidad) WHERE id = ? AND organization_id = ?
+    const updatedCount = await db.knowledge.updateMany({ where: { id, organizationId: auth.orgId }, data })
+    if (updatedCount.count !== 1) return json({ error: 'Entrada de conocimiento no encontrada' }, { status: 404 })
+    const entry = await db.knowledge.findUniqueOrThrow({ where: { id } })
 
     await auditAndTimeline({
       orgId: auth.orgId,
@@ -72,7 +75,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const existing = await db.knowledge.findFirst({ where: { id, organizationId: auth.orgId }, select: { id: true, title: true } })
     if (!existing) return json({ error: 'Entrada de conocimiento no encontrada' }, { status: 404 })
 
-    await db.knowledge.delete({ where: { id } })
+    // (FASE 5 defensa en profundidad) DELETE con filtro de organización explícito
+    const deleted = await db.knowledge.deleteMany({ where: { id, organizationId: auth.orgId } })
+    if (deleted.count !== 1) return json({ error: 'Entrada de conocimiento no encontrada' }, { status: 404 })
     await auditAndTimeline({
       orgId: auth.orgId,
       userId: auth.userId,

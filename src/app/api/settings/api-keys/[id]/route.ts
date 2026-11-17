@@ -15,7 +15,11 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const existing = await db.apiKey.findFirst({ where: { id, organizationId: auth.orgId }, select: { id: true, revokedAt: true } })
     if (!existing) throw new HttpError(404, 'Clave no encontrada')
     if (!existing.revokedAt) {
-      await db.apiKey.update({ where: { id }, data: { revokedAt: new Date() } })
+      // (FASE 5 defensa en profundidad) la condición de organización va EN la
+      // mutación: un id adivinado de otra org no puede revocarse ni siquiera
+      // por carrera (WHERE id = ? AND organization_id = ?).
+      const revoked = await db.apiKey.updateMany({ where: { id, organizationId: auth.orgId }, data: { revokedAt: new Date() } })
+      if (revoked.count !== 1) throw new HttpError(404, 'Clave no encontrada')
     }
     return json({ revoked: true })
   })

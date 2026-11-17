@@ -28,7 +28,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (typeof body.isShared === 'boolean') data.isShared = body.isShared
     if (typeof body.isDefault === 'boolean') data.isDefault = body.isDefault
 
-    const updated = await db.savedView.update({ where: { id }, data })
+    // (FASE 5 defensa en profundidad) WHERE id = ? AND organization_id = ?
+    const updatedCount = await db.savedView.updateMany({ where: { id, organizationId: auth.orgId }, data })
+    if (updatedCount.count !== 1) return json({ error: 'Vista no encontrada' }, { status: 404 })
+    const updated = await db.savedView.findUniqueOrThrow({ where: { id } })
     return json({ view: updated })
   })
 }
@@ -43,7 +46,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     if (view.userId && view.userId !== auth.userId && !auth.isAdmin) {
       return json({ error: 'Sin permisos para eliminar esta vista' }, { status: 403 })
     }
-    await db.savedView.delete({ where: { id } })
+    // (FASE 5 defensa en profundidad) DELETE con filtro de organización explícito
+    const deleted = await db.savedView.deleteMany({ where: { id, organizationId: auth.orgId } })
+    if (deleted.count !== 1) return json({ error: 'Vista no encontrada' }, { status: 404 })
     return json({ success: true })
   })
 }

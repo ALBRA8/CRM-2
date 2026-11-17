@@ -47,9 +47,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
     if (mustRevoke) data.tokenVersion = { increment: 1 }
 
-    const updated = await db.user.update({
+    // (FASE 5 defensa en profundidad) WHERE id = ? AND organization_id = ?
+    const updatedCount = await db.user.updateMany({ where: { id, organizationId: auth.orgId }, data })
+    if (updatedCount.count !== 1) throw new HttpError(404, 'Miembro no encontrado')
+    const updated = await db.user.findUniqueOrThrow({
       where: { id },
-      data,
       select: { id: true, name: true, email: true, role: true, phone: true, company: true, avatar: true, isActive: true, createdAt: true },
     })
     await auditAndTimeline({
@@ -83,7 +85,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     // (segunda reparación) Desactivación + revocación de sesiones en UN SOLO
     // update atómico: no hay ventana en la que el usuario esté inactivo con
     // sesiones válidas, ni estado cambiado sin revocación.
-    await db.user.update({ where: { id }, data: { isActive: false, tokenVersion: { increment: 1 } } })
+    // (FASE 5 defensa en profundidad) WHERE id = ? AND organization_id = ?
+    const deactivated = await db.user.updateMany({ where: { id, organizationId: auth.orgId }, data: { isActive: false, tokenVersion: { increment: 1 } } })
+    if (deactivated.count !== 1) throw new HttpError(404, 'Miembro no encontrado')
     await auditAndTimeline({
       orgId: auth.orgId,
       userId: auth.userId,
