@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useAppStore } from '@/lib/store'
 import { can } from '@/lib/rbac'
 import { cn } from '@/lib/utils'
@@ -24,9 +25,11 @@ import {
   Shield,
   ShieldCheck,
   Clock,
+  Layers,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { EcosystemDialog } from './ecosystem-dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,6 +67,8 @@ const navItems = [
 
 export function Sidebar() {
   const { view, setView, user, sidebarCollapsed, toggleSidebar, logout } = useAppStore()
+  // (ecosistema 2026-11-17) acceso directo a la capa 2A y 2B desde el CRM
+  const [ecoOpen, setEcoOpen] = useState(false)
 
   // El usuario solo ve los módulos que su rol puede ejercer
   const visibleNavItems = navItems.filter((item) => can(user?.role, item.perm))
@@ -161,6 +166,19 @@ export function Sidebar() {
         })}
       </nav>
 
+      {/* Acceso directo al ecosistema (capa 2A y 2B) */}
+      <div className="px-1.5 pb-1.5 flex-shrink-0 border-t border-slate-700/50 pt-1.5">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setEcoOpen(true)}
+          className="w-full justify-start px-2.5 h-9 text-slate-300 hover:text-white hover:bg-slate-800"
+        >
+          <Layers className="w-4 h-4 flex-shrink-0 text-emerald-400" />
+          {!sidebarCollapsed && <span className="ml-2 text-[13px] font-medium">Ecosistema</span>}
+        </Button>
+      </div>
+
       {/* Collapse Toggle */}
       <div className="px-1.5 pb-1.5 flex-shrink-0">
         <Button
@@ -218,13 +236,14 @@ export function Sidebar() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      {/* Ecosystem dialog (acceso directo a 2A/2B) */}
+      <EcosystemDialog open={ecoOpen} onOpenChange={setEcoOpen} />
     </aside>
   )
 }
-
-/* Mobile sidebar with overlay backdrop */
 export function MobileSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { view, setView, user, logout } = useAppStore()
+  const [ecoOpen, setEcoOpen] = useState(false)
 
   const initials = user?.name
     ?.split(' ')
@@ -309,6 +328,19 @@ export function MobileSidebar({ open, onClose }: { open: boolean; onClose: () =>
               })}
             </nav>
 
+            {/* Acceso directo al ecosistema (capa 2A y 2B) */}
+            <div className="px-3 pb-2 flex-shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEcoOpen(true)}
+                className="w-full justify-start border-slate-700 bg-slate-800/60 text-slate-200 hover:bg-slate-800 hover:text-white h-10"
+              >
+                <Layers className="w-4 h-4 text-emerald-400" />
+                <span className="ml-2 text-sm font-medium">Ecosistema</span>
+              </Button>
+            </div>
+
             {/* User Section */}
             <div className="border-t border-slate-700/50 p-4">
               <div className="flex items-center gap-3">
@@ -337,6 +369,7 @@ export function MobileSidebar({ open, onClose }: { open: boolean; onClose: () =>
           </motion.div>
         )}
       </AnimatePresence>
+      <EcosystemDialog open={ecoOpen} onOpenChange={setEcoOpen} />
     </>
   )
 }
