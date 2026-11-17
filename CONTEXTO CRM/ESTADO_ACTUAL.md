@@ -272,4 +272,12 @@ Re-emparejamiento con el remoto (PAT nuevo verificado en git y REST), línea bas
 - Commits: CRM `9276e22`, WHATSPOWER `84d7232`, ULTRA `9c00ad2`. Puertas: CRM 773/773, WP 318/318, ULTRA 278/278; TypeScript y escáner de secretos limpios en los tres.
 - Las puertas endurecidas quedan intactas: login-demo anónimo 403 en producción, `ALLOW_REAL_DISPATCH=false`, Baileys canal principal. Configuración del dueño en [PENDIENTES.md](PENDIENTES.md).
 
+## Blindaje QR de WhatsApp y Sincronización Remota — 2026-11-17 (ter)
+
+- **Handshake WebSocket y Código 428:** Se solucionó el fallo de conexión al escanear QR reemplazando el descriptor de navegador arbitrario por `Browsers.ubuntu('Chrome')` y usando versión web dinámica (`fetchLatestWaWebVersion()`).
+- **Ciclo de vida QR y Anti-Loop:** El daemon purga archivos no autenticados en `.wa-auth/<orgId>`, impone un tope de 3 reintentos antes de marcar el estado como expirado (`qr_expired`), y publica metadatos de expiración (`ttlSeconds: 25`, `qrExpiresAt`).
+- **UI Reactiva:** La pantalla de configuración de WhatsApp incluye cuenta regresiva en vivo, overlay al expirar con acción directa de nuevo QR y llamada forzada en "Refrescar QR".
+- **Estado de Ramas y Sincronización:** Los 3 repositorios sincronizados con sus remotos en `repair/produccion-real`. Commits de CRM integrados vía merge limpio con las mejoras de SSO del ecosistema.
+
+
 
