@@ -5,6 +5,12 @@ title Ecosistema ALBRA - Arranque completo
 cd /d "%~dp0"
 set "ROOT=%cd%"
 
+REM Este archivo vive DENTRO del repo CRM-ALBRA, y las capas 2A/2B son sus
+REM carpetas HERMANAS (un nivel arriba). Se detecta sola para que tambien
+REM funcione si se copia a la raiz del ecosistema.
+set "ECO_ROOT=%ROOT%"
+if not exist "%ECO_ROOT%\WHATSPOWER\src\server.ts" if exist "%ECO_ROOT%\..\WHATSPOWER\src\server.ts" for %%i in ("%ECO_ROOT%\..") do set "ECO_ROOT=%%~fi"
+
 REM ============================================================
 REM  INICIAR_ECOSISTEMA.bat - 2026-11-17
 REM  Arranca en orden: daemon 3002 - CRM 3000 - WhatsPower 3003 -
@@ -25,8 +31,8 @@ REM ============================================================
 
 REM ---------- Carpetas de las capas -edita aqui si cambian de sitio- ----------
 REM Tambien puedes definirlas como variables de entorno WHATSPOWER_DIR y ULTRA_DIR.
-set "WP_DIR=%ROOT%\WHATSPOWER"
-set "ULTRA_DIR=%ROOT%\WHATSPOWER-ULTRA"
+set "WP_DIR=%ECO_ROOT%\WHATSPOWER"
+set "ULTRA_DIR=%ECO_ROOT%\WHATSPOWER-ULTRA"
 if defined WHATSPOWER_DIR set "WP_DIR=%WHATSPOWER_DIR%"
 if defined ULTRA_DIR set "ULTRA_DIR=%ULTRA_DIR%"
 
@@ -61,8 +67,12 @@ REM ---------- 2) CRM - 3000 ----------
 netstat -ano | findstr /C:":3000 " | findstr "LISTENING" >nul 2>nul
 if errorlevel 1 (
   echo  [2/4] CRM - puerto 3000: iniciando servidor...
-  if exist "scripts\windows\_crm-servidor.cmd" (
-    start "2-CRM-Servidor" /min cmd /c "%~dp0scripts\windows\_crm-servidor.cmd"
+  if exist ".next\standalone\server.js" (
+    start "2-CRM-Servidor" /min cmd /k "node scripts\start-standalone.mjs"
+  ) else if exist "scripts\windows\_crm-servidor.cmd" (
+    echo        [AVISO] No hay build standalone (.next\standalone). Arrancando en modo dev;
+    echo        para produccion ejecuta primero: npm run build
+    start "2-CRM-Servidor" /min cmd /k "%~dp0scripts\windows\_crm-servidor.cmd"
   ) else (
     echo        [ERROR] scripts\windows\_crm-servidor.cmd no existe; no se puede arrancar el CRM.
   )

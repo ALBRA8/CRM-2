@@ -15,8 +15,11 @@ REM  se informa si existen y si COINCIDEN entre los tres servicios.
 REM ============================================================
 
 REM ---------- Carpetas -igual que INICIAR_ECOSISTEMA.bat- ----------
-set "WP_DIR=%ROOT%\WHATSPOWER"
-set "ULTRA_DIR=%ROOT%\WHATSPOWER-ULTRA"
+REM 2A/2B son carpetas HERMANAS del repo CRM-ALBRA -un nivel arriba-.
+set "ECO_ROOT=%ROOT%"
+if not exist "%ECO_ROOT%\WHATSPOWER\src\server.ts" if exist "%ECO_ROOT%\..\WHATSPOWER\src\server.ts" for %%i in ("%ECO_ROOT%\..") do set "ECO_ROOT=%%~fi"
+set "WP_DIR=%ECO_ROOT%\WHATSPOWER"
+set "ULTRA_DIR=%ECO_ROOT%\WHATSPOWER-ULTRA"
 if defined WHATSPOWER_DIR set "WP_DIR=%WHATSPOWER_DIR%"
 if defined ULTRA_DIR set "ULTRA_DIR=%ULTRA_DIR%"
 
