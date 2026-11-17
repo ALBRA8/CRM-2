@@ -24,6 +24,9 @@ const NON_SECRET_ALLOWED = new Set([
   'CRM ALBRA',
   'http://localhost:3002',
   'http://localhost:9000',
+  // URLs de Studio del ecosistema (SSO): puertos locales, NO secretos
+  'http://127.0.0.1:3003', // WHATSPOWER_STUDIO_URL
+  'http://127.0.0.1:3004', // ULTRA_STUDIO_URL
   'true',
   'false',
   '1', // TRUST_PROXY_HOPS (config no-secreta, segunda reparación §2.C)
