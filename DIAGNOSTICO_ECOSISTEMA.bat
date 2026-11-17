@@ -94,13 +94,16 @@ for /f %%c in ('curl -s -m 3 -o nul -w "%%{http_code}" "%~2" 2^>nul') do set "CO
 echo    [!CODE!] %~1
 goto :eof
 
-:envsecreto  [%1=archivo .env] [%2=variable de salida]  -JAMAS imprime el valor-
+:envsecreto  [%1=archivo .env] [%2=variable de salida]  -se compara en memoria, JAMAS se imprime-
 set "%~2="
 if not exist "%~1" goto :eof
 for /f "usebackq tokens=1,* delims==" %%a in (`findstr /B /L /C:"ECOSYSTEM_SSO_SECRET=" "%~1"`) do (
   set "TMPV=%%b"
   if defined TMPV set "TMPV=!TMPV:"=!"
-  if not "!TMPV!"=="" set "%~2=1"
+  REM Se guarda el VALOR real (no un simple 1) para que la comparacion de mas
+  REM abajo detecte de verdad si los tres secretos coinciden. Si fuese "1"
+  REM el diagnostico diria "COINCIDE" con secretos distintos.
+  if not "!TMPV!"=="" set "%~2=!TMPV!"
 )
 goto :eof
 
