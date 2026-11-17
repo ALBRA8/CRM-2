@@ -4,6 +4,8 @@ CRM SaaS multi-tenant **host-agnostic** (CHALECO CRM): construido con **Next.js 
 
 > **El CRM ya no depende de un agente propietario.** El antiguo agente de chat fue eliminado: la inteligencia que opera el CRM la aporta un **host externo** (un agente general, un servicio o un proceso) a través de contratos formales — REST `/api/crm/actions`, servidor MCP `/api/mcp` y contrato de memoria MemoryDV. Ver [docs/HARNESS.md](./docs/HARNESS.md).
 
+> ⚠️ **Aviso Importante — Canal no oficial de WhatsApp**: el daemon de WhatsApp (`src/whatsapp-daemon/daemon.mjs`) conecta por **Baileys**, un canal **no oficial** basado en emulación de WhatsApp Web. Su uso conlleva **riesgo inherente de bloqueo o suspensión del número por parte de Meta**. Se recomienda **calentar líneas** (envíos graduales y pacing) y usar **números secundarios**, nunca el número principal del negocio. Para producción comercial, migra el transporte a **Meta WhatsApp Cloud API** (los adaptadores por organización ya existen).
+
 ## Módulos principales
 
 - **Dashboard** con métricas del negocio y actividad reciente

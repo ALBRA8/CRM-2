@@ -29,7 +29,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const DAEMON = join(__dirname, '..', '..', 'src', 'whatsapp-daemon', 'daemon.mjs')
 
 // Datos FICTICIOS únicamente (regla del repo: cero datos reales).
-const TEST_SECRET = 'daemon_test_internal_secret_min24chars_2026'
+const TEST_SECRET = 'daemon_test_internal_secret_min24chars_2026' // dummy de prueba — scan-secrets:allow
 const TEST_PORT = 34_000 + (process.pid % 2_000)
 
 function nonLoopbackIp(): string | null {
