@@ -22,7 +22,7 @@
  * Arranque: npm run wa:daemon  ó  node src/whatsapp-daemon/daemon.mjs
  */
 
-import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadContentFromMessage } from '@whiskeysockets/baileys'
+import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestWaWebVersion, fetchLatestBaileysVersion, downloadContentFromMessage, Browsers } from '@whiskeysockets/baileys'
 import QRCode from 'qrcode'
 import qrcodeTerminal from 'qrcode-terminal'
 import { createServer } from 'http'
@@ -337,9 +337,9 @@ async function connectToWhatsApp(orgId) {
   // momentánea), Baileys sigue con su versión embebida en vez de morir aquí.
   let version = null
   try {
-    const fetched = await fetchLatestBaileysVersion()
+    const fetched = await fetchLatestWaWebVersion().catch(() => fetchLatestBaileysVersion())
     version = fetched.version
-    console.log(`[WA:${orgId.slice(-6)}] Using Baileys version: ${version.join('.')}`)
+    console.log(`[WA:${orgId.slice(-6)}] Using WhatsApp Web version: ${version.join('.')}`)
   } catch (err) {
     console.warn(`[WA:${orgId.slice(-6)}] No se pudo consultar la versión de WhatsApp Web; se usa la versión embebida de Baileys:`, err?.message || err)
   }
@@ -352,7 +352,7 @@ async function connectToWhatsApp(orgId) {
     ...(version ? { version } : {}),
     auth: state,
     logger: silentLogger,
-    browser: ['CRM ALBRA', 'Chrome', '1.0.0'],
+    browser: Browsers.ubuntu('Chrome'),
     connectTimeoutMs: 60000,
     qrTimeout: 120000,
   })
@@ -395,6 +395,12 @@ async function connectToWhatsApp(orgId) {
         // Logout: la sesión de ESA organización muere y se limpia SOLO su carpeta.
         destroySession(s, { removeAuthDir: true })
       } else {
+        if (s.sock) {
+          try { s.sock.end() } catch {}
+          try { s.sock.removeAllListeners?.('connection.update') } catch {}
+          try { s.sock.ev?.removeAllListeners?.('messages.upsert') } catch {}
+          s.sock = null
+        }
         s.status = 'disconnected'
         if (shouldReconnect) {
           scheduleReconnect(s, `Conexión cerrada (código ${statusCode ?? 'desconocido'}). Reintentando automáticamente.`)
@@ -736,13 +742,17 @@ const server = createServer(async (req, res) => {
         jsonResponse(res, { error: 'Organización no encontrada' }, 400)
         return
       }
+      const force = body.force === true
       const s = sessions.get(orgId)
-      if (s && s.status === 'connected') {
+      if (s && s.status === 'connected' && !force) {
         jsonResponse(res, { status: 'connected', phone: s.phone, orgId, orgLinked: true })
-      } else if (s && (s.inFlight || s.status === 'connecting' || s.status === 'waiting_qr')) {
+      } else if (s && !force && (s.inFlight || s.status === 'connecting' || s.status === 'waiting_qr')) {
         // Ya hay una conexión en curso para esta org: no duplicar sockets.
         jsonResponse(res, { status: s.status, message: 'La conexión de esta organización ya está en curso', orgId, orgLinked: true })
       } else {
+        if (s && force) {
+          destroySession(s, { removeAuthDir: true })
+        }
         connectToWhatsApp(orgId).catch((err) => console.error('[WA] Error al conectar:', err?.message || err))
         jsonResponse(res, { status: 'connecting', message: 'Iniciando conexión...', orgId, orgLinked: true })
       }

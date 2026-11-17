@@ -71,9 +71,9 @@ export async function ensureDemoOrganization(): Promise<DemoSeedResult> {
     return { orgId: existingUser.organizationId, userId: existingUser.id, created: false }
   }
 
-  // Org demo nueva
+  // Org demo nueva (plan enterprise: acceso total al sistema y hasta 20 conexiones)
   const org = await db.organization.create({
-    data: { name: 'ALBRA Demo', slug: 'albra-demo', plan: 'pilot' },
+    data: { name: 'ALBRA Demo', slug: 'albra-demo', plan: 'enterprise' },
   })
   const user = await db.user.create({
     data: {

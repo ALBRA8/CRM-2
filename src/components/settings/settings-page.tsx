@@ -517,14 +517,15 @@ export function SettingsPage() {
     }
   }
 
-  const handleWaConnect = async () => {
+  const handleWaConnect = async (force: boolean | unknown = false) => {
+    const isForce = force === true
     setWaLoading(true)
     try {
       const token = api.getToken()
       const res = await fetch(DAEMON_PROXY, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ path: '/connect' }),
+        body: JSON.stringify({ path: '/connect', force: isForce }),
       })
       // ANTES se ignoraba la respuesta: si el daemon estaba apagado, el proxy
       // devuelve { success: false, note: 'Daemon de WhatsApp no disponible' } y
@@ -542,7 +543,7 @@ export function SettingsPage() {
       await new Promise(r => setTimeout(r, 2000))
       await loadWaStatus()
       await loadWaQr()
-      toast.success('Generando código QR...')
+      toast.success(isForce ? 'Regenerando código QR...' : 'Generando código QR...')
     } catch {
       toast.error('Error al conectar con WhatsApp')
     } finally {
@@ -1452,10 +1453,11 @@ export function SettingsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={loadWaQr}
+                          onClick={() => handleWaConnect(true)}
+                          disabled={waLoading}
                           className="gap-1.5"
                         >
-                          <RefreshCw className="w-3.5 h-3.5" />
+                          <RefreshCw className={`w-3.5 h-3.5 ${waLoading ? 'animate-spin' : ''}`} />
                           Refrescar QR
                         </Button>
                         <Button
@@ -1480,7 +1482,7 @@ export function SettingsPage() {
                         Haz clic en Conectar para generar un código QR. Escanea con tu WhatsApp para vincular.
                       </p>
                       <Button
-                        onClick={handleWaConnect}
+                        onClick={() => handleWaConnect(false)}
                         disabled={waLoading}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/25 gap-2"
                       >
