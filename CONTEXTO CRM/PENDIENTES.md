@@ -342,3 +342,10 @@ Consolidadas desde los `OWNER_TODO.md` de los tres repositorios creados/actualiz
 - [ ] **Staging**: validar backup restaurable, dry-run de backfill, pruebas con destinatarios consentidos y ensayo de rollback antes de producción real.
 - [ ] **Legal (Ley 1581)**: Términos y Política de Privacidad definitivos; decisión sobre política de IA si se activa el nodo `AI_RESPONSE` (transmisión de conversaciones a terceros).
 
+## Acceso directo al ecosistema (2026-11-17 bis) — configuración del dueño
+
+El botón **Ecosistema** del CRM (visible también tras entrar en demo) abre WhatsPower y WhatsPower-Ultra con sesión de operador vía SSO de un solo uso. Para activarlo en un despliegue:
+- [ ] Definir `ECOSYSTEM_SSO_SECRET` con EL MISMO valor en los tres servicios (`openssl rand -hex 32`).
+- [ ] En el CRM: `WHATSPOWER_STUDIO_URL` (ej. `http://127.0.0.1:3003`) y `ULTRA_STUDIO_URL` (ej. `http://127.0.0.1:3004`) alcanzables desde el navegador del operador.
+- [ ] En 2A/2B: la ruta de canje `GET /studio/login-ecosystem` solo existe con el secreto configurado (fail-closed 404). Sin la configuración, el botón muestra el acceso como no disponible.
+
