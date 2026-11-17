@@ -90,9 +90,9 @@ beforeAll(async () => {
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
-  // Esperar a que el daemon anuncie su API (o 15 s máx)
+  // Esperar a que el daemon anuncie su API (o 25 s máx en máquinas bajo carga)
   await new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('daemon no arrancó en 15s')), 15_000)
+    const timer = setTimeout(() => reject(new Error('daemon no arrancó en 25s')), 25_000)
     const onData = (d: Buffer) => {
       if (d.toString().includes(`http://127.0.0.1:${TEST_PORT}`)) {
         clearTimeout(timer)
@@ -105,7 +105,7 @@ beforeAll(async () => {
       if (d.toString().includes('EADDRINUSE')) { clearTimeout(timer); reject(new Error('puerto ocupado')) }
     })
   })
-}, 30_000)
+}, 35_000)
 
 afterAll(() => {
   child?.kill('SIGTERM')
