@@ -1,9 +1,9 @@
 # Paridad Técnica 100% WhatsON & WATI — WhatsPower-Ultra (Capa 2B)
 
-**Fecha:** 2026-11-16  
+**Fecha:** 2026-11-16 (sincerado 2026-11-17)  
 **Repositorio:** `ALBRA8/WHATSPOWER-ULTRA`  
-**Ramas sincronizadas:** `main` y `repair/produccion-real` (Head: `6a68b86`)  
-**Estado:** 100% Completado, Auditado y Verificado (239/239 tests verdes en 50 suites)
+**Rama de reparación:** `repair/produccion-real`  
+**Estado:** Matriz sincerada — solo se declara paridad en lo COMPROBABLE con las suites automatizadas (`npm test` en verde; ver AUDIT_REPORT.md)
 
 ---
 
@@ -24,7 +24,7 @@ WhatsON es un software de escritorio monousuario para Windows 10 con dependencia
 | **Motor Spintax** | Spintax combinatorio básico `{A\|B}` (hasta 625 combinaciones 5×5×5×5) | Spintax recursivo determinista anidado multinivel con semilla por contacto y variables dinámicas ilimitadas | **Superado** |
 | **Escudo Anti-Ban** | Pacing fijo/aleatorio básico entre envíos | **5 Capas Anti-Ban:** Throttler dinámico, enfriamiento por lotes (`PAUSED_COOLDOWN`), horario laboral, fatiga de línea y JIT check | **Superado** |
 | **Protección Just-In-Time (JIT)** | Ninguna (si el contacto se dio de baja durante la campaña, WhatsON igual le dispara) | **Verificación JIT pre-despacho atómica:** Comprueba locks activos y bajas en Capa 2A milisegundos antes del envío real | **Superado** |
-| **Rotación de Líneas** | Manual mediante múltiples instancias de emuladores o cambio de sesión | Rotación multi-cuenta automática por organización con balanceo y enfriamiento de números | **100% Paridad** |
+| **Rotación de Líneas** | Manual mediante múltiples instancias de emuladores o cambio de sesión | **No implementada (Requiere integración futura)** — el repo NO contiene código de rotación/balanceo automático de líneas; solo pacing y fatiga por organización | **Pendiente** |
 | **Gestión de Respuestas / Chat** | Módulo rudimentario de autorrespuesta; recomienda delegar a HiWaBot | Chat omnicanal reactivo integrado, con hilos, respuestas rápidas, paginación histórica y asignación de agentes | **Superado** |
 | **Canales y Embudo** | Lista plana de destinatarios sin estado CRM | Tablero Kanban interactivo drag-and-drop con etapas personalizadas, buscador en tiempo real y persistencia atómica | **Superado** |
 | **Normalización Telefónica** | Prefijo manual ingresado por el usuario | Normalizador internacional automático con soporte E.164 (+57 Colombia y LATAM deduplicado) | **100% Paridad** |
