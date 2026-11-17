@@ -31,15 +31,24 @@ import { fileURLToPath } from 'url'
 import fs from 'fs'
 import { authDirFor, planBootRestore, decideUnscopedSend, validateOrgId } from './session-registry.mjs'
 import { ensureIdempotencyTable, reserveDaemonSend, markDaemonSendDone, markDaemonSendFailed } from './idempotency.mjs'
+import { safeSecretEqual, normalizeOrigin, isOriginAllowed } from './security-helpers.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const AUTH_ROOT = join(__dirname, '.wa-auth') // raíz: una carpeta por organización dentro
 const PORT = Number(process.env.WHATSAPP_DAEMON_PORT || 3002)
+// (reparación 2026-11-17, FASE 1.C) el daemon escucha POR DEFECTO en 127.0.0.1:
+// es un servicio interno (lo consume el servidor Next por localhost) y jamás
+// debe quedar expuesto a la red. HOST admite override para despliegues
+// específicos (p. ej. contenedor con proxy interno).
+const HOST = process.env.HOST || '127.0.0.1'
 
 // El daemon es un proceso Node independiente: carga el .env del proyecto para
 // compartir DATABASE_URL e INTERNAL_API_SECRET con el servidor Next.js.
+// (reparación 2026-11-17) ENV_FILE permite apuntar a OTRO archivo de entorno
+// (pruebas herméticas con datos ficticios, instancias aisladas) sin tocar el
+// .env real del proyecto.
 try {
-  process.loadEnvFile(join(__dirname, '..', '..', '.env'))
+  process.loadEnvFile(process.env.ENV_FILE || join(__dirname, '..', '..', '.env'))
   console.log('[ENV] .env del proyecto cargado')
 } catch {
   console.warn('[ENV] Sin .env en la raíz — usa variables de entorno del proceso')
@@ -606,11 +615,19 @@ async function sendWhatsAppMessage(orgId, jid, text) {
 
 // ============ HTTP API Server ============
 const server = createServer(async (req, res) => {
-  // CORS restringido a mismo origen (el frontend pasa por el proxy de Next)
-  const origin = req.headers.origin || req.headers.referer || ''
+  // CORS restringido a mismo origen (el frontend pasa por el proxy de Next).
+  // (reparación 2026-11-17, FASE 1.C) Validación EXACTA de origen: se parsea con
+  // new URL(...).origin y se compara contra la lista permitida SIN prefijos.
+  // El antiguo `origin.startsWith(permitido)` aceptaba orígenes maliciosos como
+  // `http://localhost:3000.attacker.com`. Las llamadas servidor-a-servidor
+  // (el proxy de Next) no envían Origin/Referer y no pasan por este filtro.
+  const rawOrigin = req.headers.origin || req.headers.referer || ''
+  const origin = normalizeOrigin(rawOrigin)
   const allowedOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000']
-  const requestHost = req.headers.host || ''
-  if (origin && !allowedOrigins.some(o => origin.startsWith(o)) && !requestHost.startsWith('localhost') && !requestHost.startsWith('127.0.0.1')) {
+  // origin === ''  → petición servidor-a-servidor sin Origin/Referer (proxy Next)
+  // origin === null → header PRESENTE pero no parseable: RECHAZAR (no omitir)
+  // origin válida  → coincidencia EXACTA contra la lista permitida
+  if (rawOrigin && (origin === null || !isOriginAllowed(origin, allowedOrigins))) {
     res.writeHead(403, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ error: 'Forbidden' }))
     return
@@ -621,9 +638,11 @@ const server = createServer(async (req, res) => {
 
   // SEGURIDAD (auditoría crítica #2/#4): TODOS los métodos exigen el secreto
   // interno (antes los GET de lectura estaban abiertos y exponían conversaciones).
+  // (reparación 2026-11-17, FASE 1.C) Comparación timing-safe vía SHA-256 de
+  // longitud fija: ni el contenido ni la LONGITUD del secreto se filtran por tiempo.
   const providedAuth = req.headers.authorization?.replace('Bearer ', '') || ''
 
-  if (req.method !== 'OPTIONS' && providedAuth !== INTERNAL_SECRET) {
+  if (req.method !== 'OPTIONS' && !safeSecretEqual(providedAuth, INTERNAL_SECRET)) {
     res.writeHead(401, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ error: 'Unauthorized. Provide Authorization: Bearer <INTERNAL_API_SECRET> header' }))
     return
@@ -1035,10 +1054,12 @@ function performBoot() {
 }
 
 // ============ Start ============
-server.listen(PORT, () => {
+// (reparación 2026-11-17, FASE 1.C) Bind al HOST configurado (127.0.0.1 por
+// defecto): el daemon NUNCA vuelve a exponerse en 0.0.0.0 por descuido.
+server.listen(PORT, HOST, () => {
   console.log(`\n🟢 CRM ALBRA - WhatsApp Daemon (multi-organización)`)
-  console.log(`   API: http://localhost:${PORT}`)
-  console.log(`   Status: http://localhost:${PORT}/status`)
+  console.log(`   API: http://${HOST}:${PORT}`)
+  console.log(`   Status: http://${HOST}:${PORT}/status`)
   console.log(`   Sesiones activas: ${sessions.size}\n`)
   performBoot()
 })
