@@ -328,3 +328,17 @@ Las entradas anteriores que indicaban que la outbox de workflows no existía son
 - [x] 4 Puertas de calidad superadas: 239/239 tests verdes en 50 suites, `tsc` limpio, 0 secretos expuestos y build exitoso.
 - [x] Cambios integrados y sincronizados en ramas `repair/produccion-real` y `main` (commit `6a68b86`).
 
+## Tareas del dueño consolidadas (OWNER_TODO) — 2026-11-17
+
+Consolidadas desde los `OWNER_TODO.md` de los tres repositorios creados/actualizados en la reparación del 2026-11-17 (el detalle normativo por repo vive en cada `OWNER_TODO.md`); ninguna de estas tareas se simuló ni se completó desde el sandbox:
+
+- [ ] **Rotación de PAT de GitHub**: los PAT compartidos en texto de chat (incluido el de sesiones anteriores, `ghp_M9w5…`) deben revocarse tras validar esta entrega y el merge; generar uno nuevo con alcance mínimo.
+- [ ] **Merge de las 3 ramas `repair/produccion-real` → `main`** previa revisión de diffs y apertura de PR (desde el sandbox no se tocó `main` ni se hizo force-push, por regla del encargo).
+- [ ] **Purga de historial git** (`git filter-repo` + force-push autorizado): secretos históricos MUERTOS permanecen en commits antiguos de CRM/WHATSPOWER (baseline verificable); en ULTRA el historial completo se escaneó con 0 hallazgos.
+- [ ] **Docker compose build + up en el PC del dueño** (aquí no hay docker): CRM + daemon, WHATSPOWER y ULTRA; verificar `migrate deploy` y arranque de server/worker/daemon.
+- [ ] **Despliegue**: instalar unit systemd del daemon (`Restart=always`), programar respaldo diario (`backup-db.ts`), confirmar `DEMO_MODE=false` y `TRUST_PROXY` correcto en producción, y definir `HOST` del daemon (default `127.0.0.1`; solo contenedores separados necesitan otro host).
+- [ ] **Canal Meta Cloud oficial (opcional, decisión comercial)**: cuenta Meta Business verificada, número oficial y plantillas aprobadas por organización. Los adaptadores por organización ya existen; Baileys SIGUE siendo el canal principal (regla del encargo).
+- [ ] **Líneas SIM secundarias y warm-up** de números Baileys para difusión real (jamás el número principal), antes de la primera campaña.
+- [ ] **Staging**: validar backup restaurable, dry-run de backfill, pruebas con destinatarios consentidos y ensayo de rollback antes de producción real.
+- [ ] **Legal (Ley 1581)**: Términos y Política de Privacidad definitivos; decisión sobre política de IA si se activa el nodo `AI_RESPONSE` (transmisión de conversaciones a terceros).
+

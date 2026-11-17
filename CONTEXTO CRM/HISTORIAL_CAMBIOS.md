@@ -134,3 +134,37 @@ Ambas líneas de trabajo se conservan en el historial:
   - Build: Generación de bundle de producción con salida limpia.
 - **Documentación:** Creado `CONTEXTO CRM/PARIDAD_WHATSON_WHATSPOWER_ULTRA.md`.
 
+## 2026-11-17 — Reparación técnica y auditoría de producción (FASE 1–5) en los tres repositorios
+
+Ejecución del encargo de reparación técnica en las tres capas del ecosistema, sobre la rama `repair/produccion-real` de cada repositorio: `main` intacto, sin force-push, sin reescritura de historial, cero datos reales (solo `+573000000000`, `user@example.com`, `org_test`) y Baileys se mantiene como canal principal de WhatsApp (NO se migró a Meta Cloud API; los adaptadores existentes no se tocaron). Método: TDD (cada reparación precedida de una prueba que falla antes y pasa después) + verificación real (suites completas, escáner de secretos y simulación E2E de los 3 servicios con `ALLOW_REAL_DISPATCH=false`). Auditoría consolidada en [AUDITORIAS.md](AUDITORIAS.md) A-007; tareas del dueño en [PENDIENTES.md](PENDIENTES.md). Detalle completo por repositorio en sus `AUDIT_REPORT.md`, `CHANGELOG.md` y `OWNER_TODO.md`.
+
+### CRM-ALBRA (6 commits, `4284687` → `d7ad0bb`)
+- `4284687` fix(daemon): bind por defecto en `127.0.0.1` (configurable por `HOST`), secreto comparado con `crypto.timingSafeEqual` (SHA-256 de longitud fija) y validación EXACTA de origen con `new URL().origin` (se elimina `.startsWith()`, que admitía bypass tipo `crm.albra.co.attacker.com`; orígenes malformados rechazados). Prueba: `tests/integration/daemon-security.test.ts` (6, incluye bind no-loopback contra la IP real).
+- `057511b` fix(security): aislamiento multi-tenant en rutas que no tenían suite dedicada (OAuth social Instagram/Facebook/Telegram/TikTok, Google OAuth, `/api/team/:id`, `/api/knowledge/:id`, `/api/custom-fields/:id`, `/api/internal/*` — anónimo/sin permiso/cross-tenant → 401/403/404 con efecto cero) y condición `WHERE id AND organization_id` explícita en mutaciones por id (api-keys, custom-fields, knowledge, saved-views, team; auditoría de las 122 rutas `[id]`). Prueba: `tests/integration/tenant-route-hardening.test.ts` (22).
+- `2ae7f9f` docs(hygiene): aviso de canal no oficial Baileys en README y dummy marcado en la prueba del daemon.
+- `5089356` docs(parity): matriz de paridad WhatsON sincerada — "Rotación multi-cuenta automática" dejada de declarar al 100% y registrada como NO implementada (requiere integración futura).
+- `0368299` chore: limpieza de artefactos operativos y `.gitignore` global (`*.pdf`, `backups/`, `storage/temp/`).
+- `d7ad0bb` docs(audit): CHANGELOG, AUDIT_REPORT, OWNER_TODO y matriz de producción de la sesión.
+- Puertas verificadas: suite 764/764 (93 archivos, vitest), escáner de secretos del árbol limpio (allowlist con 50 dummies verificados) y escáner de historial sin hallazgos NUEVOS.
+
+### WHATSPOWER (4 commits, `53cb61f` → `4b06118`)
+- `53cb61f` fix(ai): IA desactivada por defecto — `isAiEnabled()`: sin credencial se realizan CERO llamadas HTTP a terceros y `AI_ENABLED=false` manda sobre la credencial presente; documentación explícita de que, al activarla, el texto de las conversaciones de clientes se transmite al proveedor externo (`.env.example` y README §2.b). Prueba: `tests/ai-disabled-by-default.test.ts` (6).
+- `acd532f` docs(hygiene): aviso Baileys en la cabecera del README, documentación del motor de automatización (`automation_rules`, `automation_events`, `stage_change_dedup`, `/api/crm/stage-change`) en `FICHA.md` §7.b y sustitución de conteos de pruebas hard-coded.
+- `a6cf359` docs(architecture): postura sobre `node:sqlite` y `--experimental-strip-types` con mitigaciones y plan de migración (`DOCS/DECISION_SQLITE_TYPES.md`).
+- `4b06118` docs(audit): CHANGELOG, AUDIT_REPORT, OWNER_TODO y matriz de producción de la sesión.
+- Puertas verificadas: suite 316/316 (`npm test`), escáner de secretos del árbol limpio.
+
+### WHATSPOWER-ULTRA (8 commits, `4794444` → `56a0653`)
+- `4794444` fix(worker): `ConsentStore` OBLIGATORIO en `BroadcastEngine` (fail-closed `CONSENT_STORE_REQUIRED`) y cableado en `worker-main.ts` (también en `LocalSuppressionStore`): el chequeo JIT de consentimiento (Ley 1581) ya no puede saltarse y un opt-out revoca el consentimiento en el store. Prueba: `tests/worker-consent.test.ts` (5).
+- `ab524ce` fix(auth): `/studio/login-demo` devuelve 403 cuando `NODE_ENV=production`; `DEMO_MODE=true` en producción es problema fatal en `productionConfigProblems`; el rate limiter de login ya NO borra el contador tras cada éxito (acumula, anti fuerza bruta); IP desde `req.socket.remoteAddress` salvo `TRUST_PROXY=true`. Prueba: `tests/login-demo-hardening.test.ts` (6).
+- `df13523` fix(worker): `WORKER_DISABLE_PACING` prohibido en producción (problema fatal en `productionConfigProblems` + guard en `worker-main.ts` con exit 1; legítimo solo en desarrollo). Prueba: `tests/pacing-guard.test.ts` (4, con proceso hijo real).
+- `4ac7996` fix(tracking): la IP de los clics (`/t/:code`) jamás se almacena en crudo — solo `sha256(ip+salt)`; `X-Forwarded-For` condicionado a `TRUST_PROXY=true`. Prueba: `tests/tracking-ip-hash.test.ts` (6).
+- `aa81718` docs(hygiene): aviso de canal no oficial Baileys en README y en la caja de aviso de Integraciones → Transporte.
+- `b261f5f` build: `engines` y `.nvmrc` alineados a Node 22; decisión documentada de `node:sqlite`/strip-types (`DOCS/DECISION_SQLITE_TYPES.md`); `scripts/backup-db.ts` y `scripts/restore-db.ts` creados y probados con datos ficticios; RUNBOOK §3.1–3.2 (healthcheck/systemd y respaldo).
+- `9cbd4d0` fix(suppression): normalización canónica del teléfono en la lista de bajas (una baja `+57…` ahora coincide con el contacto `573…`; el guardia JIT comparaba formatos distintos) + simulación E2E de flujo cruzado. Prueba: `tests/e2e-cross-flow.test.ts` (7: mensaje entrante → flujo → evento CRM → campaña ULTRA con `LOCK_EXCLUDED`, `SKIPPED_NO_CONSENT` y salvaguarda; `SENT=0`).
+- `56a0653` docs(audit): CHANGELOG, AUDIT_REPORT, OWNER_TODO y matriz de producción de la sesión.
+- Puertas verificadas: suite 269/269 (50 suites, node:test), test de seguridad 2/2, escáner de árbol limpio, TypeScript 0 errores y E2E cruzado 7/7.
+
+### Publicación
+- Las tres ramas `repair/produccion-real` se envían a `origin` al cierre de esta sesión con un PAT nuevo provisto por el dueño (push por rama; `main` intacto; verificación posterior con `ls-remote` registrada en AUDITORIAS A-007).
+

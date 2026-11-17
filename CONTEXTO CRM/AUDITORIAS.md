@@ -86,3 +86,40 @@ Pruebas reportadas: 434/434 con .env de producción simulado, 434/434 sin .env y
 | CI lint continue-on-error sin control | P2 | RESUELTO (B7: lint:baseline bloqueante para errores nuevos) |
 | security-log solo en /api/nicho | P2 | RESUELTO (B8: login_failed + rbac.denied) |
 | Puente CRM→2A con firma v1 (incompatible con endurecimiento 2A) | P1 | RESUELTO (B9: HMAC v2 coordinado) |
+
+## A-007 — Auditoría de producción consolidada de los 3 repositorios (2026-11-17)
+
+**Fecha:** 2026-11-17. **Ramas:** `repair/produccion-real` en los tres repositorios — CRM-ALBRA (base `9f2c41a` → head `d7ad0bb`), WHATSPOWER (base `d6a7ee6` → head `4b06118`) y WHATSPOWER-ULTRA (base `7dc7bbc` → head `56a0653`). **Método:** TDD (cada reparación precedida de una prueba que falla y pasa después) + verificación real (suites completas, `tsc`, escáner de secretos árbol/historial, simulación E2E de los 3 servicios con `ALLOW_REAL_DISPATCH=false`). **Reglas del encargo respetadas:** `main` intacto en los tres, sin force-push, sin reescritura de historial, cero datos reales (solo `+573000000000`, `user@example.com`, `org_test`), sin escanear QR ni tocar `.wa-auth`, y Baileys se mantiene como canal principal (NO se migró a Meta Cloud API; adaptadores existentes intactos).
+
+### Puertas de calidad ejecutadas al cierre
+| Repositorio | Suite | TypeScript | Escáner secretos | E2E cruzado |
+|---|---|---|---|---|
+| CRM-ALBRA | 764/764 (93 archivos, vitest) | 0 errores | árbol limpio; historial sin hallazgos NUEVOS | simulación 3 servicios 18/18 (sesión previa) |
+| WHATSPOWER | 316/316 (`npm test`) | 0 errores (sin cambios de tipos) | árbol limpio | 18/18 (sesión previa) |
+| WHATSPOWER-ULTRA | 269/269 (50 suites, node:test) + seguridad 2/2 | 0 errores | árbol limpio | **7/7 nueva** `tests/e2e-cross-flow.test.ts` (`SENT=0`) |
+
+### Hallazgos y estado (consolidado; detalle por commit en AUDIT_REPORT.md de cada repo)
+| ID | Repo | Severidad | Hallazgo | Estado | Evidencia |
+|---|---|---|---|---|---|
+| H-C1 | CRM | ALTO | daemon de WhatsApp en `0.0.0.0`, secreto con `!==` y origen con `.startsWith()` (bypass `crm.albra.co.attacker.com`) | RESUELTO `4284687` | `daemon-security.test.ts` (6; bind no-loopback contra IP real) |
+| H-C2 | CRM | ALTO | OAuth social, team, knowledge, custom-fields y `/api/internal/*` sin suite de aislamiento dedicada | RESUELTO `057511b` | `tenant-route-hardening.test.ts` (22; 401/403/404, efecto cero) |
+| H-C3 | CRM | MEDIO | mutaciones por id sin `organization_id` en el `WHERE` | RESUELTO `057511b` | `WHERE id AND organization_id` en 5 módulos + auditoría de 122 rutas `[id]` |
+| H-C4 | CRM | INFO | matriz de paridad declaraba "Rotación multi-cuenta automática 100%" sin código | RESUELTO `5089356` | matriz sincerada a "No implementada" |
+| H-W1 | WP | MEDIO | IA podía transmitir conversaciones a terceros sin gate explícito | RESUELTO `53cb61f` | `ai-disabled-by-default.test.ts` (6; CERO HTTP sin credencial) |
+| H-W2 | WP | INFO | motor de automatización (`automation_rules/events`, `stage_change_dedup`) sin documentar | RESUELTO `acd532f` | `FICHA.md` §7.b |
+| H-1 | ULTRA | CRÍTICO | `BroadcastEngine` se construía SIN `ConsentStore`: el chequeo JIT de consentimiento se saltaba y las bajas no revocaban | RESUELTO `4794444` | `worker-consent.test.ts` (5; fail-closed `CONSENT_STORE_REQUIRED`) |
+| H-2 | ULTRA | ALTO | `/studio/login-demo` daba sesión admin en producción con `DEMO_MODE=true`; rate limiter borraba contador tras cada éxito; IP de `x-forwarded-for` crudo | RESUELTO `ab524ce` | `login-demo-hardening.test.ts` (6) |
+| H-3 | ULTRA | ALTO | `WORKER_DISABLE_PACING` desactivaba el throttling anti-baneo sin restricción | RESUELTO `df13523` | `pacing-guard.test.ts` (4; proceso hijo real, exit 1) |
+| H-4 | ULTRA | MEDIO | rastreo de clics sin suite dedicada de privacidad de IP | RESUELTO `4ac7996` | `tracking-ip-hash.test.ts` (6; jamás IP cruda, solo `sha256(ip+salt)`) |
+| H-5 | ULTRA | MEDIO | baja `+57…` no coincidía con contacto `573…` en el guardia JIT anti-baja | RESUELTO `9cbd4d0` | `e2e-cross-flow.test.ts` (7) |
+| H-6 | WP/ULTRA/CRM | INFO | aviso de canal no oficial Baileys ausente en README/UI | RESUELTO `aa81718`/`2ae7f9f`/`acd532f` | aviso en README y UI de transporte |
+| H-7 | ULTRA | INFO | sin decisión documentada de runtime ni procedimiento de respaldo | RESUELTO `b261f5f` | `DOCS/DECISION_SQLITE_TYPES.md`; `backup-db.ts`/`restore-db.ts` probados con datos ficticios |
+
+### Límites de la auditoría
+- No se ejecutó `docker compose build` (sin docker en el entorno de trabajo): Dockerfile/compose revisados estáticamente; tarea del PC del dueño.
+- No se conectó ninguna sesión Baileys real, no se escaneó QR, no se accedió a `.wa-auth` ni se leyó ningún `.env` real.
+- Sin merge a `main`, sin despliegue y sin validación en staging: la certificación de producción requiere el ciclo del dueño (OWNER_TODO de cada repo).
+- El historial git NO se purgó (regla del encargo); escáner de historial en verde para hallazgos NUEVOS con baseline verificable.
+
+### Publicación verificada
+- Push por rama de `repair/produccion-real` a `origin` en los tres repositorios con PAT nuevo provisto por el dueño, verificado a continuación con `ls-remote` (SHA head remoto = SHA head local). Sin force-push.

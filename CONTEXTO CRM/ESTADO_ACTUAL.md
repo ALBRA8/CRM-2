@@ -258,3 +258,11 @@ Re-emparejamiento con el remoto (PAT nuevo verificado en git y REST), línea bas
   - **Build:** `build-site.mjs` completado satisfactoriamente.
 - **Documento de referencia:** `CONTEXTO CRM/PARIDAD_WHATSON_WHATSPOWER_ULTRA.md`.
 
+## Sesión 2026-11-17 — Reparación técnica y auditoría de producción (3 repositorios)
+
+- Ejecutado el encargo de reparación técnica en las tres capas (CRM-ALBRA, WHATSPOWER, WHATSPOWER-ULTRA) sobre la rama `repair/produccion-real` de cada repo; `main` intacto, sin force-push y sin reescritura de historial.
+- Puertas verificadas al cierre: CRM 764/764 (93 archivos), WHATSPOWER 316/316, ULTRA 269/269 + seguridad 2/2; TypeScript 0 errores en los tres; escáner de secretos en verde (árbol e historial sin hallazgos nuevos); simulación E2E cruzada 7/7 con `SENT=0` (`ALLOW_REAL_DISPATCH=false`).
+- Reparaciones clave: consentimiento fail-closed en el worker de ULTRA (`ConsentStore` obligatorio en `BroadcastEngine`), endurecimiento de `/studio/login-demo` (403 en producción, contador acumulativo, IP por socket), prohibición de `WORKER_DISABLE_PACING` en producción, IP de clics solo hasheada, daemon del CRM en `127.0.0.1` con `timingSafeEqual` y validación exacta de origen, aislamiento multi-tenant en rutas CRM sin suite dedicada (`WHERE id AND organization_id`), IA de WHATSPOWER desactivada por defecto, matriz de paridad sincerada (rotación multi-cuenta = no implementada) y aviso de canal no oficial Baileys en los tres repos.
+- Estado honesto: sin despliegue ni staging; `docker compose build` pendiente del PC del dueño; merge a `main` y rotación de PAT son tareas del dueño.
+- Auditoría consolidada: [AUDITORIAS.md](AUDITORIAS.md) A-007. Historial de commits: [HISTORIAL_CAMBIOS.md](HISTORIAL_CAMBIOS.md) (2026-11-17). Tareas del dueño: [PENDIENTES.md](PENDIENTES.md).
+
