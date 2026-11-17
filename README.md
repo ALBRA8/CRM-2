@@ -60,6 +60,11 @@ capa: nunca se redirigen a archivos dentro de las subcarpetas, que en Windows pu
 "Acceso denegado" por ACL). `DIAGNOSTICO_ECOSISTEMA.bat` imprime puertos, códigos HTTP y el
 estado de `ECOSYSTEM_SSO_SECRET`/URLs de los tres `.env` (jamás imprime el valor del secreto).
 
+Ambos viven en esta carpeta y localizan las capas 2A/2B como carpetas **hermanas** (un nivel
+arriba); si se copian a la raíz del ecosistema se detecta sola. El `INICIAR_ECOSISTEMA.bat` de la
+raíz del ecosistema solo delega en este, para no mantener dos versiones. El CRM arranca con el
+build standalone (`.next/standalone`) y, si no existe, avisa y cae a `next dev`.
+
 ### Cookie de sesión y apertura por IP de red (SESSION_COOKIE_SECURE)
 La cookie `albra_session` es HttpOnly + SameSite=Lax con Secure SOLO en producción. Con
 `http://localhost` los navegadores la aceptan; si el CRM se abre por IP de red LAN sin HTTPS

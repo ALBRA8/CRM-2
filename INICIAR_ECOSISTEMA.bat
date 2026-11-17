@@ -70,7 +70,7 @@ if errorlevel 1 (
   if exist ".next\standalone\server.js" (
     start "2-CRM-Servidor" /min cmd /k "node scripts\start-standalone.mjs"
   ) else if exist "scripts\windows\_crm-servidor.cmd" (
-    echo        [AVISO] No hay build standalone (.next\standalone). Arrancando en modo dev;
+    echo        [AVISO] No hay build standalone en .next\standalone. Arrancando en modo dev;
     echo        para produccion ejecuta primero: npm run build
     start "2-CRM-Servidor" /min cmd /k "%~dp0scripts\windows\_crm-servidor.cmd"
   ) else (
