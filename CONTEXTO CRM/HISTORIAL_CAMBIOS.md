@@ -178,7 +178,25 @@ A petición del dueño: el acceso demo ahora abre el ECOSISTEMA COMPLETO (CRM + 
 - **Contrato compartido**: módulo `ecosystem-sso.ts` idéntico en los tres repos (formato, TTL, jti); documentado en los tres README y `.env.example`. `ALLOW_REAL_DISPATCH=false`, Baileys como canal principal y todas las reglas del encargo siguen intactas.
 - **Verificación pre-subida (commit CRM `bb2bd1c`)**: reejecución de las tres suites completas antes de subir. WP 318/318 y ULTRA 278/278 verdes a la primera; CRM detectó que la allowlist de higiene de `.env.example` (test P0.4-H3) no reconocía los dos puertos locales nuevos del SSO (`127.0.0.1:3003`/`3004`) — corrección en la allowlist del test (las URLs loopback son legítimamente no-secretas según el propio contrato del test). Suite final CRM: **773/773**. Los tres repos verificados con `git ls-remote`: SHA remoto = SHA local en `repair/produccion-real`.
 
-## 2026-11-17 (tercera) — corrección del ecosistema demo: pantalla de acceso, demo de 2A, arranque y aceptación completa
+## 2026-11-17 (ter) — Blindaje y resolución de handshake de WhatsApp Baileys (Código 428) y sincronización
+
+- **Causa raíz del fallo de vinculación (código 428)**: Baileys utilizaba un descriptor de navegador no estándar `['CRM ALBRA', 'Chrome', '1.0.0']` y `fetchLatestBaileysVersion()` obsoleto. Los servidores multi-device de WhatsApp cerraban el socket WebSocket con error 428 (`connectionClosed` / `Connection Terminated`) durante el registro.
+- **Solución implementada (`daemon.mjs`, commits `6f2ca35` y `78151c8`)**:
+  - Se configuró `Browsers.ubuntu('Chrome')` (firma oficial de navegador web soportada por WhatsApp).
+  - Se reemplazó por `fetchLatestWaWebVersion()` dinámico con timeout de 3.5s y fallback seguro.
+  - Limpieza preventiva de sesiones huérfanas en `.wa-auth/<orgId>`: si `creds.json` existe pero carece de `me.id` (sesión no emparejada o abandonada), se purgan los archivos residuales antes de `useMultiFileAuthState(dir)` para garantizar un estado criptográfico limpio.
+  - Límite de reintentos: el daemon limita a 3 reintentos el ciclo de reconexión si no hay credenciales vinculadas, pasando a estado `qr_expired` para no saturar los servidores de WhatsApp.
+  - TTL y frescura del QR: se añadieron `ttlSeconds: 25`, `qrGeneratedAt` y `qrExpiresAt` en `GET /qr` y soporte de `POST /connect { force: true }` para regeneración manual inmediata.
+- **Frontend endurecido (`settings-page.tsx`)**:
+  - Cuenta regresiva visible `Activo (Xs)` de 25 segundos para el código QR.
+  - Desenfoque visual y overlay interactivo al expirar (`qrSecondsLeft <= 0`) con botón `"Generar nuevo QR"` que dispara `handleWaConnect(true)` de forma forzada.
+  - El botón "Refrescar QR" ahora invoca la reconexión forzada en lugar de solo consultar la imagen caducada en memoria.
+  - Prevención de parpadeo de imagen durante la expiración.
+- **Sincronización remota y merge limpio (commit `ac2f3ee`)**:
+  - Se hizo pull de `origin/repair/produccion-real` en los 3 repositorios (WHATSPOWER y ULTRA avanzaron fast-forward; CRM-ALBRA integró los endpoints de SSO de ecosistema sin conflictos con commit de merge `ac2f3ee`).
+  - Suite de pruebas completa verificada.
+
+## 2026-11-17 (cuarta) — corrección del ecosistema demo: pantalla de acceso, demo de 2A, arranque y aceptación completa
 
 Diagnóstico del dueño (Windows, 03:40-03:55 America/Bogota): solo el 3000 escuchaba; el canje SSO no llegaba a probarse; los studios pedían el secreto con `window.prompt` bloqueante y borraban el body al cancelar; 2A pedía además la organización con un segundo prompt; `INICIAR_ECOSISTEMA.bat` no esperaba salud ni avisaba fallos; la cookie del CRM con Secure no se guarda por IP de LAN.
 

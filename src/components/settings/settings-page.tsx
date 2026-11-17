@@ -155,6 +155,7 @@ interface WaQrData {
   qr: string | null // base64 data URL
   qrText?: string | null
   phone?: string | null
+  ttlSeconds?: number
 }
 
 const PROVIDERS = [
@@ -375,6 +376,23 @@ export function SettingsPage() {
   // al primer intento la UI se quedaba quieta para siempre: "no genera el QR".
   const [waConnectAttempted, setWaConnectAttempted] = useState(false)
   const [waLastError, setWaLastError] = useState<string | null>(null)
+  const [qrSecondsLeft, setQrSecondsLeft] = useState<number>(25)
+
+  useEffect(() => {
+    if (waQr.ttlSeconds !== undefined) {
+      setQrSecondsLeft(waQr.ttlSeconds)
+    } else if (waQr.qr) {
+      setQrSecondsLeft(25)
+    }
+  }, [waQr.qr, waQr.ttlSeconds])
+
+  useEffect(() => {
+    if (!waQr.qr || qrSecondsLeft <= 0) return
+    const timer = setInterval(() => {
+      setQrSecondsLeft((prev) => Math.max(0, prev - 1))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [waQr.qr, qrSecondsLeft])
 
   // Nicho / Negocio state
   const [nichoBrand, setNichoBrand] = useState('')
@@ -445,9 +463,10 @@ export function SettingsPage() {
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null
     const shouldPoll =
-      waStatus.status === 'waiting_qr' ||
+      (waStatus.status === 'waiting_qr' ||
       waStatus.status === 'connecting' ||
-      (waConnectAttempted && waStatus.status !== 'connected')
+      (waConnectAttempted && waStatus.status !== 'connected')) &&
+      waStatus.status !== 'qr_expired'
     if (shouldPoll) {
       interval = setInterval(() => {
         loadWaQr()
@@ -511,20 +530,23 @@ export function SettingsPage() {
       setWaQr(data)
       if (data.status === 'connected') {
         setWaStatus(prev => ({ ...prev, status: 'connected', phone: data.phone ?? null }))
+      } else if (data.status === 'qr_expired') {
+        setWaStatus(prev => ({ ...prev, status: 'qr_expired' }))
       }
     } catch {
       // Daemon not reachable
     }
   }
 
-  const handleWaConnect = async () => {
+  const handleWaConnect = async (force: boolean | unknown = false) => {
+    const isForce = force === true
     setWaLoading(true)
     try {
       const token = api.getToken()
       const res = await fetch(DAEMON_PROXY, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ path: '/connect' }),
+        body: JSON.stringify({ path: '/connect', force: isForce }),
       })
       // ANTES se ignoraba la respuesta: si el daemon estaba apagado, el proxy
       // devuelve { success: false, note: 'Daemon de WhatsApp no disponible' } y
@@ -542,7 +564,7 @@ export function SettingsPage() {
       await new Promise(r => setTimeout(r, 2000))
       await loadWaStatus()
       await loadWaQr()
-      toast.success('Generando código QR...')
+      toast.success(isForce ? 'Regenerando código QR...' : 'Generando código QR...')
     } catch {
       toast.error('Error al conectar con WhatsApp')
     } finally {
@@ -1008,7 +1030,7 @@ export function SettingsPage() {
   const currentProvider = PROVIDERS.find(p => p.id === selectedProvider)
   const isConfigured = settings?.llm.apiKeyConfigured
   const isWaConnected = waStatus.status === 'connected'
-  const isWaWaitingQr = waStatus.status === 'waiting_qr'
+  const isWaWaitingQr = waStatus.status === 'waiting_qr' || waStatus.status === 'qr_expired'
   const isWaConnecting = waStatus.status === 'connecting'
 
   if (loading) {
@@ -1373,7 +1395,7 @@ export function SettingsPage() {
                         ? 'border-amber-200 text-amber-700 bg-amber-50'
                         : 'border-slate-200 text-slate-500'
                   }>
-                    {isWaConnected ? 'Online' : isWaWaitingQr ? 'QR Listo' : isWaConnecting ? 'Conectando...' : 'Offline'}
+                    {isWaConnected ? 'Online' : waStatus.status === 'qr_expired' ? 'QR Expirado' : isWaWaitingQr ? 'QR Listo' : isWaConnecting ? 'Conectando...' : 'Offline'}
                   </Badge>
                 </div>
               </CardContent>
@@ -1424,20 +1446,48 @@ export function SettingsPage() {
                     <div className="text-center py-4">
                       {waQr.qr ? (
                         <>
-                          <div className="bg-white p-4 rounded-2xl shadow-lg border border-slate-200 mb-4 inline-block">
-                            <img
-                              src={waQr.qr}
-                              alt="WhatsApp QR Code"
-                              className="w-64 h-64"
-                            />
+                          <div className="relative inline-block mb-3">
+                            <div className={`bg-white p-4 rounded-2xl shadow-lg border border-slate-200 transition-all ${qrSecondsLeft <= 0 ? 'opacity-20 blur-[1px]' : ''}`}>
+                              <img
+                                src={waQr.qr}
+                                alt="WhatsApp QR Code"
+                                className="w-64 h-64 select-none pointer-events-none"
+                              />
+                            </div>
+                            {qrSecondsLeft <= 0 && (
+                              <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-white/85 rounded-2xl">
+                                <Clock className="w-8 h-8 text-amber-600 mb-2" />
+                                <p className="text-sm font-semibold text-slate-800 mb-1">Código QR expirado</p>
+                                <p className="text-xs text-slate-500 mb-3 text-center max-w-[210px]">
+                                  WhatsApp renueva el código periódicamente por seguridad
+                                </p>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleWaConnect(true)}
+                                  disabled={waLoading}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-sm"
+                                >
+                                  <RefreshCw className={`w-3.5 h-3.5 ${waLoading ? 'animate-spin' : ''}`} />
+                                  Generar nuevo QR
+                                </Button>
+                              </div>
+                            )}
                           </div>
-                          <p className="text-sm text-slate-600 font-medium mb-1">
-                            Escanea este código con WhatsApp
-                          </p>
-                          <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 mb-3">
-                            {waPolling && <Loader2 className="w-3 h-3 animate-spin" />}
-                            <span>Actualizando automáticamente...</span>
-                          </div>
+                          {qrSecondsLeft > 0 ? (
+                            <>
+                              <p className="text-sm text-slate-700 font-medium mb-1">
+                                Escanea este código con WhatsApp
+                              </p>
+                              <div className="flex items-center justify-center gap-2 text-xs text-slate-400 mb-4">
+                                <span className="inline-flex items-center gap-1.5 text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  Activo ({qrSecondsLeft}s)
+                                </span>
+                                <span>•</span>
+                                <span>Renovación automática</span>
+                              </div>
+                            </>
+                          ) : null}
                         </>
                       ) : (
                         <div className="py-10">
@@ -1452,10 +1502,11 @@ export function SettingsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={loadWaQr}
+                          onClick={() => handleWaConnect(true)}
+                          disabled={waLoading}
                           className="gap-1.5"
                         >
-                          <RefreshCw className="w-3.5 h-3.5" />
+                          <RefreshCw className={`w-3.5 h-3.5 ${waLoading ? 'animate-spin' : ''}`} />
                           Refrescar QR
                         </Button>
                         <Button
@@ -1480,7 +1531,7 @@ export function SettingsPage() {
                         Haz clic en Conectar para generar un código QR. Escanea con tu WhatsApp para vincular.
                       </p>
                       <Button
-                        onClick={handleWaConnect}
+                        onClick={() => handleWaConnect(false)}
                         disabled={waLoading}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/25 gap-2"
                       >

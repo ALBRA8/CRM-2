@@ -20,6 +20,7 @@
 | H-C4 | INFO | Matriz de paridad declaraba "Rotación multi-cuenta automática" 100% sin código | Sincerada a "No implementada (Requiere integración futura)" (5089356) | — |
 | H-C5 | INFO | `.gitignore` sin `*.pdf`/`backups/`/`storage/temp/` globales | Añadidas; árbol verificado sin PDFs/PIDs/logs rastreados (0368299) | `git ls-files` limpio |
 | H-C6 | INFO | Cliente Prisma desincronizado del schema hacía fallar 40 pruebas de auth | `npx prisma generate` (regeneración tras cambiar de rama); suite 742→752 en verde | Evidencia en la suite |
+| H-C7 | ALTO | Fallo 428 en vinculación Baileys por descriptor de navegador no estándar y sesión residual corrupta | `Browsers.ubuntu('Chrome')`, `fetchLatestWaWebVersion` con fallback, purga de `.wa-auth` huérfano, límite de reintentos con `qr_expired`, TTL 25s y regeneración forzada (6f2ca35, 78151c8) | Verificación interactiva en localhost:3000 con generación y regeneración exitosa de QR |
 
 ### Qué queda pendiente y por qué
 - **Docker compose build**: sin docker en el entorno de trabajo (tarea del PC, `OWNER_TODO.md`).

@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 2026-11-17 — Blindaje del ciclo de vida QR de WhatsApp (Baileys) y solución Handshake 428
+
+- **`fix(whatsapp)` (6f2ca35 & 78151c8)**:
+  - **Resolución de Error 428 (`connectionClosed` / `Connection Terminated`)**: WhatsApp cerraba el WebSocket al generar el código QR debido al descriptor de navegador `['CRM ALBRA', 'Chrome', '1.0.0']` y versión obsoleta de Baileys. Se actualizó a `Browsers.ubuntu('Chrome')` y consulta dinámica con `fetchLatestWaWebVersion()` (con timeout de 3.5s y fallback seguro).
+  - **Saneamiento automático de sesiones huérfanas**: Si existe `.wa-auth/<orgId>/creds.json` pero carece de `me.id` (sesión no emparejada o escaneo interrumpido), se purga el directorio antes de inicializar `useMultiFileAuthState()`, previniendo corrupción de claves de cifrado en reintentos.
+  - **Límite de reintentos en bucle**: Se estableció un tope de 3 reintentos automáticos si la sesión no está autenticada, pasando a estado `qr_expired` para proteger la IP contra bloqueos y throttling de WhatsApp.
+  - **TTL y frescura de QR**: `GET /qr` ahora reporta `ttlSeconds` (25s), `qrGeneratedAt` y `qrExpiresAt`. `POST /connect` admite `{ force: true }` para forzar reinicio inmediato del socket y emisión de un nuevo QR.
+  - **Frontend reactivo (`settings-page.tsx`)**:
+    - Temporizador regresivo visible de 25 segundos (`Activo (Xs)`).
+    - Desenfoque y overlay de expiración interactivo con botón *"Generar nuevo QR"* (`handleWaConnect(true)`).
+    - El botón "Refrescar QR" ahora solicita regeneración forzada al daemon.
+    - Eliminado el parpadeo de imagen durante la transición de estado.
+- **`merge` (ac2f3ee)**:
+  - Integración sin conflictos de los commits remotos de SSO de ecosistema (`origin/repair/produccion-real`) con las mejoras locales de WhatsApp.
+
 ## 2026-11-17 — Acceso directo al ecosistema (SSO de un solo uso)
 
 - **`feat(ecosystem)` (9276e22)**: el botón **Ecosistema** del sidebar (desktop y móvil) abre
