@@ -1,6 +1,18 @@
 # OWNER_TODO — Acciones que SOLO el dueño puede ejecutar
 
-**Actualizado:** 2026-11-15 · **Rama:** `repair/produccion-real`
+**Actualizado:** 2026-11-17 · **Rama:** `repair/produccion-real`
+
+## 0. Nuevas tareas de esta sesión (reparación 2026-11-17)
+- [ ] **Rotar el PAT de GitHub** usado en esta sesión (estuvo en texto de chat) tras validar el push.
+- [ ] **Docker compose build + up en el PC** (sin docker en el entorno de trabajo): CRM + daemon; verificar migrate deploy y arranque del standalone.
+- [ ] **Instalar el unit systemd del daemon** (RUNBOOK del repo ULTRA §3.1 aplica al daemon del CRM en :3002): `Restart=always`, `RestartSec=10`.
+- [ ] **Confirmar el HOST del daemon en producción**: si el CRM corre en la misma máquina, NO definir HOST (default 127.0.0.1); solo con contenedores separados definir el HOST del red interior.
+- [ ] **Contratar líneas SIM secundarias para calentamiento** de números Baileys (jamás el número principal).
+
+---
+
+
+
 Este archivo lista lo que NO se puede automatizar desde el entorno de trabajo:
 requiere cuentas externas, decisiones de negocio o acceso físico al PC/despliegue.
 Nada de lo siguiente se simuló ni se fingió completado.

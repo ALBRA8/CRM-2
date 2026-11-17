@@ -1,3 +1,32 @@
+# AUDIT_REPORT — CRM-ALBRA
+
+## Actualización 2026-11-17 — Reparación técnica (FASE 1.C, higiene y FASE 5)
+
+**Rama:** `repair/produccion-real` · **Método:** TDD (vitest) + verificación real.
+
+### Puertas de calidad (ejecutadas al cierre)
+| Verificación | Resultado |
+|---|---|
+| `npx vitest run` (93 archivos) | **764/764 PASS** |
+| `npm run security:scan` | 0 secretos en el árbol (allowlist con 50 dummies verificados) |
+| `npm run security:scan:history` | sin hallazgos NUEVOS (baseline previa vigente) |
+
+### Hallazgos resueltos con evidencia
+| ID | Severidad | Hallazgo | Reparación (commit) | Prueba |
+|---|---|---|---|---|
+| H-C1 | **ALTO** | El daemon de WhatsApp escuchaba en 0.0.0.0 por defecto, comparaba el secreto con `!==` (sin timing-safe) y validaba el origen con `.startsWith()` (bypass con `crm.albra.co.attacker.com`) | Bind 127.0.0.1 por defecto (HOST configurable), `timingSafeEqual` vía SHA-256, validación EXACTA de origen con `new URL().origin`, orígenes malformados RECHAZADOS (4284687) | `tests/integration/daemon-security.test.ts` (6, incluye bind no-loopback contra la IP real) |
+| H-C2 | ALTO | Rutas sin suite dedicada: OAuth social, equipo, conocimiento, campos personalizados, /api/internal | Suite de aislamiento multi-tenant: 401/403/404 sin oráculo + efecto cero (057511b) | `tests/integration/tenant-route-hardening.test.ts` (22) |
+| H-C3 | MEDIO | Mutaciones por id sin condición de organización explícita en el where (dependían del find-then-mutate) | `WHERE id AND organization_id` explícito en api-keys, custom-fields, knowledge, saved-views y team; auditoría completa de 122 rutas [id] (057511b) | Suite completa en verde |
+| H-C4 | INFO | Matriz de paridad declaraba "Rotación multi-cuenta automática" 100% sin código | Sincerada a "No implementada (Requiere integración futura)" (5089356) | — |
+| H-C5 | INFO | `.gitignore` sin `*.pdf`/`backups/`/`storage/temp/` globales | Añadidas; árbol verificado sin PDFs/PIDs/logs rastreados (0368299) | `git ls-files` limpio |
+| H-C6 | INFO | Cliente Prisma desincronizado del schema hacía fallar 40 pruebas de auth | `npx prisma generate` (regeneración tras cambiar de rama); suite 742→752 en verde | Evidencia en la suite |
+
+### Qué queda pendiente y por qué
+- **Docker compose build**: sin docker en el entorno de trabajo (tarea del PC, `OWNER_TODO.md`).
+- **Purga de historial git**: decisión del dueño (regla del encargo: NO reescribir; `security:scan:history` en verde con baseline).
+
+---
+
 # AUDIT_REPORT — Misión de Auditoría Integral y Corrección Autónoma
 
 ## Sesión sandbox 2026-11-15 — verificación total y hallazgos F6 (rama `repair/produccion-real`)

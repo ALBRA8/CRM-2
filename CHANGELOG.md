@@ -1,5 +1,53 @@
 # CHANGELOG
 
+## 2026-11-17 — Reparación de producción real (FASE 1.C + higiene + FASE 5)
+
+### Seguridad — Daemon de WhatsApp (Baileys)
+- **`fix(daemon)` (4284687)**: `src/whatsapp-daemon/daemon.mjs`:
+  - **Bind a 127.0.0.1 por defecto** (antes 0.0.0.0): el daemon es un servicio
+    interno y jamás queda expuesto a la red; `HOST` admite override explícito.
+  - **Secreto compartido con timingSafeEqual** (SHA-256 de longitud fija — sin
+    fuga de contenido ni longitud por tiempo de comparación); nuevo módulo
+    testeable `security-helpers.mjs`.
+  - **Validación EXACTA del origen** con `new URL(origin).origin`: eliminado el
+    `.startsWith()` que aceptaba `crm.albra.co.attacker.com`; orígenes
+    malformados se RECHAZAN (no se omiten); peticiones servidor-a-servidor sin
+    Origin no pasan filtro (el proxy de Next no envía Origin).
+  - `ENV_FILE` para pruebas herméticas (jamás toca el `.env` real).
+  - Prueba: `tests/integration/daemon-security.test.ts` (6 casos vitest:
+    helpers unitarios, secreto 200/401, sufijo atacante 403, bind no-loopback
+    verificado contra la IP real de la máquina, inspección estática).
+
+### Seguridad — Aislamiento tenant en rutas no verificadas (FASE 5)
+- **`fix(security)` (057511b)**: nueva suite `tests/integration/tenant-route-hardening.test.ts`
+  (22 pruebas): anónimo→401, miembro→403, admin de otra org→404 SIN oráculo,
+  con verificación de EFECTO CERO, para OAuth social (Instagram/Facebook/TikTok
+  start+config, Telegram config, Google auth/disconnect), equipo
+  (/api/team, /api/team/:id), conocimiento, campos personalizados y
+  /api/internal/*.
+- **Defensa en profundidad**: `WHERE id = ? AND organization_id = ?` EXPLÍCITO
+  en las mutaciones por id de api-keys, custom-fields, knowledge, saved-views y
+  team (un id adivinado/cruzado jamás muta registros de otro tenant). Auditoría
+  completa del resto de rutas: findFirst con organizationId en el mismo handler.
+
+### Higiene y documentación
+- **`docs(hygiene)` (2ae7f9f)**: aviso de canal NO oficial Baileys en README;
+  dummy de secreto de prueba marcado `scan-secrets:allow`.
+- **`docs(parity)` (5089356)**: matriz de paridad sincerada — la fila
+  "Rotación de Líneas" declaraba 100% Paridad SIN código: ahora
+  "No implementada (Requiere integración futura)".
+- **`chore` (0368299)**: `.gitignore` bloquea `*.pdf`, `backups/`, `storage/temp/`
+  (el árbol ya estaba limpio de PDFs/PIDs/logs rastreados).
+- 2FA documentado en `docs/MIGRACIONES.md` (migración 3, preexistente
+  verificado: setup/enable/verify/disable, secreto cifrado AES-256-GCM).
+
+### Números de la sesión
+- Suite completa: **764/764** PASS en 94 archivos (vitest; tras regenerar el cliente Prisma) ·
+  `security:scan`: 0 secretos en el árbol.
+
+---
+
+
 ## [repair/produccion-real] 2026-11-15 — Preparación para Producción Real
 
 ### Fase 1 — Canal Oficial de WhatsApp

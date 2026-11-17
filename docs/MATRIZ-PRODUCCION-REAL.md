@@ -1,4 +1,24 @@
-# MATRIZ DE PRODUCCIÓN REAL — CRM-ALBRA (2026-11-15)
+# MATRIZ DE PRODUCCIÓN REAL — CRM-ALBRA (2026-11-17)
+
+**Rama:** `repair/produccion-real` · **Método:** evidencia EJECUTADA en la sesión.
+
+## Veredicto final transparente (sesión reparación 2026-11-17)
+
+| Área | Veredicto | Evidencia |
+|---|---|---|
+| Daemon WhatsApp: bind, secreto timing-safe, origen exacto | ✅ CERRADO | 127.0.0.1 default; SHA-256+timingSafeEqual; new URL().origin exacto — 6 pruebas vitest (incluida verificación de bind no-loopback contra la IP real) |
+| Aislamiento tenant en rutas sin suite | ✅ CERRADO | 22 pruebas nuevas (OAuth social, team, knowledge, custom-fields, /api/internal): 401/403/404 sin oráculo + efecto cero |
+| Defensa en profundidad en updates/deletes por id | ✅ CERRADO | WHERE id AND organization_id explícito en api-keys, custom-fields, knowledge, saved-views, team; auditoría de 122 rutas [id] sin vulnerabilidades restantes |
+| Matriz de paridad sincera | ✅ CERRADO | "Rotación de líneas" → No implementada (requiere integración futura) |
+| .gitignore (pdf/backups/temp) | ✅ CERRADO | Reglas añadidas; árbol sin artefactos rastreados |
+| Suite completa | ✅ LISTO | **764/764** (vitest; cliente Prisma regenerado tras cambiar de rama) |
+| Secretos | ✅ LIMPIO | security:scan 0 hallazgos en el árbol |
+| Docker compose | ⛔ PENDIENTE (dueño) | Sin docker en el entorno; Dockerfile multi-stage revisado estáticamente |
+| Purga de historial git | 🟦 DECISIÓN DEL DUEÑO | NO se reescribe (regla); scan-history sin hallazgos nuevos |
+
+---
+
+# MATRIZ DE PRODUCCIÓN REAL — CRM-ALBRA (histórico 2026-11-15)
 
 **Rama:** `repair/produccion-real` · **Método:** cada casilla con evidencia EJECUTADA en esta sesión (comando y resultado), no declaraciones.
 **Regla de oro:** nada se marca listo sin prueba real. Los pendientes del dueño viven en `OWNER_TODO.md`.
