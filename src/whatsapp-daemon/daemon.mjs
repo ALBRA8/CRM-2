@@ -100,9 +100,12 @@ function getOrCreateSession(orgId) {
     s = {
       orgId,
       sock: null,
-      status: 'disconnected', // disconnected | connecting | waiting_qr | connected
+      status: 'disconnected', // disconnected | connecting | waiting_qr | qr_expired | connected
       qrCodeData: null,
       qrCodeText: null,
+      qrGeneratedAt: null,
+      qrExpiresAt: null,
+      reconnectTimeout: null,
       phone: null,
       lastUpdate: null,
       lastError: null,
@@ -271,24 +274,41 @@ async function transcribeViaApi(audioBuffer) {
 }
 
 /**
- * Reintento de conexión con backoff POR SESIÓN: 3s, 6s, 9s... hasta 30s.
+ * Reintento de conexión con backoff POR SESIÓN: 3s, 6s, 9s... hasta 15s.
  * El fallo de una organización NUNCA toca las sesiones de las demás.
  */
 function scheduleReconnect(s, reason) {
+  if (s.reconnectTimeout) {
+    clearTimeout(s.reconnectTimeout)
+    s.reconnectTimeout = null
+  }
+  // Si no está conectado y el QR no fue escaneado tras varios intentos, pausar
+  // para no saturar a WhatsApp y no provocar bloqueos de IP (código 428).
+  if (s.retries >= 3 && s.status !== 'connected') {
+    s.status = 'qr_expired'
+    s.lastError = 'El código QR expiró por inactividad. Haz clic en "Refrescar QR" para generar uno nuevo.'
+    console.warn(`[WA:${s.orgId.slice(-6)}] Límite de reintentos alcanzado sin escaneo. Esperando acción del usuario.`)
+    return
+  }
   s.retries++
-  const delay = Math.min(3000 * s.retries, 30000)
+  const delay = Math.min(3000 * s.retries, 15000)
   if (reason) {
     s.lastError = reason
     console.warn(`[WA:${s.orgId.slice(-6)}] ${reason}`)
   }
   console.log(`[WA:${s.orgId.slice(-6)}] Reintento de conexión en ${delay / 1000}s (intento ${s.retries})...`)
-  setTimeout(() => {
+  s.reconnectTimeout = setTimeout(() => {
+    s.reconnectTimeout = null
     connectToWhatsApp(s.orgId).catch((err) => console.error('[WA] Error en reintento:', err?.message || err))
   }, delay)
 }
 
 /** Limpieza de UNA sesión: socket, estado y SOLO su carpeta de credenciales. */
 function destroySession(s, { removeAuthDir = false } = {}) {
+  if (s.reconnectTimeout) {
+    clearTimeout(s.reconnectTimeout)
+    s.reconnectTimeout = null
+  }
   if (s.sock) {
     try { s.sock.end() } catch {}
     try { s.sock.removeAllListeners?.('connection.update') } catch {}
@@ -298,6 +318,8 @@ function destroySession(s, { removeAuthDir = false } = {}) {
   s.status = 'disconnected'
   s.qrCodeData = null
   s.qrCodeText = null
+  s.qrGeneratedAt = null
+  s.qrExpiresAt = null
   s.phone = null
   s.lastError = null
   s.retries = 0
@@ -325,21 +347,47 @@ async function connectToWhatsApp(orgId) {
   if (s.inFlight) return
   if (s.sock && s.status === 'connected') return
 
+  if (s.reconnectTimeout) {
+    clearTimeout(s.reconnectTimeout)
+    s.reconnectTimeout = null
+  }
+
   s.inFlight = true
   s.status = 'connecting'
   s.lastUpdate = new Date().toISOString()
 
   try {
   const dir = authDirFor(AUTH_ROOT, orgId)
+
+  // Hardening: si la sesión no está verificada como conectada, comprobar creds.json en disco.
+  // Si no hay un inicio de sesión completo previo, purgar archivos temporales residuales
+  // para que el intercambio criptográfico del QR comience desde un estado limpio.
+  const credsFile = join(dir, 'creds.json')
+  let isLinkedOnDisk = false
+  if (fs.existsSync(credsFile)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(credsFile, 'utf8'))
+      if (parsed?.me?.id) isLinkedOnDisk = true
+    } catch {}
+  }
+  if (!isLinkedOnDisk && fs.existsSync(dir)) {
+    try {
+      fs.rmSync(dir, { recursive: true, force: true })
+    } catch {}
+  }
+
   const { state, saveCreds } = await useMultiFileAuthState(dir) // eslint-disable-line react-hooks/rules-of-hooks
 
-  // Versión de WhatsApp Web: si no se puede consultar (sin salida a internet
-  // momentánea), Baileys sigue con su versión embebida en vez de morir aquí.
+  // Versión de WhatsApp Web: con timeout de 3.5s para no congelar la UI si hay latencia externa.
   let version = null
   try {
-    const fetched = await fetchLatestWaWebVersion().catch(() => fetchLatestBaileysVersion())
-    version = fetched.version
-    console.log(`[WA:${orgId.slice(-6)}] Using WhatsApp Web version: ${version.join('.')}`)
+    const fetchPromise = fetchLatestWaWebVersion().catch(() => fetchLatestBaileysVersion())
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3500))
+    const fetched = await Promise.race([fetchPromise, timeoutPromise])
+    version = fetched?.version
+    if (version) {
+      console.log(`[WA:${orgId.slice(-6)}] Using WhatsApp Web version: ${version.join('.')}`)
+    }
   } catch (err) {
     console.warn(`[WA:${orgId.slice(-6)}] No se pudo consultar la versión de WhatsApp Web; se usa la versión embebida de Baileys:`, err?.message || err)
   }
@@ -354,7 +402,9 @@ async function connectToWhatsApp(orgId) {
     logger: silentLogger,
     browser: Browsers.ubuntu('Chrome'),
     connectTimeoutMs: 60000,
-    qrTimeout: 120000,
+    defaultQueryTimeoutMs: 60000,
+    keepAliveIntervalMs: 25000,
+    qrTimeout: 40000,
   })
   s.sock = sock
 
@@ -370,6 +420,8 @@ async function connectToWhatsApp(orgId) {
     if (qr) {
       s.status = 'waiting_qr'
       s.qrCodeText = qr
+      s.qrGeneratedAt = Date.now()
+      s.qrExpiresAt = Date.now() + 25000 // 25s de validez
 
       try {
         s.qrCodeData = await QRCode.toDataURL(qr, {
@@ -410,8 +462,14 @@ async function connectToWhatsApp(orgId) {
       s.status = 'connected'
       s.qrCodeData = null
       s.qrCodeText = null
+      s.qrGeneratedAt = null
+      s.qrExpiresAt = null
       s.lastError = null
       s.retries = 0
+      if (s.reconnectTimeout) {
+        clearTimeout(s.reconnectTimeout)
+        s.reconnectTimeout = null
+      }
       console.log(`[WA:${orgId.slice(-6)}] Connected successfully!`)
 
       try {
@@ -721,10 +779,21 @@ const server = createServer(async (req, res) => {
       }
       if (s.status === 'connected') {
         jsonResponse(res, { status: 'connected', qr: null, phone: s.phone, orgId })
+      } else if (s.status === 'qr_expired') {
+        jsonResponse(res, { status: 'qr_expired', qr: null, orgId, message: s.lastError })
       } else if (s.qrCodeData) {
-        jsonResponse(res, { status: 'waiting_qr', qr: s.qrCodeData, qrText: s.qrCodeText, orgId })
+        const now = Date.now()
+        const ttl = s.qrExpiresAt ? Math.max(0, Math.round((s.qrExpiresAt - now) / 1000)) : 25
+        jsonResponse(res, {
+          status: 'waiting_qr',
+          qr: s.qrCodeData,
+          qrText: s.qrCodeText,
+          qrGeneratedAt: s.qrGeneratedAt || null,
+          ttlSeconds: ttl,
+          orgId,
+        })
       } else {
-        jsonResponse(res, { status: s.status, qr: null, orgId })
+        jsonResponse(res, { status: s.status, qr: null, orgId, lastError: s.lastError })
       }
       return
     }
