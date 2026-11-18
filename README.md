@@ -79,6 +79,14 @@ el servidor expuesto a internet. Pruebas: `tests/unit/session-cookie-flags.test.
 
 > **better-sqlite3 y Node 24:** better-sqlite3 es un módulo nativo compilado contra la ABI de la versión de Node con la que se instalaron las dependencias (`NODE_MODULE_VERSION` 115 en Node 22 vs 137 en Node 24). Si corres el proyecto con Node 24 y obtienes el error "was compiled against a different Node.js version", ejecuta `npm rebuild better-sqlite3` (o reinstala dependencias con tu Node activo). Recomendación: mantén Node 22 en desarrollo y producción para no tener que recompilar entre versiones.
 
+## E2E de tres servicios (ecosistema completo, autocontenido)
+
+```bash
+npm run e2e:3
+```
+
+Levanta **CRM + WHATSPOWER + ULTRA** con bases de datos temporales y secretos generados en runtime, ejecuta el flujo completo (webhook Meta firmado → puente → flujo → cliente en CRM; lock; consentimiento; campaña con lock / sin consentimiento / salvaguarda) y verifica que **SENT=0** (jamás hay envío real: `ALLOW_REAL_DISPATCH=false`). Al terminar detiene los procesos y elimina las bases temporales. Multiplataforma (Windows y Linux) usando solo Node; los repos hermanos se autodescubren por el campo `name` de su `package.json` (o usa `E2E_CRM_DIR` / `E2E_WP_DIR` / `E2E_ULTRA_DIR` para rutas explícitas). Requiere `npm install` previo en los tres repos.
+
 ## Puesta en marcha
 
 ```bash
