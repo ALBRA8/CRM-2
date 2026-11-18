@@ -368,3 +368,22 @@ Tras la corrección de la sesión 2026-11-17 (SSO del ecosistema + pantalla de a
 - [ ] **Cookie Secure con IP de red (H)**: la cookie `albra_session` lleva Secure solo en producción; con `http://localhost` funciona, pero abriendo el CRM por IP de red LAN sin HTTPS el navegador NO la guarda ("la demo no entra"). Existe el escape explícito `SESSION_COOKIE_SECURE=false` en el `.env` del CRM (documentado en README y .env.example): usarlo SOLO si el servidor no está expuesto a internet. Decidir si se prefiere eso o servir el CRM por HTTPS/local.
 - [ ] **Entrada demo directa de 2A fuera del CRM**: ya existe `POST /studio/login-demo` en 2A con el mismo endurecimiento de 2B (403 en producción, rate limit compartido, cookie HttpOnly); decide el dueño si además quiere un botón demo público en la landing de 2A o mantener 2A entrando solo desde el CRM/pantalla de acceso.
 - [ ] ACL de Windows: el "Acceso denegado" al crear .log dentro de WHATSPOWER/WHATSPOWER-ULTRA es de permisos heredados de esas subcarpetas (el código arranca limpio en Linux); los .bat nuevos evitan el problema al no escribir archivos de log.
+
+## Pendientes técnicos de auditoría — Estado tras sincronización de correcciones (2026-11-18)
+
+Correcciones entregadas por el constructor (z.ai) y verificadas por Antigravity en host Windows:
+
+- [x] **TS2540 en `CRM-ALBRA/tests/integration/ecosystem-links.test.ts` — RESUELTO (`380a012`)**:
+  - Reemplazadas las asignaciones directas por `vi.stubEnv('NODE_ENV', ...)` y `vi.unstubAllEnvs()` en `afterEach`. `npx tsc --noEmit` completó con **0 errores** (exit code 0).
+- [x] **Desbloquear `npm run build` en `CRM-ALBRA` — RESUELTO (`380a012`)**:
+  - `next build && node scripts/copy-standalone.mjs` completó exitosamente con **exit code 0** (124 rutas estáticas/dinámicas compiladas y optimizadas).
+- [x] **Allowlist de secreto en `CRM-ALBRA/tests/integration/ecosystem-links.test.ts:27` — RESUELTO (`380a012`)**:
+  - Reemplazado el secreto literal por `crypto.randomBytes(24).toString('hex')` en runtime. `npm run security:scan` pasó con **0 secretos detectados** (exit code 0).
+- [x] **Compatibilidad de `better-sqlite3@13.0.3` en Node 24 — RESUELTO (`f5a5a0e`)**:
+  - Documentado en README que el entorno recomendado de desarrollo es Node 22 o el uso de `npm ci --ignore-scripts` en Node 24.
+- [x] **Runner E2E autocontenido y multiplataforma — RESUELTO (`67f8a96`, `fe22890`, `71871df`)**:
+  - Implementado comando universal `npm run e2e:3` sin dependencias de `/tmp/e2e3.env` ni scripts externos; levanta los 3 servicios con puertos y bases temporales aisladas.
+- [x] **Botón 'Entrar sin registro (demo)' condicionado en UI de ULTRA — RESUELTO (`3aecd54`)**:
+  - `renderDashboardLoginHtml(opts.demoEnabled)` renderiza el botón únicamente si el backend concedería la sesión (`DEMO_MODE=true` fuera de producción). Con `DEMO_MODE=false`, el botón no se incluye en el HTML. Suite ULTRA: 284/284 PASS.
+- [ ] **Ajuste de timeout en webhook bridge para E2E en Windows dev**:
+  - En `scripts/e2e-3-servicios.mjs` bajo Windows con Turbopack dev compilando bajo demanda, la llamada de vuelta a CRM en `E5b` puede requerir elevar `INBOUND_TIMEOUT_MS` en `whatspower-bridge.ts` o margen en polling para alcanzar 20/20 PASS. Actualmente 19/20 PASS confirmados.

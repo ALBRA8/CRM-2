@@ -244,4 +244,62 @@ Saneamiento riguroso de datos personales y teléfonos colombianos reales en el �
   - `WHATSPOWER`: `npm test` → **324/324 PASS** (38 suites). `npm run check:pii` → 0 violaciones.
   - `WHATSPOWER-ULTRA`: `npm test` → **283/283 PASS** (50 suites). `npm run check:pii` → 0 violaciones.
 
+## 2026-11-18 — Auditoría y Certificación de Pruebas en Host Local (Antigravity)
+
+Ejecución metódica del plan de pruebas sobre la rama `repair/produccion-real` sincronizada en los tres repositorios (CRM: `59b6c71`, WP: `bd8e335`, ULTRA: `b5f5a1c`):
+
+- **1. Ejecución de Pruebas Unitarias y de Integración**:
+  - `CRM-ALBRA`: **781/781 PASS** en `vitest` (96 archivos, exit code 0). Base de datos temporal creada con 17 migraciones en Prisma (`test-prisma.db`).
+  - `WHATSPOWER`: **324/324 PASS** en `npm test` (38 suites, exit code 0). Exacto al valor de referencia.
+  - `WHATSPOWER-ULTRA`: **283/283 PASS** en `npm test` (50 suites, exit code 0). Exacto al valor de referencia.
+- **2. Verificación del Guardián de PII**:
+  - `npm run check:pii` arrojó exit code 0 en los 3 repos (árboles 100% limpios de datos reales o teléfonos no autorizados).
+  - Prueba negativa ejecutada: un archivo temporal con teléfono no autorizado fue interceptado de inmediato (`[TELEFONO_NO_AUTORIZADO]`), redactado en logs (`[REDACTADO]`) y generó exit code 1. Archivo eliminado inmediatamente.
+- **3. Pruebas de Arranque en Modo Producción y Guards Fail-Closed**:
+  - WhatsPower-Ultra y WhatsPower Studio: llamadas a `/studio/login-demo` responden `HTTP 403 Forbidden` cuando `DEMO_MODE=false`.
+  - Servidor de Ultra falla al arrancar (exit 1) con `DEMO_MODE=true` en producción.
+  - Worker de Ultra falla al arrancar (exit 1) con `WORKER_DISABLE_PACING=1` en producción.
+  - Servidor CRM falla al arrancar (exit 1) ante secretos débiles o ausentes en producción (`src/instrumentation.ts`).
+  - CRM `/api/auth/ecosystem/links`: responde 403 en producción o con DEMO_MODE apagado (12/12 PASS en `ecosystem-links.test.ts`).
+- **4. Consentimiento y Circuito de Bajas (Ultra)**:
+  - Ensayo con componentes reales del worker (`BroadcastEngine`, `ConsentStore`, `LocalSuppressionStore`): contacto sin consentimiento previo quedó en `SKIPPED_NO_CONSENT`; contacto con opt-out/baja quedó en `SUPPRESSED`. Total llamadas de envío: 0 (`sentCount = 0`).
+- **5. Integración de Servicios y Salud**:
+  - Levantados CRM (:3000), WHATSPOWER (:3003) y ULTRA (:3004) en modo desarrollo/simulación con bases temporales. Los tres endpoints `/api/health` respondieron HTTP 200 con éxito.
+- **6. Inspección de Interfaz en Navegador (Subagente Browser a 390px móvil)**:
+  - CRM-ALBRA: carga completa responsiva a 390x844 sin pantallas blancas ni errores fatales de React.
+  - WHATSPOWER Studio: carga lienzo visual y bloquea con modal de acceso requiriendo credenciales.
+  - WHATSPOWER-ULTRA Studio: carga panel completo. Al hacer clic en botón *"🚀 Entrar sin registro (demo)"* en `/login`, el backend devuelve `403 Forbidden` (`{"error":"Modo demo no habilitado. Configura DEMO_MODE=true en .env"}`), desplegando la advertencia visual.
+- **7. Operación y Respaldo**:
+  - Respaldo atómico de base SQLite temporal ejecutado con `VACUUM INTO`. `PRAGMA integrity_check` retornó `ok` antes y después de restaurar las 47 tablas.
+  - Docker Compose: no se pudo ejecutar localmente por no estar instalado Docker en el host.
+- **8. Hallazgos Documentados para el Constructor (z.ai)**:
+  - Error TS2540 en `tests/integration/ecosystem-links.test.ts` (impide `tsc --noEmit` y `npm run build`).
+  - Detección de secreto falso sin allowlist en `ecosystem-links.test.ts:27` en `npm run security:scan`.
+  - Fallo de compilación nativa en `better-sqlite3@13.0.3` bajo Node 24 Windows (`npm ci --ignore-scripts` resuelve temporalmente).
+
+## 2026-11-18 (Segunda Fase) — Verificación de Correcciones y Certificación Final de Puertas
+
+Sincronizados los repositorios con origin tras las correcciones aplicadas por el constructor (`z.ai`):
+- **CRM-ALBRA (`67f8a96`)**:
+  - `tests/integration/ecosystem-links.test.ts`: Asignación a `process.env.NODE_ENV` sustituida por `vi.stubEnv('NODE_ENV', ...)` y `vi.unstubAllEnvs()` en `afterEach`.
+  - Secreto literal de prueba reemplazado por `crypto.randomBytes(24).toString('hex')` en runtime.
+  - Implementado `scripts/e2e-3-servicios.mjs` con runner dinámico multiplataforma.
+  - `npx tsc --noEmit`: **0 errores** (exit code 0).
+  - `npm run security:scan`: **0 secretos** (exit code 0).
+  - `npm run build`: **Exitoso** (exit code 0, 124 rutas standalone compiladas).
+  - `npx vitest run tests/integration/ecosystem-links.test.ts`: **12/12 PASS** (exit code 0).
+- **WHATSPOWER (`fe22890`)**:
+  - Soporte de base de datos SQLite configurable por variable de entorno `WHATSPOWER_DB_PATH` para aislamiento en pruebas E2E.
+  - `npm test`: **324/324 PASS** en 38 suites (exit code 0).
+  - `npm run check:pii`: **0 violaciones** (exit code 0).
+- **WHATSPOWER-ULTRA (`71871df` / `3aecd54`)**:
+  - Soporte de base de datos configurable por entorno `ULTRA_DB_PATH`.
+  - `renderDashboardLoginHtml(opts.demoEnabled)`: El botón *"🚀 Entrar sin registro (demo)"* se renderiza en la UI únicamente cuando `demoEnabled=true` (`DEMO_MODE=true` fuera de producción).
+  - `npm test`: **284/284 PASS** en 50 suites (exit code 0). Incluye nueva prueba unitaria `1.B.6` para renderizado condicional del botón demo.
+  - `npm run check:pii`: **0 violaciones** (exit code 0).
+- **Integración E2E 3 Servicios (`npm run e2e:3`)**:
+  - Ejecutada la suite completa multiplataforma: levantamiento orquestado de CRM (:3000), WP (:3003) y ULTRA (:3004) con puertos libres automáticos y bases SQLite temporales.
+  - Resultado: **19/20 aserciones PASS**, **SENT=0** absoluto (cero envíos a la red real).
+
+
 
