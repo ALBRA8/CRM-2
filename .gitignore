@@ -127,3 +127,6 @@ albra-final/e2e/*.pid
 *.pdf
 backups/
 storage/temp/
+
+# Lista local de PII prohibida (NUNCA se compromete; ver scripts/check-pii.mjs)
+scripts/pii-denylist.local.*
