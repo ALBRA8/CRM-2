@@ -74,8 +74,10 @@ el servidor expuesto a internet. Pruebas: `tests/unit/session-cookie-flags.test.
 
 ## Requisitos
 
-- Node.js 20 o superior (también funciona con Bun)
+- **Node.js 22** — es el runtime de producción y el único soportado: `.nvmrc` fija `22.14.0`, `engines` exige `>=22.12.0` y las imágenes Docker usan `node:22-alpine`. Con nvm basta `nvm use` (lee `.nvmrc`).
 - npm 10+ (o bun)
+
+> **better-sqlite3 y Node 24:** better-sqlite3 es un módulo nativo compilado contra la ABI de la versión de Node con la que se instalaron las dependencias (`NODE_MODULE_VERSION` 115 en Node 22 vs 137 en Node 24). Si corres el proyecto con Node 24 y obtienes el error "was compiled against a different Node.js version", ejecuta `npm rebuild better-sqlite3` (o reinstala dependencias con tu Node activo). Recomendación: mantén Node 22 en desarrollo y producción para no tener que recompilar entre versiones.
 
 ## Puesta en marcha
 
