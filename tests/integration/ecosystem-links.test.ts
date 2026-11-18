@@ -16,7 +16,8 @@
  *  5. El receptor lo considera de un solo uso (SingleUseJti — contrato
  *     idéntico al de las capas 2A/2B).
  */
-import { describe, it, expect, beforeAll, afterEach } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
+import { randomBytes } from 'node:crypto'
 import type { NextRequest } from 'next/server'
 import { req as makeReq, tokenA } from '../helpers'
 import { GET as linksGET } from '@/app/api/auth/ecosystem/links/route'
@@ -24,7 +25,8 @@ import { signEcosystemToken, verifyEcosystemToken, SingleUseJti } from '@/lib/ec
 
 const req = makeReq as (path: string, opts?: any) => NextRequest
 
-const SSO_SECRET = 'ecosystem_sso_secret_test_min_32_chars_0001'
+// Secreto de prueba generado en runtime (sin literal commiteado: security:scan lo rechazaría).
+const SSO_SECRET = randomBytes(24).toString('hex')
 
 const ENV_KEYS = ['ECOSYSTEM_SSO_SECRET', 'WHATSPOWER_STUDIO_URL', 'ULTRA_STUDIO_URL', 'DEMO_MODE', 'NODE_ENV'] as const
 
@@ -39,15 +41,17 @@ async function statusOf(promise: Promise<Response>): Promise<number> {
 }
 
 beforeAll(() => {
+  vi.unstubAllEnvs()
   for (const k of ENV_KEYS) delete process.env[k]
   process.env.DEMO_MODE = 'true'
-  process.env.NODE_ENV = 'development'
+  vi.stubEnv('NODE_ENV', 'development')
 })
 
 afterEach(() => {
+  vi.unstubAllEnvs()
   for (const k of ENV_KEYS) delete process.env[k]
   process.env.DEMO_MODE = 'true'
-  process.env.NODE_ENV = 'development'
+  vi.stubEnv('NODE_ENV', 'development')
 })
 
 interface LinksResponse {
@@ -147,7 +151,7 @@ describe('ECOSISTEMA — la ruta responde sin entorno parcial', () => {
   it('10. en producción responde 403 Forbidden', async () => {
     process.env.ECOSYSTEM_SSO_SECRET = SSO_SECRET
     process.env.WHATSPOWER_STUDIO_URL = 'http://127.0.0.1:3003'
-    process.env.NODE_ENV = 'production'
+    vi.stubEnv('NODE_ENV', 'production')
     process.env.DEMO_MODE = 'true'
     const res = await linksGET(req('/api/auth/ecosystem/links', { token: tokenA() }))
     expect(res.status).toBe(403)
@@ -158,7 +162,7 @@ describe('ECOSISTEMA — la ruta responde sin entorno parcial', () => {
   it('11. con DEMO_MODE apagado responde 403 Forbidden', async () => {
     process.env.ECOSYSTEM_SSO_SECRET = SSO_SECRET
     process.env.WHATSPOWER_STUDIO_URL = 'http://127.0.0.1:3003'
-    process.env.NODE_ENV = 'development'
+    vi.stubEnv('NODE_ENV', 'development')
     delete process.env.DEMO_MODE
     const res = await linksGET(req('/api/auth/ecosystem/links', { token: tokenA() }))
     expect(res.status).toBe(403)
