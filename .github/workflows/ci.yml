@@ -25,6 +25,10 @@ jobs:
         run: npm run security:scan
       - name: Escáner de PII y teléfonos reales
         run: npm run check:pii
+        env:
+          # Pepper secreto del denylist (secret de GitHub Actions). Si falta, el escáner
+          # continúa con los patrones genéricos y emite un aviso visible en el log.
+          PII_PEPPER: ${{ secrets.PII_PEPPER }}
       - name: Generar cliente Prisma
         run: npm run db:generate
       - name: Migraciones Prisma en SQLite temporal (instalación limpia)
