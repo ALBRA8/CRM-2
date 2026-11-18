@@ -1278,7 +1278,7 @@ Task: Diagnosticar "listo pero no respondio" tras la primera prueba real de What
 Work Log:
 - Verificado: daemon :3002 connected, phone 573000000001, orgLinked=true (sesion escaneada ~19:23 UTC tras reboot-restore del VM).
 - VM se reciclo ~19:15 UTC; golive-reboot-restore.sh restauro WP :3003 + daemon :3002; CRM :3000 volvio con boot del sandbox (Next carga .env alineado R2 -> proxy funciona).
-- Trazado el mensaje real del operador (pushName Johan Bravo, JID LID 215779257634953): recibido 19:25:16Z, persistido en WhatsAppMessage; CRM POST /api/whatsapp/auto-reply 200 en 928ms; respuesta IA generada y guardada 19:25:17Z (outbound/agent).
+- Trazado el mensaje de prueba del operador (pushName Operador Demo, JID LID 215779999999999): recibido 19:25:16Z, persistido en WhatsAppMessage; CRM POST /api/whatsapp/auto-reply 200 en 928ms; respuesta IA generada y guardada 19:25:17Z (outbound/agent).
 - BARRERA 3 (causa raiz de "no respondio"): daemon.mjs:362 toma contactPhone de remoteJid (@lid) y :510 responde a LID@s.whatsapp.net (inexistente). Baileys no rechaza el envio -> log "Reply sent" enganoso; entrega real NUNCA ocurre.
 - Sesion .wa-auth persistida en src/whatsapp-daemon/.wa-auth (19:23) -> reinicio post-fix NO requiere re-escaneo.
 - Fix minimo propuesto (pendiente GO del operador, orden vigente: no corregir codigo automaticamente): preferir msg.key.senderPn para contactPhone / responder al JID real. ~2-4 lineas en daemon.mjs.

@@ -7,7 +7,8 @@
 ### Puertas de calidad (ejecutadas al cierre)
 | Verificación | Resultado |
 |---|---|
-| `npx vitest run` (93 archivos) | **764/764 PASS** |
+| `npx vitest run` (96 archivos) | **781/781 PASS** |
+| `npm run check:pii` | **0 violaciones** (árbol público limpio de PII y teléfonos reales) |
 | `npm run security:scan` | 0 secretos en el árbol (allowlist con 50 dummies verificados) |
 | `npm run security:scan:history` | sin hallazgos NUEVOS (baseline previa vigente) |
 
@@ -21,10 +22,14 @@
 | H-C5 | INFO | `.gitignore` sin `*.pdf`/`backups/`/`storage/temp/` globales | Añadidas; árbol verificado sin PDFs/PIDs/logs rastreados (0368299) | `git ls-files` limpio |
 | H-C6 | INFO | Cliente Prisma desincronizado del schema hacía fallar 40 pruebas de auth | `npx prisma generate` (regeneración tras cambiar de rama); suite 742→752 en verde | Evidencia en la suite |
 | H-C7 | ALTO | Fallo 428 en vinculación Baileys por descriptor de navegador no estándar y sesión residual corrupta | `Browsers.ubuntu('Chrome')`, `fetchLatestWaWebVersion` con fallback, purga de `.wa-auth` huérfano, límite de reintentos con `qr_expired`, TTL 25s y regeneración forzada (6f2ca35, 78151c8) | Verificación interactiva en localhost:3000 con generación y regeneración exitosa de QR |
+| H-C8 | CRÍTICO | Acceso SSO de Ecosistema (`login-ecosystem` y `links`) carecía de validación de producción/demo y aislamiento multi-tenant | Guardas fail-closed en 2A, 2B y Capa 1: 403 en `NODE_ENV=production` y `DEMO_MODE=false`; token firmado con `orgId` y `role`; prohibición fatal de `ECOSYSTEM_SSO_SECRET` en arranque de producción (`productionConfigProblems`) | Suites automatizadas 14/14 PASS en WP, 14/14 PASS en ULTRA, 12/12 PASS en CRM |
+| H-C9 | **ALTO** | PII de operador (nombre real, WhatsApp LID y handle de pruebas) presente en `worklog.md` y scripts | Reemplazo exhaustivo por datos ficticios (`Operador Demo`, LID dummy `215779999999999`, handle `operadordemo01`); script `scripts/check-pii.mjs` (`npm run check:pii`) integrado en CI | `npm run check:pii` (0 violaciones) + suite 781/781 PASS |
 
 ### Qué queda pendiente y por qué
+- **Canal Meta Cloud oficial**: Sigue siendo un **pendiente diferido**. Baileys es el canal activo de mensajería; la migración oficial de Meta requiere cuenta Meta Business verificada, app en developers.facebook.com y números registrados por el cliente.
+- **Rotación de credenciales externas**: **NO fue verificada directamente** en el entorno, solo fue recomendada formalmente en `OWNER_TODO.md` para ejecución por parte del dueño.
 - **Docker compose build**: sin docker en el entorno de trabajo (tarea del PC, `OWNER_TODO.md`).
-- **Purga de historial git**: decisión del dueño (regla del encargo: NO reescribir; `security:scan:history` en verde con baseline).
+- **Purga de historial git**: decisión del dueño (regla del encargo: NO reescribir historial sin autorización expresa; `security:scan:history` y `check:pii` en verde).
 
 ---
 

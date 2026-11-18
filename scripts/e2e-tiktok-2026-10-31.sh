@@ -50,12 +50,12 @@ echo "== 5) OAuth callback (feliz) =="
 cb=$(curl -s -m 25 -H "$AH" -H "Cookie: tt_oauth_csrf=$STATE" -D - -o /dev/null \
   "http://localhost:3000/api/tiktok/oauth/callback?code=MOCKCODE&state=$STATE")
 cbloc=$(echo "$cb" | rg -io "^location: (.+)$" -r '$1' | head -1 | tr -d '\r')
-echo "$cbloc" | grep -q "tt_connected=johanbravo0830" && ok "redirect éxito con @usuario TikTok" || bad "callback location: $cbloc"
+echo "$cbloc" | grep -q "tt_connected=operadordemo01" && ok "redirect éxito con @usuario TikTok" || bad "callback location: $cbloc"
 cfg=$(curl -s -m 15 -H "$AH" http://localhost:3000/api/tiktok/config)
 echo "$cfg" | grep -q '"hasAccessToken":true' && ok "token guardado cifrado" || bad "config: $cfg"
 echo "$cfg" | grep -q '"isActive":true' && ok "canal TikTok ACTIVO" || bad "canal inactivo"
 echo "$cfg" | grep -q '"openId":"TT-OPENID-7300000000000000001"' && ok "open_id persistido" || bad "openId: $cfg"
-echo "$cfg" | grep -q '"displayName":"johanbravo0830"' && ok "displayName desde /user/info" || bad "displayName: $cfg"
+echo "$cfg" | grep -q '"displayName":"operadordemo01"' && ok "displayName desde /user/info" || bad "displayName: $cfg"
 grep -q "token body" "$LOGS/mock-tiktok.log" && ok "intercambio code→token ejecutado (POST form)" || bad "sin intercambio"
 
 echo "== 6) webhook TikTok =="

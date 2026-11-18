@@ -23,6 +23,8 @@ jobs:
         run: npm install --legacy-peer-deps
       - name: Escáner de secretos (CP-Sec-01)
         run: npm run security:scan
+      - name: Escáner de PII y teléfonos reales
+        run: npm run check:pii
       - name: Generar cliente Prisma
         run: npm run db:generate
       - name: Migraciones Prisma en SQLite temporal (instalación limpia)

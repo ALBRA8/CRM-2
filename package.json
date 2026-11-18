@@ -21,6 +21,7 @@
     "wa:daemon:detached": "node scripts/start-daemon-detached.mjs",
     "security:scan": "node scripts/scan-secrets.mjs",
     "security:scan:history": "node scripts/scan-secrets.mjs --history",
+    "check:pii": "node scripts/check-pii.mjs",
     "lint:baseline": "node scripts/lint-baseline.mjs",
     "postinstall": "prisma generate",
     "ops:monitor-outbox": "node scripts/monitor-outbox.mjs"

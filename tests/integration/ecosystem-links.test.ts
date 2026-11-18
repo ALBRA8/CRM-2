@@ -26,7 +26,7 @@ const req = makeReq as (path: string, opts?: any) => NextRequest
 
 const SSO_SECRET = 'ecosystem_sso_secret_test_min_32_chars_0001'
 
-const ENV_KEYS = ['ECOSYSTEM_SSO_SECRET', 'WHATSPOWER_STUDIO_URL', 'ULTRA_STUDIO_URL'] as const
+const ENV_KEYS = ['ECOSYSTEM_SSO_SECRET', 'WHATSPOWER_STUDIO_URL', 'ULTRA_STUDIO_URL', 'DEMO_MODE', 'NODE_ENV'] as const
 
 async function statusOf(promise: Promise<Response>): Promise<number> {
   try {
@@ -40,10 +40,14 @@ async function statusOf(promise: Promise<Response>): Promise<number> {
 
 beforeAll(() => {
   for (const k of ENV_KEYS) delete process.env[k]
+  process.env.DEMO_MODE = 'true'
+  process.env.NODE_ENV = 'development'
 })
 
 afterEach(() => {
   for (const k of ENV_KEYS) delete process.env[k]
+  process.env.DEMO_MODE = 'true'
+  process.env.NODE_ENV = 'development'
 })
 
 interface LinksResponse {
@@ -138,5 +142,47 @@ describe('ECOSISTEMA — la ruta responde sin entorno parcial', () => {
     const body = (await res.json()) as LinksResponse
     expect(body.whatspower.available).toBe(false)
     expect(body.ultra.available).toBe(false)
+  })
+
+  it('10. en producción responde 403 Forbidden', async () => {
+    process.env.ECOSYSTEM_SSO_SECRET = SSO_SECRET
+    process.env.WHATSPOWER_STUDIO_URL = 'http://127.0.0.1:3003'
+    process.env.NODE_ENV = 'production'
+    process.env.DEMO_MODE = 'true'
+    const res = await linksGET(req('/api/auth/ecosystem/links', { token: tokenA() }))
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body.error).toContain('Forbidden')
+  })
+
+  it('11. con DEMO_MODE apagado responde 403 Forbidden', async () => {
+    process.env.ECOSYSTEM_SSO_SECRET = SSO_SECRET
+    process.env.WHATSPOWER_STUDIO_URL = 'http://127.0.0.1:3003'
+    process.env.NODE_ENV = 'development'
+    delete process.env.DEMO_MODE
+    const res = await linksGET(req('/api/auth/ecosystem/links', { token: tokenA() }))
+    expect(res.status).toBe(403)
+  })
+
+  it('12. el token emitido contiene orgId y role de la sesión', async () => {
+    process.env.ECOSYSTEM_SSO_SECRET = SSO_SECRET
+    process.env.WHATSPOWER_STUDIO_URL = 'http://127.0.0.1:3003'
+    process.env.DEMO_MODE = 'true'
+    const res = await linksGET(req('/api/auth/ecosystem/links', { token: tokenA() }))
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as LinksResponse
+    const token = new URL(body.whatspower.url!).searchParams.get('token')!
+    const verdict = verifyEcosystemToken(token, SSO_SECRET)
+    expect(verdict.ok).toBe(true)
+    if (verdict.ok) {
+      expect(verdict.payload.orgId).toBeDefined()
+      // Verificación con orgId correcta pasa
+      const vMatch = verifyEcosystemToken(token, SSO_SECRET, Date.now(), verdict.payload.orgId)
+      expect(vMatch.ok).toBe(true)
+      // Verificación con orgId ajena RECHAZA
+      const vForeign = verifyEcosystemToken(token, SSO_SECRET, Date.now(), 'org_completamente_ajena')
+      expect(vForeign.ok).toBe(false)
+      expect(!vForeign.ok && vForeign.reason).toBe('organización no autorizada')
+    }
   })
 })

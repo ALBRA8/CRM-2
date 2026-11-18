@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 2026-11-17 — Higiene PII y guardián automatizado en CI
+
+- **`fix(pii)`**:
+  - **Saneamiento exhaustivo de PII**: Reemplazo de identificadores personales en archivos rastreados (`worklog.md`, `scripts/e2e-tiktok-2026-10-31.sh`, `scripts/mock-tiktok-server.mjs`) por datos ficticios estándar (`Operador Demo`, LID `215779999999999`, handle `operadordemo01`).
+  - **Guardián automatizado (`scripts/check-pii.mjs`)**: Escáner AST y regex ejecutado con `npm run check:pii` que audita el árbol rastreado por git buscando números telefónicos colombianos reales (`573...`), nombres personales u operadores reales.
+  - **Integración en CI (`.github/workflows/ci.yml`)**: Agregado el paso `Escáner de PII y teléfonos reales` previo a la ejecución de pruebas. Suite Vitest: **781/781 PASS** (96 test files).
+
 ## 2026-11-17 — Blindaje del ciclo de vida QR de WhatsApp (Baileys) y solución Handshake 428
 
 - **`fix(whatsapp)` (6f2ca35 & 78151c8)**:

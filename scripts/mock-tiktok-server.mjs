@@ -39,7 +39,7 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' })
     res.end(
       JSON.stringify({
-        data: { user: { open_id: 'TT-OPENID-7300000000000000001', display_name: 'johanbravo0830' } },
+        data: { user: { open_id: 'TT-OPENID-7300000000000000001', display_name: 'operadordemo01' } },
       }),
     )
     return

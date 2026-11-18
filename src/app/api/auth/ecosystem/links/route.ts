@@ -23,11 +23,25 @@ import { buildEcosystemLink } from '@/lib/ecosystem-sso'
  */
 export async function GET(req: NextRequest) {
   return handle(async () => {
-    await requireAuth(req)
+    const auth = await requireAuth(req)
+    // Guard estricta: el acceso SSO directo solo existe en modo demo / desarrollo.
+    // En producción o con DEMO_MODE inactivo se rechaza tajantemente con 403 Forbidden.
+    if (process.env.NODE_ENV === 'production' || String(process.env.DEMO_MODE || '').toLowerCase() !== 'true') {
+      return json(
+        { error: 'Forbidden: el acceso directo al ecosistema está deshabilitado fuera del modo demo/desarrollo' },
+        { status: 403 }
+      )
+    }
     const secret = process.env.ECOSYSTEM_SSO_SECRET
     return json({
-      whatspower: buildEcosystemLink(process.env.WHATSPOWER_STUDIO_URL, secret),
-      ultra: buildEcosystemLink(process.env.ULTRA_STUDIO_URL, secret),
+      whatspower: buildEcosystemLink(process.env.WHATSPOWER_STUDIO_URL, secret, {
+        orgId: auth.orgId,
+        role: auth.role,
+      }),
+      ultra: buildEcosystemLink(process.env.ULTRA_STUDIO_URL, secret, {
+        orgId: auth.orgId,
+        role: auth.role,
+      }),
     })
   })
 }

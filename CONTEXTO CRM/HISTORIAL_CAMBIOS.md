@@ -206,3 +206,42 @@ Diagnóstico del dueño (Windows, 03:40-03:55 America/Bogota): solo el 3000 escu
 - **CRM**: cookie `albra_session` con Secure condicional (`SESSION_COOKIE_SECURE=false` como escape explícito documentado para IP de LAN sin HTTPS; por defecto Secure solo en producción). Nuevos `INICIAR_ECOSISTEMA.bat` (orden daemon→CRM→2A→2B con espera de salud y reporte de fallos por capa) y `DIAGNOSTICO_ECOSISTEMA.bat` (puertos + HTTP + presencia/igualdad de `ECOSYSTEM_SSO_SECRET` en los tres `.env` sin imprimir el valor).
 - **Aceptación**: pasos 1-7 del guion en verde contra los 4 servicios reales (CRM standalone producción, daemon, 2A, 2B) y paso 8 en navegador real (Chrome headless): landing → INICIAR DEMO → sidebar Ecosistema → Abrir WhatsPower (nueva pestaña con Flow Studio y el flujo ManyChat cargado, sin gate) → Abrir WhatsPower-Ultra (dashboard con métricas y onboarding, sin login). Capturas en `download/`.
 - Suites finales: CRM **778/778** (96 archivos; +5 pruebas de cookie), 2A **321/321** (+3: cadena de aceptación, páginas de error SSO, login-demo dev/producción), 2B **280/280** (+2: cadena de aceptación y páginas de error SSO). Reglas intactas: login-demo anónimo 403 en producción, nada de secretos en JS/sessionStorage/URLs, comparación timing-safe, jti de un uso, `ALLOW_REAL_DISPATCH=false`, Baileys como canal principal, `.env` jamás commiteado.
+
+## 2026-11-17 (quinta) — Auditoría de Seguridad Ecosistema SSO, blindaje de entorno y salvaguarda de prueba real
+
+Auditoría integral del acceso "Ecosistema" (traspaso SSO entre CRM, WhatsPower y WhatsPower-Ultra) tras la vinculación interactiva exitosa de WhatsApp en el daemon:
+
+- **1. Salvaguarda física de despacho y prueba real**:
+  - `ALLOW_REAL_DISPATCH=false` verificado y confirmado en `.env` de las 3 capas (CRM-ALBRA, WHATSPOWER, WHATSPOWER-ULTRA).
+  - Componentes automáticos de envío APAGADOS: `CHANNEL_AUTOREPLY_ENABLED=false` en `.env` del CRM; `/api/whatsapp/auto-reply` responde `{ paused: true }` sin invocar LLMs ni generar mensajes; workers de difusión de WhatsPower-Ultra inactivos y con fail-closed físico (`SKIPPED_NO_CONSENT`/`FAILED_FATAL`, 0 envíos reales).
+  - Regla estricta: mientras haya sesión real vinculada, SOLO se admiten pruebas de RECEPCIÓN. Cero envíos automáticos. Los envíos de prueba son exclusivamente manuales y autorizados uno a uno.
+  - Sanitización estricta: política de no imprimir ni persistir en el repositorio, commits, archivos de test o logs el número de teléfono vinculado ni datos personales del operador.
+- **2. Auditoría del acceso "Ecosistema" (SSO)**:
+  - **Mecanismo analizado**: formato `v1.<b64url(payload)>.<b64url(HMAC-SHA256)>`, firmado por el CRM con `ECOSYSTEM_SSO_SECRET`, TTL de 90 segundos, canje único vía `SingleUseJti` en memoria y emisión de cookie HttpOnly de sesión de operador (`issueStudioSession`).
+  - **Vulnerabilidad hallada (H-ECO-1 / H-C8)**: `GET /studio/login-ecosystem` (en 2A y 2B) y `GET /api/auth/ecosystem/links` (en Capa 1) carecían de verificación de entorno y aislamiento multi-tenant. En producción, un token emitido hubiera otorgado sesión administrativa central sin credenciales.
+  - **Corrección y blindaje aplicado**:
+    - **Rechazo tajante (403 Forbidden)**: `GET /studio/login-ecosystem` (2A y 2B) y `GET /api/auth/ecosystem/links` (Capa 1) ahora rechazan con 403 incondicional si `NODE_ENV === 'production'` o si `DEMO_MODE !== 'true'`.
+    - **Fallo al arrancar en producción**: `productionConfigProblems` en `WHATSPOWER/src/security.ts` y `WHATSPOWER-ULTRA/src/security.ts` marca `ECOSYSTEM_SSO_SECRET` y `DEMO_MODE=true` como problemas fatales bloqueantes del arranque.
+    - **Aislamiento multi-tenant en el token**: el payload de `signEcosystemToken` ahora incluye obligatoriamente `orgId` y `role` de la sesión CRM. `verifyEcosystemToken` verifica la correspondencia y rechaza tokens ajenos con 403 "organización no autorizada", evitando cualquier escalada de privilegios cruzada.
+  - **Auditoría de accesos sin credenciales**: revisadas exhaustivamente todas las rutas de WhatsPower y WhatsPower-Ultra. Fuera del modo demo (`DEMO_MODE=false`), NO existe ninguna vía pública ni anónima para obtener sesión ni acceder a la API (todas las rutas exigen Bearer administrativo o sesión HttpOnly autenticada).
+- **3. Suites de pruebas actualizadas y en verde**:
+  - `CRM-ALBRA`: 12/12 PASS en `tests/integration/ecosystem-links.test.ts` (verificado 403 en producción, 403 sin demo, firma con orgId y rechazo ante org ajena).
+  - `WHATSPOWER`: 14/14 PASS en `tests/ecosystem-login.test.ts` (+4 pruebas: 403 en producción, 403 sin DEMO_MODE, rechazo ante org ajena, cadena de aceptación).
+  - `WHATSPOWER-ULTRA`: 14/14 PASS en `tests/ecosystem-login.test.ts` (+4 pruebas espejo alineadas con el nuevo contrato).
+
+## 2026-11-17 (sexta) — Sanitización Integral de PII en Árbol Público y Guardián Automatizado en CI
+
+Saneamiento riguroso de datos personales y teléfonos colombianos reales en el árbol rastreado de los tres repositorios públicos:
+- **1. Saneamiento de datos reales**:
+  - `CRM-ALBRA`: `worklog.md` saneado (nombre de operador a `Operador Demo` y WhatsApp LID real a dummy `215779999999999`); `scripts/e2e-tiktok-2026-10-31.sh` y `scripts/mock-tiktok-server.mjs` (handles personales a `operadordemo01`).
+  - `WHATSPOWER-ULTRA`: `docs/WEBHOOK-MENSAJES.md` (teléfono `57301...` a dummy `573000000001`); `tests/dashboard-parity.test.ts` (nombre real a `Operador Demo` / `Contacto Demo` y teléfono a `573000000001`); `tests/superpowers-level3.test.ts` (`30198...` a `3000000002` / `573000000002`); `FICHA.md` saneado.
+- **2. Guardián automatizado de PII (`npm run check:pii`)**:
+  - Implementado `scripts/check-pii.mjs` en los tres repositorios. Audita con regex y análisis de patrones cada archivo versionado por git.
+  - Bloquea commits y pipelines si reaparecen números colombianos reales (`573...`), nombres reales u operadores no autorizados.
+  - Integrado como paso obligatorio `Escáner de PII y teléfonos reales` en `.github/workflows/ci.yml`.
+- **3. Puertas de calidad finales ejecutadas**:
+  - `CRM-ALBRA`: `npx vitest run` → **781/781 PASS** (96 test files). `npm run check:pii` → 0 violaciones.
+  - `WHATSPOWER`: `npm test` → **324/324 PASS** (38 suites). `npm run check:pii` → 0 violaciones.
+  - `WHATSPOWER-ULTRA`: `npm test` → **283/283 PASS** (50 suites). `npm run check:pii` → 0 violaciones.
+
+
