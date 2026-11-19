@@ -215,3 +215,82 @@ describe('M7 · dedupeInboxConversations — contacto presente en AMBAS fuentes'
     expect(dedupeInboxConversations(list).map((c) => c.key)).toEqual(['cc:a', 'cc:b', 'tg:dup', 'ig:visible'])
   })
 })
+
+// ---------- (F3 / F3-T04) filtros server-side de la bandeja ----------
+
+import { filterInboxConversations, normalizeSearchText, type InboxFilters } from '@/lib/inbox'
+
+describe('F3 · normalizeSearchText', () => {
+  it('minúsculas y sin acentos', () => {
+    expect(normalizeSearchText('José García')).toBe('jose garcia')
+    expect(normalizeSearchText('  ÑANDÚ  ')).toBe('nandu')
+    expect(normalizeSearchText(null)).toBe('')
+    expect(normalizeSearchText('')).toBe('')
+  })
+})
+
+describe('F3 · filterInboxConversations', () => {
+  const base = {
+    channelLabel: 'WhatsApp' as const,
+    clientId: null,
+    lastMessageFrom: 'in' as const,
+    unreadCount: 0,
+    isAutoReply: false,
+    lastMessageAt: '2026-01-01T00:00:00Z',
+    lastMessage: '',
+  }
+  const list: InboxConversation[] = [
+    { ...base, key: 'cc:c1', channel: 'whatsapp', connectionId: 'conn-a', connectionName: 'Ventas', contactName: 'José García', contactHandle: '+573001110000', lastMessage: 'Quiero una cotización' },
+    { ...base, key: 'cc:c2', channel: 'whatsapp', connectionId: 'conn-b', connectionName: 'Soporte', contactName: 'María Pérez', contactHandle: '+573002220000', lastMessage: 'Hola' },
+    { ...base, key: 'wa:legacy', channel: 'whatsapp', connectionId: null, connectionName: null, contactName: 'WA Legacy', contactHandle: '573001110000' },
+    { ...base, key: 'tg:c3', channel: 'telegram', connectionId: null, connectionName: null, contactName: 'José TG', contactHandle: '555001' },
+    { ...base, key: 'ig:c4', channel: 'instagram', connectionId: 'conn-a', connectionName: 'Ventas', contactName: 'IG Fan', contactHandle: 'ig-user-1' },
+  ]
+
+  it('sin filtros: pasa todo', () => {
+    expect(filterInboxConversations(list, {})).toHaveLength(5)
+    expect(filterInboxConversations(list, { query: '' })).toHaveLength(5)
+  })
+
+  it('filtro por canal exacto', () => {
+    const out = filterInboxConversations(list, { channel: 'whatsapp' })
+    expect(out.map((c) => c.key)).toEqual(['cc:c1', 'cc:c2', 'wa:legacy'])
+  })
+
+  it('filtro por cuenta: solo canónicas enlazadas; las legacy quedan fuera', () => {
+    const out = filterInboxConversations(list, { connectionId: 'conn-a' })
+    expect(out.map((c) => c.key)).toEqual(['cc:c1', 'ig:c4'])
+    // una legacy no puede afirmar su cuenta: no aparece bajo ninguna cuenta
+    expect(filterInboxConversations(list, { connectionId: 'conn-x' })).toEqual([])
+  })
+
+  it('búsqueda por nombre SIN acentos y case-insensitive', () => {
+    const out = filterInboxConversations(list, { query: 'jose garcia' })
+    expect(out.map((c) => c.key)).toEqual(['cc:c1'])
+  })
+
+  it('búsqueda por teléfono con y sin +', () => {
+    expect(filterInboxConversations(list, { query: '+573001110000' }).map((c) => c.key)).toEqual(['cc:c1'])
+    expect(filterInboxConversations(list, { query: '573001110000' }).map((c) => c.key)).toEqual(['cc:c1', 'wa:legacy'])
+  })
+
+  it('búsqueda por contenido del último mensaje', () => {
+    const out = filterInboxConversations(list, { query: 'cotización' })
+    expect(out.map((c) => c.key)).toEqual(['cc:c1'])
+  })
+
+  it('canal + cuenta + búsqueda combinados', () => {
+    const filters: InboxFilters = { channel: 'instagram', connectionId: 'conn-a', query: 'fan' }
+    expect(filterInboxConversations(list, filters).map((c) => c.key)).toEqual(['ig:c4'])
+    const nada: InboxFilters = { channel: 'telegram', connectionId: 'conn-a' }
+    expect(filterInboxConversations(list, nada)).toEqual([])
+  })
+
+  it('query de solo espacios tras normalizar: se ignora (no filtra todo)', () => {
+    expect(filterInboxConversations(list, { query: '   ' })).toHaveLength(5)
+  })
+
+  it('defensivo: lista nula → vacío', () => {
+    expect(filterInboxConversations(null as unknown as InboxConversation[], {})).toEqual([])
+  })
+})

@@ -364,3 +364,63 @@ describe('POST /api/inbox/send — conversaciones canónicas (outbox)', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 })
+
+describe('(F3) GET /api/inbox — filtros server-side de la bandeja', () => {
+  it('canal inválido → 400 (fail-closed)', async () => {
+    const res = await inboxGET(req('/inbox?channel=paloma-mensajeria', { token: tokenA() }))
+    expect(res.status).toBe(400)
+  })
+
+  it('?channel=telegram devuelve SOLO telegram de org-a', async () => {
+    const res = await inboxGET(req('/inbox?channel=telegram', { token: tokenA() }))
+    expect(res.status).toBe(200)
+    const body = await jsonBody(res)
+    const convs = body.conversations as Array<{ channel: string }>
+    expect(convs.length).toBeGreaterThanOrEqual(1)
+    expect(convs.every((c) => c.channel === 'telegram')).toBe(true)
+  })
+
+  it('?q busca por nombre, handle y contenido sin acentos ni case', async () => {
+    // por contenido del último mensaje de WhatsApp ("¿Tienen disponibilidad?")
+    const res1 = await inboxGET(req(`/inbox?q=${encodeURIComponent('disponibilidad')}`, { token: tokenA() }))
+    const body1 = await jsonBody(res1)
+    const convs1 = body1.conversations as Array<{ key: string }>
+    expect(convs1.some((c) => c.key === `wa:${waConvId}`)).toBe(true)
+
+    // por nombre de contacto legacy ("WA Contacto") — case-insensitive
+    const res2 = await inboxGET(req(`/inbox?q=${encodeURIComponent('wa contacto')}`, { token: tokenA() }))
+    const body2 = await jsonBody(res2)
+    const convs2 = body2.conversations as Array<{ key: string }>
+    expect(convs2.some((c) => c.key === `wa:${waConvId}`)).toBe(true)
+
+    // por teléfono con '+'
+    const res3 = await inboxGET(req(`/inbox?q=${encodeURIComponent(waPhone)}`, { token: tokenA() }))
+    const body3 = await jsonBody(res3)
+    const convs3 = body3.conversations as Array<{ key: string }>
+    expect(convs3.some((c) => c.key === `wa:${waConvId}`)).toBe(true)
+  })
+
+  it('?q sin resultados devuelve lista vacía (200, no error)', async () => {
+    const res = await inboxGET(req(`/inbox?q=${encodeURIComponent('zzz-no-existe-nadie')}`, { token: tokenA() }))
+    expect(res.status).toBe(200)
+    const body = await jsonBody(res)
+    expect((body.conversations as unknown[]).length).toBe(0)
+  })
+
+  it('?connection con id inexistente → lista vacía (nunca filtra cross-org)', async () => {
+    const res = await inboxGET(req('/inbox?connection=conn-inexistente-000', { token: tokenA() }))
+    expect(res.status).toBe(200)
+    const body = await jsonBody(res)
+    expect((body.conversations as unknown[]).length).toBe(0)
+  })
+
+  it('los filtros combinados se intersectan (canal + q)', async () => {
+    const res = await inboxGET(req(`/inbox?channel=telegram&q=${encodeURIComponent('segunda pregunta')}`, { token: tokenA() }))
+    expect(res.status).toBe(200)
+    const body = await jsonBody(res)
+    const convs = body.conversations as Array<{ key: string; channel: string }>
+    expect(convs.length).toBeGreaterThanOrEqual(1)
+    expect(convs.every((c) => c.channel === 'telegram')).toBe(true)
+    expect(convs.some((c) => c.key === `tg:${tgClientId}`)).toBe(true)
+  })
+})

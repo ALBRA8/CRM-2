@@ -1,18 +1,30 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Inbox as InboxIcon, MessageCircle, Send as SendIcon, Instagram, RefreshCw, Loader2, Mic, Music2 } from 'lucide-react'
+import { Inbox as InboxIcon, MessageCircle, Send as SendIcon, Instagram, RefreshCw, Loader2, Mic, Music2, Search, Building2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import type { InboxConversation, InboxMessage } from '@/lib/inbox'
 
 /**
- * Bandeja omnicanal (Fase 4): WhatsApp + Telegram + Instagram + Messenger en una sola vista.
+ * Bandeja omnicanal (Fase 4): WhatsApp + Telegram + Instagram + Messenger + TikTok en una sola vista.
  * Dos paneles (lista + hilo) en desktop; en móvil se alterna lista/hilo.
  * Polling cada 12s; envío por el canal de cada conversación vía /api/inbox/send.
+ *
+ * (F3 / F3-T04) Los filtros por canal, cuenta conectada y búsqueda libre son
+ * SERVER-SIDE (antes del recorte por límite): la ventana de 100 siempre está
+ * llena de resultados que cumplen. El polling respeta los filtros activos.
  */
 
 /** Icono Messenger (rayo) — lucide no lo trae (mismo SVG que settings/facebook-tab) */
@@ -63,20 +75,39 @@ export function InboxPage() {
   const [sending, setSending] = useState(false)
   const [draft, setDraft] = useState('')
   const [filter, setFilter] = useState<ChannelFilter>('all')
+  // (F3) Filtros server-side: cuenta conectada + búsqueda libre (debounce 300 ms).
+  const [accountFilter, setAccountFilter] = useState('all')
+  const [searchInput, setSearchInput] = useState('')
+  const [query, setQuery] = useState('')
+  const [knownAccounts, setKnownAccounts] = useState<{ id: string; name: string }[]>([])
   const threadRef = useRef<HTMLDivElement>(null)
   const canonicalRequestRef = useRef<{ key: string; text: string; id: string } | null>(null)
+
+  // Debounce de la búsqueda: no golpeamos la API por cada tecla.
+  useEffect(() => {
+    const t = setTimeout(() => setQuery(searchInput.trim().slice(0, 100)), 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
+  const buildParams = useCallback((): Record<string, string> | undefined => {
+    const params: Record<string, string> = {}
+    if (filter !== 'all') params.channel = filter
+    if (accountFilter !== 'all') params.connection = accountFilter
+    if (query) params.q = query
+    return Object.keys(params).length > 0 ? params : undefined
+  }, [filter, accountFilter, query])
 
   const loadList = useCallback(async (silent = false) => {
     if (!silent) setLoadingList(true)
     try {
-      const res = (await api.getInbox()) as { conversations?: InboxConversation[] }
+      const res = (await api.getInbox(buildParams())) as { conversations?: InboxConversation[] }
       setConversations(res.conversations || [])
     } catch {
       if (!silent) toast.error('No se pudo cargar la bandeja')
     } finally {
       setLoadingList(false)
     }
-  }, [])
+  }, [buildParams])
 
   const openConversation = useCallback(async (conv: InboxConversation) => {
     setSelected(conv)
@@ -94,12 +125,26 @@ export function InboxPage() {
     }
   }, [])
 
-  // Carga inicial + polling
+  // Re-carga cuando cambian los filtros server-side (canal, cuenta, búsqueda).
   useEffect(() => {
     loadList()
-    const t = setInterval(() => loadList(true), 12000)
-    return () => clearInterval(t)
   }, [loadList])
+
+  // Catálogo de cuentas conectadas para el selector: se aprende de las cargas
+  // SIN filtro de cuenta (al filtrar por una, las opciones no se encogen).
+  useEffect(() => {
+    if (accountFilter !== 'all') return
+    const seen = new Map<string, string>()
+    for (const c of conversations) {
+      if (c.connectionId && c.connectionName) seen.set(c.connectionId, c.connectionName)
+    }
+    if (seen.size === 0) return
+    setKnownAccounts((prev) => {
+      const merged = new Map(prev.map((a) => [a.id, a.name]))
+      for (const [id, name] of seen) merged.set(id, name)
+      return [...merged].map(([id, name]) => ({ id, name }))
+    })
+  }, [conversations, accountFilter])
 
   // Poll del hilo abierto (solo si no se está enviando)
   useEffect(() => {
@@ -116,15 +161,29 @@ export function InboxPage() {
     return () => clearInterval(t)
   }, [selected, sending])
 
+  // Poll silencioso que respeta los filtros activos (mismo loadList que la carga inicial).
+  useEffect(() => {
+    const t = setInterval(() => loadList(true), 12000)
+    return () => clearInterval(t)
+  }, [loadList])
+
   // Auto-scroll al último mensaje
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages])
 
-  const filtered = useMemo(
-    () => (filter === 'all' ? conversations : conversations.filter((c) => c.channel === filter)),
-    [conversations, filter]
-  )
+  // (F3) El servidor ya aplica canal + cuenta + búsqueda ANTES del recorte:
+  // la lista que llega está lista para mostrar.
+  const filtered = conversations
+
+  const hasActiveFilters = filter !== 'all' || accountFilter !== 'all' || query.length > 0
+
+  function resetFilters() {
+    setFilter('all')
+    setAccountFilter('all')
+    setSearchInput('')
+    setQuery('')
+  }
 
   const totalUnread = useMemo(() => conversations.reduce((acc, c) => acc + c.unreadCount, 0), [conversations])
 
@@ -213,19 +272,67 @@ export function InboxPage() {
       <div className="flex-1 min-h-0 grid md:grid-cols-[340px_1fr]">
         {/* Lista de conversaciones */}
         <div className={cn('border-r border-slate-100 flex flex-col min-h-0', selected && 'hidden md:flex')}>
-          <div className="flex gap-1.5 p-3 border-b border-slate-50 flex-wrap">
-            {filters.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                className={cn(
-                  'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors',
-                  filter === f.id ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          <div className="flex flex-col gap-2 p-3 border-b border-slate-50">
+            {/* (F3) Búsqueda libre + cuenta conectada — server-side */}
+            <div className="flex items-center gap-1.5">
+              <div className="relative flex-1">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Input
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Buscar contacto, número o mensaje…"
+                  className="h-8 text-xs pl-8 pr-7 bg-white"
+                />
+                {searchInput && (
+                  <button
+                    onClick={() => setSearchInput('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    title="Limpiar búsqueda"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 )}
-              >
-                {f.label}
-              </button>
-            ))}
+              </div>
+              {knownAccounts.length > 0 && (
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                  <Select value={accountFilter} onValueChange={setAccountFilter}>
+                    <SelectTrigger className="h-8 text-xs w-[120px] bg-white">
+                      <SelectValue placeholder="Cuenta" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas las cuentas</SelectItem>
+                      {knownAccounts.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {filters.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setFilter(f.id)}
+                  className={cn(
+                    'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors',
+                    filter === f.id ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
+              {hasActiveFilters && (
+                <button
+                  onClick={resetFilters}
+                  className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800 text-white hover:bg-slate-700 transition-colors"
+                  title="Quitar todos los filtros"
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">
             {loadingList ? (

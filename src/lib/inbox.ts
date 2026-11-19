@@ -32,6 +32,8 @@ export interface InboxConversation {
   key: string
   /** Nombre seguro de la cuenta conectada; solo presente en conversaciones canónicas. */
   connectionName?: string | null
+  /** Id de la conexión canónica (ChannelConnection); null en las legacy. (F3) */
+  connectionId?: string | null
   channel: InboxChannel
   channelLabel: 'WhatsApp' | 'Telegram' | 'Instagram' | 'Messenger' | 'TikTok'
   contactName: string
@@ -354,7 +356,7 @@ async function listCanonicalChannelConversations(orgId: string, limit: number): 
     const rows = await db.channelConversation.findMany({
       where: { organizationId: orgId, status: 'active', connection: { is: { organizationId: orgId } } },
       include: {
-        connection: { select: { organizationId: true, displayName: true, status: true, channel: true } },
+        connection: { select: { id: true, organizationId: true, displayName: true, status: true, channel: true } },
         messages: { orderBy: { createdAt: 'desc' }, take: 1, select: { direction: true } },
       },
       orderBy: [{ lastMessageAt: 'desc' }, { updatedAt: 'desc' }],
@@ -367,6 +369,7 @@ async function listCanonicalChannelConversations(orgId: string, limit: number): 
         key: 'cc:' + row.id,
         channel: row.channel as InboxChannel,
         channelLabel: CHANNEL_LABELS[row.channel as InboxChannel] || 'WhatsApp',
+        connectionId: row.connection.id ?? null,
         connectionName: row.connection.displayName || null,
         contactName: row.contactName || row.externalContactKey,
         contactHandle: row.externalContactKey,
@@ -383,10 +386,71 @@ async function listCanonicalChannelConversations(orgId: string, limit: number): 
   }
 }
 
+// ---------- (F3) filtros por canal, cuenta y búsqueda (puros, testeables) ----------
+
+export interface InboxFilters {
+  /** Canal exacto. `undefined` = todos los canales. */
+  channel?: InboxChannel
+  /** Cuenta conectada (ChannelConnection id). `undefined` = todas las cuentas. */
+  connectionId?: string
+  /** Búsqueda libre sobre contacto, handle y último mensaje. `''`/`undefined` = sin filtro. */
+  query?: string
+}
+
+const SEARCHABLE_FIELDS = ['contactName', 'contactHandle', 'lastMessage'] as const
+
+/**
+ * Normaliza texto para búsqueda: minúsculas y sin acentos (NFD + strip de
+ * diacríticos). Así "José" coincide con "jose" y "+57 300" con "57300"
+ * (el número se busca con o sin '+', aunque con espacios intermedios la
+ * coincidencia es por subcadena del texto normalizado).
+ */
+export function normalizeSearchText(raw: string | null | undefined): string {
+  if (!raw || typeof raw !== 'string') return ''
+  return raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
+/**
+ * (F3 / F3-T04) Aplica los filtros de bandeja ANTES del recorte por límite:
+ * la ventana de resultados queda llena de conversaciones que CUMPLEN el
+ * filtro (el recorte client-side previo mostraba ventanas medio vacías).
+ *
+ * Reglas:
+ *  - `channel`: igualdad exacta del canal.
+ *  - `connectionId`: solo coinciden las canónicas enlazadas a ESA cuenta; las
+ *    legacy (sin conexión explícita) quedan fuera — no se puede afirmar de
+ *    qué cuenta vinieron sin inventar datos.
+ *  - `query`: subcadena sobre nombre de contacto, handle y último mensaje,
+ *    normalizada (sin acentos, minúsculas). Con query corta (<1 tras
+ *    normalizar) se ignora, no filtra todo.
+ */
+export function filterInboxConversations(
+  conversations: InboxConversation[],
+  filters: InboxFilters,
+): InboxConversation[] {
+  if (!Array.isArray(conversations)) return []
+  const channel = filters?.channel
+  const connectionId = filters?.connectionId
+  const query = normalizeSearchText(filters?.query)
+  return conversations.filter((c) => {
+    if (channel && c.channel !== channel) return false
+    if (connectionId && c.connectionId !== connectionId) return false
+    if (query.length >= 1) {
+      const haystack = SEARCHABLE_FIELDS.map((f) => normalizeSearchText(c[f])).join('\n')
+      if (!haystack.includes(query)) return false
+    }
+    return true
+  })
+}
+
 /** Lista unificada, ordenada por actividad reciente y UNIFICADA por contacto (M7).
  *  Las fuentes legacy tapadas por una canónica no se repiten; el historial
- *  completo sigue en la ficha 360. */
-export async function listInbox(orgId: string, limit = 100): Promise<InboxConversation[]> {
+ *  completo sigue en la ficha 360. (F3) los filtros se aplican ANTES del recorte. */
+export async function listInbox(orgId: string, limit = 100, filters: InboxFilters = {}): Promise<InboxConversation[]> {
   const [canonical, wa, tg, ig, fb] = await Promise.all([
     listCanonicalChannelConversations(orgId, limit),
     listWhatsAppConversations(orgId, limit),
@@ -394,9 +458,12 @@ export async function listInbox(orgId: string, limit = 100): Promise<InboxConver
     listTimelineConversations(orgId, 'instagram', limit),
     listTimelineConversations(orgId, 'facebook', limit),
   ])
-  return dedupeInboxConversations(
-    [...canonical, ...wa, ...tg, ...ig, ...fb]
-      .sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || '')),
+  return filterInboxConversations(
+    dedupeInboxConversations(
+      [...canonical, ...wa, ...tg, ...ig, ...fb]
+        .sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || '')),
+    ),
+    filters,
   ).slice(0, limit)
 }
 
