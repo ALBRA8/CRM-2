@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Inbox as InboxIcon, MessageCircle, Send as SendIcon, Instagram, RefreshCw, Loader2, Mic, Music2 } from 'lucide-react'
+import { Inbox as InboxIcon, MessageCircle, Send as SendIcon, Instagram, RefreshCw, Loader2, Mic, Music2, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -56,27 +56,43 @@ function timeAgo(iso: string | null): string {
 
 export function InboxPage() {
   const [conversations, setConversations] = useState<InboxConversation[]>([])
+  const [accounts, setAccounts] = useState<string[]>([])
   const [selected, setSelected] = useState<InboxConversation | null>(null)
   const [messages, setMessages] = useState<InboxMessage[]>([])
   const [loadingList, setLoadingList] = useState(true)
   const [loadingThread, setLoadingThread] = useState(false)
   const [sending, setSending] = useState(false)
   const [draft, setDraft] = useState('')
+  // F3 — filtros en SERVIDOR (canal, cuenta y búsqueda viajan en la query).
   const [filter, setFilter] = useState<ChannelFilter>('all')
+  const [accountFilter, setAccountFilter] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const threadRef = useRef<HTMLDivElement>(null)
   const canonicalRequestRef = useRef<{ key: string; text: string; id: string } | null>(null)
+
+  // Búsqueda con debounce: no dispara una petición por tecla.
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(searchInput.trim()), 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
 
   const loadList = useCallback(async (silent = false) => {
     if (!silent) setLoadingList(true)
     try {
-      const res = (await api.getInbox()) as { conversations?: InboxConversation[] }
+      const params: Record<string, string> = {}
+      if (filter !== 'all') params.channel = filter
+      if (accountFilter) params.connection = accountFilter
+      if (searchQuery) params.q = searchQuery
+      const res = (await api.getInbox(params)) as { conversations?: InboxConversation[]; accounts?: string[] }
       setConversations(res.conversations || [])
+      if (res.accounts) setAccounts(res.accounts)
     } catch {
       if (!silent) toast.error('No se pudo cargar la bandeja')
     } finally {
       setLoadingList(false)
     }
-  }, [])
+  }, [filter, accountFilter, searchQuery])
 
   const openConversation = useCallback(async (conv: InboxConversation) => {
     setSelected(conv)
@@ -94,7 +110,7 @@ export function InboxPage() {
     }
   }, [])
 
-  // Carga inicial + polling
+  // Carga inicial + polling + recarga cuando cambian los filtros (F3)
   useEffect(() => {
     loadList()
     const t = setInterval(() => loadList(true), 12000)
@@ -121,10 +137,8 @@ export function InboxPage() {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages])
 
-  const filtered = useMemo(
-    () => (filter === 'all' ? conversations : conversations.filter((c) => c.channel === filter)),
-    [conversations, filter]
-  )
+  // F3: el canal ya filtra en servidor; la lista local se usa tal cual.
+  const filtered = conversations
 
   const totalUnread = useMemo(() => conversations.reduce((acc, c) => acc + c.unreadCount, 0), [conversations])
 
@@ -213,7 +227,7 @@ export function InboxPage() {
       <div className="flex-1 min-h-0 grid md:grid-cols-[340px_1fr]">
         {/* Lista de conversaciones */}
         <div className={cn('border-r border-slate-100 flex flex-col min-h-0', selected && 'hidden md:flex')}>
-          <div className="flex gap-1.5 p-3 border-b border-slate-50 flex-wrap">
+          <div className="flex gap-1.5 p-3 pb-2 border-b border-slate-50 flex-wrap">
             {filters.map((f) => (
               <button
                 key={f.id}
@@ -226,6 +240,32 @@ export function InboxPage() {
                 {f.label}
               </button>
             ))}
+          </div>
+          {/* F3 — búsqueda + cuenta (filtrado en servidor) */}
+          <div className="px-3 py-2 border-b border-slate-50 space-y-2 bg-slate-50/60">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Buscar por nombre o teléfono…"
+                data-testid="inbox-search"
+                className="w-full rounded-lg border border-slate-200 bg-white pl-8 pr-2 py-1.5 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              />
+            </div>
+            {accounts.length > 0 && (
+              <select
+                value={accountFilter}
+                onChange={(e) => setAccountFilter(e.target.value)}
+                data-testid="inbox-account-select"
+                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              >
+                <option value="">Todas las cuentas</option>
+                {accounts.map((a) => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+            )}
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">
             {loadingList ? (

@@ -408,8 +408,72 @@ async function listCanonicalChannelConversations(orgId: string, limit: number): 
   }
 }
 
-/** Lista unificada con criterio M7 (canónico primero) y orden por actividad. */
-export async function listInbox(orgId: string, limit = 100): Promise<InboxConversation[]> {
+// ---------- filtros de la bandeja (F3, puros y testeables) ----------
+
+export const INBOX_CHANNELS = ['whatsapp', 'telegram', 'instagram', 'facebook', 'tiktok'] as const
+
+export interface InboxFilters {
+  /** Canal exacto (allowlist INBOX_CHANNELS). Ignorado si viene vacío. */
+  channel?: string
+  /** Cuenta conectada (connectionName canónico). Las legacy no tienen cuenta y quedan excluidas. */
+  connection?: string
+  /** Búsqueda libre por nombre, teléfono y último mensaje (insensible a mayúsculas/formato). */
+  q?: string
+}
+
+/**
+ * Filtros del plan F3 sobre la lista YA deduplicada (M7): filtrar después del
+ * dedup garantiza que "un contacto una vez" se mantenga también filtrado.
+ * Búsqueda: nombre/handle/mensaje en texto libre + teléfono normalizado a
+ * dígitos (que '+57 300…', '57300…' y '300…' encuentren lo mismo).
+ */
+export function filterInboxConversations(conversations: InboxConversation[], filters: InboxFilters): InboxConversation[] {
+  const channel = filters.channel?.trim().toLowerCase()
+  if (channel && !(INBOX_CHANNELS as readonly string[]).includes(channel)) return []
+  const connection = filters.connection?.trim().toLowerCase()
+  const q = filters.q?.trim().toLowerCase()
+  if (!channel && !connection && !q) return conversations
+  const qDigits = q ? q.replace(/\D/g, '') : ''
+  return conversations.filter((c) => {
+    if (channel && c.channel !== channel) return false
+    if (connection && (c.connectionName || '').toLowerCase() !== connection) return false
+    if (q) {
+      const hay = `${c.contactName || ''} ${c.contactHandle || ''} ${c.lastMessage || ''}`.toLowerCase()
+      if (!hay.includes(q)) {
+        // Segunda oportunidad: solo dígitos (teléfono con o sin '+', espacios).
+        if (qDigits.length >= 4) {
+          const handleDigits = (c.contactHandle || '').replace(/\D/g, '')
+          if (!handleDigits.includes(qDigits)) return false
+        } else {
+          return false
+        }
+      }
+    }
+    return true
+  })
+}
+
+/**
+ * Cuentas conectadas de la organización (para el selector "Cuenta" de la
+ * bandeja): displayName de ChannelConnection activas, únicas y ordenadas.
+ * Consulta barata que NO depende de que existan conversaciones.
+ */
+export async function listInboxAccounts(orgId: string): Promise<string[]> {
+  try {
+    const rows = await db.channelConnection.findMany({
+      where: { organizationId: orgId, status: 'connected', displayName: { not: null } },
+      select: { displayName: true },
+      orderBy: { displayName: 'asc' },
+    })
+    return [...new Set(rows.map((r) => r.displayName!).filter(Boolean))]
+  } catch (err) {
+    console.error('[inbox] cuentas no disponibles', err)
+    return []
+  }
+}
+
+/** Lista unificada con criterio M7 (canónico primero), filtros F3 y orden por actividad. */
+export async function listInbox(orgId: string, limit = 100, filters: InboxFilters = {}): Promise<InboxConversation[]> {
   const [canonical, wa, tg, ig, fb] = await Promise.all([
     listCanonicalChannelConversations(orgId, limit),
     listWhatsAppConversations(orgId, limit),
@@ -420,7 +484,8 @@ export async function listInbox(orgId: string, limit = 100): Promise<InboxConver
   // M7: el mismo contacto (canal+identidad) aparece UNA sola vez; gana el
   // modelo canónico y el legacy queda visible solo en la ficha del cliente.
   const { list } = dedupeInboxConversations([...canonical, ...wa, ...tg, ...ig, ...fb])
-  return list
+  // F3: filtros DESPUÉS del dedup (la bandeja filtrada nunca muestra duplicados).
+  return filterInboxConversations(list, filters)
     .sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''))
     .slice(0, limit)
 }

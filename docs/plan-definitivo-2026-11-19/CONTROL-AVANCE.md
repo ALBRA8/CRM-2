@@ -13,11 +13,11 @@ Este documento se actualiza por tarea al cerrarla, con estado, archivos y prueba
 | E2 | Renumeración migraciones | Terminada (sesión previa) | migraciones renumeradas |
 | F2 | UI de conexiones WhatsApp multi-número | **Terminada 2026-11-20** | commit F2; 803/803 tests |
 | M7 | Criterio unificación doble bandeja | **Terminada 2026-11-20** | CRITERIO-BANDEJA-UNICA-M7.md; dedup + 14 tests |
+| F3 | Filtros canal/cuenta + búsqueda bandeja | **Terminada 2026-11-20** | API + UI + 24 tests (unit 15, integ 9) |
 | E4 | Readiness/CHANGELOG | En desarrollo | — |
 | D4 | Check de cifras en CI | En desarrollo | — |
 | E3 | Análisis | En desarrollo | — |
-| F3 | Filtros canal/cuenta + búsqueda bandeja | Pendiente (siguiente en cola) | — |
-| M8 | Reconciliación operable UNCERTAIN | Pendiente | — |
+| M8 | Reconciliación operable UNCERTAIN | Pendiente (siguiente en cola) | — |
 | F4 | — (fase 3/4) | Pendiente | — |
 | F5 | Salud / monitor de conexiones | Pendiente (orden recomendado tras F2/M7) | — |
 | U1–U5 | Experiencia de usuario | Pendiente | U1 nav 5+1 aprobada por instrucción global |
@@ -85,3 +85,30 @@ canónico primero con respaldo del daemon.
 completo sigue visible en la ficha — cumplido.
 
 **Reversión.** `git revert` del commit; sin migraciones ni borrados, la vuelta atrás es limpia.
+
+## F3 — Filtros por canal y cuenta + búsqueda en la bandeja (cerrada 2026-11-20)
+
+**Alcance.** Extensión de `GET /api/inbox` con tres parámetros y controles en la bandeja:
+
+- `channel=` con allowlist (whatsapp/telegram/instagram/facebook/tiktok; valor desconocido → 400).
+- `connection=` cuenta conectada (displayName canónico); las filas legacy sin cuenta quedan excluidas.
+- `q=` búsqueda libre por nombre, teléfono (normalizado a dígitos: '+57 300…', '57300…' y '300…'
+  encuentran lo mismo) y último mensaje; insensible a mayúsculas.
+- Los filtros se aplican DESPUÉS del dedup M7: la bandeja filtrada nunca muestra duplicados.
+- Respuesta añade `accounts` (cuentas conectadas únicas) para el selector de la UI.
+
+**UI.** `src/components/inbox/inbox-page.tsx`: chips de canal ahora filtran en servidor; caja de
+búsqueda con debounce (300 ms) y selector “Todas las cuentas” por conexión; polling cada 12 s
+conserva los filtros activos.
+
+**Archivos.** `src/lib/inbox.ts` (`InboxFilters`, `filterInboxConversations` puro,
+`listInboxAccounts`, `listInbox` con filtros), `src/app/api/inbox/route.ts`,
+`src/components/inbox/inbox-page.tsx`; tests `tests/unit/inbox-filters.test.ts` (15) y
+`tests/integration/inbox-filters.test.ts` (9).
+
+**Pruebas.** tsc y ESLint limpios; suite completa **841/841**.
+
+**Criterios de aceptación.** El filtro por conexión devuelve solo esa cuenta; la búsqueda encuentra
+por nombre y teléfono — cumplido (verificado en integración con semilla multi-cuenta + legacy).
+
+**Reversión.** Parámetros aditivos a la API; `git revert` limpia.
