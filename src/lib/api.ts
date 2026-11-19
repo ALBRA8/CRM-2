@@ -333,6 +333,35 @@ class ApiClient {
     return this.proxyPost('/send', data)
   }
 
+  // Conexiones WhatsApp multi-número (F2 — plan definitivo fase 3)
+  async getWaConnections() {
+    return this.request('/whatsapp/connections')
+  }
+
+  async createWaConnection(data: Record<string, unknown>) {
+    return this.request('/whatsapp/connections', { method: 'POST', body: JSON.stringify(data) })
+  }
+
+  async getWaConnection(id: string) {
+    return this.request(`/whatsapp/connections/${id}`)
+  }
+
+  async deleteWaConnection(id: string) {
+    return this.request(`/whatsapp/connections/${id}`, { method: 'DELETE' })
+  }
+
+  async verifyWaConnection(id: string) {
+    return this.request(`/whatsapp/connections/${id}/verify`, { method: 'POST' })
+  }
+
+  async getWaEmbeddedSignupConfig() {
+    return this.request('/whatsapp/embedded-signup')
+  }
+
+  async completeWaEmbeddedSignup(data: Record<string, unknown>) {
+    return this.request('/whatsapp/embedded-signup', { method: 'POST', body: JSON.stringify(data) })
+  }
+
   // Bandeja omnicanal (Fase 4) — unifica WhatsApp + Telegram + Instagram
   async getInbox(params?: Record<string, string>) {
     const query = params ? `?${new URLSearchParams(params).toString()}` : ''
