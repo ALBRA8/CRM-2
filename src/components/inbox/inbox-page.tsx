@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Inbox as InboxIcon, MessageCircle, Send as SendIcon, Instagram, RefreshCw, Loader2, Mic, Music2 } from 'lucide-react'
+import { Inbox as InboxIcon, MessageCircle, Send as SendIcon, Instagram, RefreshCw, Loader2, Mic, Music2, Search, Merge, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,7 +10,11 @@ import { cn } from '@/lib/utils'
 import type { InboxConversation, InboxMessage } from '@/lib/inbox'
 
 /**
- * Bandeja omnicanal (Fase 4): WhatsApp + Telegram + Instagram + Messenger en una sola vista.
+ * Bandeja omnicanal ÚNICA (M7 + F3 del plan definitivo).
+ * WhatsApp + Telegram + Instagram + Messenger + TikTok en una sola vista con:
+ *  - dedup "canónico primero" server-side (un contacto, una conversación);
+ *  - filtros server-side por canal, cuenta conectada y búsqueda;
+ *  - paginación "Cargar más".
  * Dos paneles (lista + hilo) en desktop; en móvil se alterna lista/hilo.
  * Polling cada 12s; envío por el canal de cada conversación vía /api/inbox/send.
  */
@@ -54,47 +58,88 @@ function timeAgo(iso: string | null): string {
   return d < 7 ? `${d} d` : new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })
 }
 
+const PAGE_SIZE = 50
+
 export function InboxPage() {
   const [conversations, setConversations] = useState<InboxConversation[]>([])
   const [selected, setSelected] = useState<InboxConversation | null>(null)
   const [messages, setMessages] = useState<InboxMessage[]>([])
   const [loadingList, setLoadingList] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [loadingThread, setLoadingThread] = useState(false)
   const [sending, setSending] = useState(false)
   const [draft, setDraft] = useState('')
   const [filter, setFilter] = useState<ChannelFilter>('all')
+  // (F3) búsqueda y cuenta server-side + paginación
+  const [search, setSearch] = useState('')
+  const [account, setAccount] = useState('')
+  const [knownAccounts, setKnownAccounts] = useState<string[]>([])
+  const [hasMore, setHasMore] = useState(false)
+  const [suppressedCount, setSuppressedCount] = useState(0)
+  const [searchInput, setSearchInput] = useState('')
   const threadRef = useRef<HTMLDivElement>(null)
   const canonicalRequestRef = useRef<{ key: string; text: string; id: string } | null>(null)
+
+  const buildParams = useCallback((offset: number): Record<string, string> => {
+    const params: Record<string, string> = { limit: String(PAGE_SIZE), offset: String(offset) }
+    if (filter !== 'all') params.channel = filter
+    if (account) params.account = account
+    if (search) params.search = search
+    return params
+  }, [filter, account, search])
 
   const loadList = useCallback(async (silent = false) => {
     if (!silent) setLoadingList(true)
     try {
-      const res = (await api.getInbox()) as { conversations?: InboxConversation[] }
+      const res = (await api.getInbox(buildParams(0))) as {
+        conversations?: InboxConversation[]
+        suppressedCount?: number
+        hasMore?: boolean
+      }
       setConversations(res.conversations || [])
+      setHasMore(res.hasMore ?? false)
+      setSuppressedCount(res.suppressedCount ?? 0)
+      // Catálogo acumulativo de cuentas conectadas conocidas
+      const names = (res.conversations || []).map((c) => c.connectionName).filter(Boolean) as string[]
+      setKnownAccounts((prev) => [...new Set([...prev, ...names])].sort())
     } catch {
       if (!silent) toast.error('No se pudo cargar la bandeja')
     } finally {
       setLoadingList(false)
     }
-  }, [])
+  }, [buildParams])
 
-  const openConversation = useCallback(async (conv: InboxConversation) => {
-    setSelected(conv)
-    setDraft('')
-    setLoadingThread(true)
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return
+    setLoadingMore(true)
     try {
-      const res = (await api.getInboxMessages(conv.key)) as { messages?: InboxMessage[] }
-      setMessages(res.messages || [])
-      // Abierta → ya no está "sin leer" en la lista local
-      setConversations((prev) => prev.map((c) => (c.key === conv.key ? { ...c, unreadCount: 0 } : c)))
+      const res = (await api.getInbox(buildParams(conversations.length))) as {
+        conversations?: InboxConversation[]
+        hasMore?: boolean
+      }
+      const incoming = res.conversations || []
+      setConversations((prev) => {
+        const seen = new Set(prev.map((c) => c.key))
+        const fresh = incoming.filter((c) => !seen.has(c.key))
+        const names = fresh.map((c) => c.connectionName).filter(Boolean) as string[]
+        setKnownAccounts((acc) => [...new Set([...acc, ...names])].sort())
+        return [...prev, ...fresh]
+      })
+      setHasMore(res.hasMore ?? false)
     } catch {
-      toast.error('No se pudo cargar la conversación')
+      toast.error('No se pudo cargar más conversaciones')
     } finally {
-      setLoadingThread(false)
+      setLoadingMore(false)
     }
-  }, [])
+  }, [buildParams, conversations.length, hasMore, loadingMore])
 
-  // Carga inicial + polling
+  // (F3) debounce de la búsqueda: 300 ms tras la última tecla
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput.trim()), 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
+  // Recarga al cambiar filtros; polling con los mismos filtros
   useEffect(() => {
     loadList()
     const t = setInterval(() => loadList(true), 12000)
@@ -116,15 +161,29 @@ export function InboxPage() {
     return () => clearInterval(t)
   }, [selected, sending])
 
+  const openConversation = useCallback(async (conv: InboxConversation) => {
+    setSelected(conv)
+    setDraft('')
+    setLoadingThread(true)
+    try {
+      const res = (await api.getInboxMessages(conv.key)) as { messages?: InboxMessage[] }
+      setMessages(res.messages || [])
+      // Abierta → ya no está "sin leer" en la lista local
+      setConversations((prev) => prev.map((c) => (c.key === conv.key ? { ...c, unreadCount: 0 } : c)))
+    } catch {
+      toast.error('No se pudo cargar la conversación')
+    } finally {
+      setLoadingThread(false)
+    }
+  }, [])
+
   // Auto-scroll al último mensaje
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages])
 
-  const filtered = useMemo(
-    () => (filter === 'all' ? conversations : conversations.filter((c) => c.channel === filter)),
-    [conversations, filter]
-  )
+  // (F3) el filtrado ahora es server-side: la lista ya llega filtrada y deduplicada
+  const filtered = conversations
 
   const totalUnread = useMemo(() => conversations.reduce((acc, c) => acc + c.unreadCount, 0), [conversations])
 
@@ -204,6 +263,12 @@ export function InboxPage() {
           <p className="text-xs text-slate-500">
             WhatsApp · Telegram · Instagram · Messenger · TikTok {totalUnread > 0 ? `— ${totalUnread} sin leer` : '— todo al día'}
           </p>
+          {suppressedCount > 0 && (
+            <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+              <Merge className="w-3 h-3 flex-shrink-0" />
+              {suppressedCount} conversación(es) legacy unificada(s) con su versión canónica (historial completo en la ficha del cliente)
+            </p>
+          )}
         </div>
         <Button variant="ghost" size="sm" className="text-slate-500 h-8 w-8 p-0" onClick={() => loadList()} title="Actualizar">
           {loadingList ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
@@ -213,19 +278,46 @@ export function InboxPage() {
       <div className="flex-1 min-h-0 grid md:grid-cols-[340px_1fr]">
         {/* Lista de conversaciones */}
         <div className={cn('border-r border-slate-100 flex flex-col min-h-0', selected && 'hidden md:flex')}>
-          <div className="flex gap-1.5 p-3 border-b border-slate-50 flex-wrap">
-            {filters.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                className={cn(
-                  'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors',
-                  filter === f.id ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                )}
-              >
-                {f.label}
-              </button>
-            ))}
+          {/* (F3) búsqueda + cuenta conectada + chips de canal */}
+          <div className="p-3 pb-2 border-b border-slate-50 space-y-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+              <input
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Buscar por nombre o teléfono…"
+                className="w-full pl-8 pr-2 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
+              />
+            </div>
+            {knownAccounts.length > 0 && (
+              <div className="relative">
+                <select
+                  value={account}
+                  onChange={(e) => setAccount(e.target.value)}
+                  className="w-full appearance-none pl-2 pr-6 py-1.5 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                >
+                  <option value="">Todas las cuentas conectadas</option>
+                  {knownAccounts.map((name) => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400 pointer-events-none" />
+              </div>
+            )}
+            <div className="flex gap-1.5 flex-wrap">
+              {filters.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setFilter(f.id)}
+                  className={cn(
+                    'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors',
+                    filter === f.id ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">
             {loadingList ? (
@@ -282,6 +374,18 @@ export function InboxPage() {
                   </button>
                 )
               })
+            )}
+            {hasMore && !loadingList && (
+              <div className="p-3">
+                <Button
+                  variant="outline" size="sm"
+                  className="w-full h-8 text-xs gap-1.5"
+                  onClick={() => void loadMore()} disabled={loadingMore}
+                >
+                  {loadingMore ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  Cargar más conversaciones
+                </Button>
+              </div>
             )}
           </div>
         </div>
