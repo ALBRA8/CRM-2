@@ -25,6 +25,7 @@ import {
   QrCode,
   RefreshCw,
   Mic,
+  Link2,
 } from 'lucide-react'
 import { format, isToday, isYesterday, isThisWeek } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -241,6 +242,14 @@ export function WhatsAppPage() {
                   </Badge>
                 )}
               </div>
+              <Button variant="ghost" size="icon" className="h-7 w-7" title="Conexiones multi-número (F2)" onClick={() => {
+                // (F2) Panel de conexiones multi-número por Meta Cloud API:
+                // deep-link REAL a la nueva vista (SPA + URL canónica).
+                window.history.replaceState(null, '', '/whatsapp/conexiones')
+                setView('wa-connections')
+              }}>
+                <Link2 className="w-3.5 h-3.5" />
+              </Button>
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
                 // (A3-10, auditoría 2026-11-11) Deep-link REAL: Settings abre la
                 // pestaña de conexiones WhatsApp (?tab=whatsapp — el mismo canal

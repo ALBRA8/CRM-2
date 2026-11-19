@@ -333,6 +333,52 @@ class ApiClient {
     return this.proxyPost('/send', data)
   }
 
+  // ── Conexiones WhatsApp multi-número (F2, Meta Cloud API por organización) ──
+  // Todo pasa por /api/whatsapp/connections con JWT: el orgId SIEMPRE sale de la
+  // sesión (el cliente nunca envía organization_id) y los tokens jamás se leen.
+  async getWaConnections() {
+    return this.request('/whatsapp/connections')
+  }
+
+  async getWaConnection(id: string) {
+    return this.request(`/whatsapp/connections/${encodeURIComponent(id)}`)
+  }
+
+  async createWaConnection(data: {
+    phoneNumberId: string
+    accessToken: string
+    displayName?: string
+    wabaId?: string
+    phoneNumber?: string
+    metaAppSecret?: string
+  }) {
+    return this.request('/whatsapp/connections', { method: 'POST', body: JSON.stringify(data) })
+  }
+
+  async disconnectWaConnection(id: string, opts: { revoked?: boolean } = {}) {
+    return this.request(`/whatsapp/connections/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ revoked: opts.revoked === true }),
+    })
+  }
+
+  async verifyWaConnection(id: string) {
+    return this.request(`/whatsapp/connections/${encodeURIComponent(id)}/verify`, {
+      method: 'POST',
+      body: '{}',
+    })
+  }
+
+  // Embedded Signup de Meta: configuración pública + state firmado de un solo uso
+  // (GET) y canje del code oficial (POST). 503 si META_APP_ID no está en el server.
+  async getWaEmbeddedSignupConfig() {
+    return this.request('/whatsapp/embedded-signup')
+  }
+
+  async completeWaEmbeddedSignup(data: { code: string; state: string; phoneNumberId: string; wabaId?: string }) {
+    return this.request('/whatsapp/embedded-signup', { method: 'POST', body: JSON.stringify(data) })
+  }
+
   // Bandeja omnicanal (Fase 4) — unifica WhatsApp + Telegram + Instagram
   async getInbox(params?: Record<string, string>) {
     const query = params ? `?${new URLSearchParams(params).toString()}` : ''

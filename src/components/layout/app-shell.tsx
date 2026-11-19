@@ -19,6 +19,7 @@ import { FinancesPage } from '@/components/finances/finances-page'
 import { SettingsPage } from '@/components/settings/settings-page'
 import { ProductsPage } from '@/components/products/products-page'
 import { WhatsAppPage } from '@/components/whatsapp/whatsapp-page'
+import { WaConnectionsPage } from '@/components/whatsapp/wa-connections-page'
 import { InboxPage } from '@/components/inbox/inbox-page'
 import { PushManager } from '@/components/pwa/push-manager'
 import { TeamPage } from '@/components/team/team-page'
@@ -191,6 +192,8 @@ function renderView(view: string): ReactNode {
       return <ProductsPage />
     case 'whatsapp':
       return <WhatsAppPage />
+    case 'wa-connections':
+      return <WaConnectionsPage />
     case 'inbox':
       return <InboxPage />
     case 'automations':
