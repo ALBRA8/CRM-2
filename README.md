@@ -38,6 +38,12 @@ El CRM expone tres contratos formales para que un host externo lo opere sin cono
 
 Detalle completo de capacidades, permisos, estados, errores y operaciones destructivas: **[docs/HARNESS.md](./docs/HARNESS.md)**.
 
+## Operación (runbook único)
+
+Arranque, supervisor, outbox, backups con drill, actualización y emergencias:
+**[docs/RUNBOOK-CRM.md](./docs/RUNBOOK-CRM.md)**. Actualización sin Docker:
+`./scripts/instalar-crm.sh --actualizar` (idempotente, respalda antes de tocar).
+
 ## Contratos (fuente única de verdad)
 
 El inventario completo de endpoints de la API — método, autenticación, org-scoping y archivo que
