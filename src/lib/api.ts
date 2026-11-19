@@ -316,6 +316,56 @@ class ApiClient {
     return this.proxyPost('/disconnect')
   }
 
+  // ---------- (F2) Conexiones WhatsApp multi-número por organización ----------
+  // La autoridad vive en el servidor (requireAuth + isAdmin + plan); el
+  // cliente solo consume. Los tokens jamás pasan por aquí en claro salvo el
+  // que el ADMIN pega UNA VEZ en el alta manual (el servidor lo cifra).
+
+  /** Lista de conexiones de la organización + cupo del plan. */
+  async getWaConnections() {
+    return this.request('/whatsapp/connections')
+  }
+
+  /** Detalle de UNA conexión (incluye últimos 20 eventos de auditoría). */
+  async getWaConnection(id: string) {
+    return this.request(`/whatsapp/connections/${id}`)
+  }
+
+  /** Alta manual Cloud API (admin): phoneNumberId + accessToken (se cifra server-side). */
+  async addWaConnection(data: {
+    phoneNumberId: string
+    accessToken: string
+    wabaId?: string
+    phoneNumber?: string
+    displayName?: string
+    metaAppSecret?: string
+  }) {
+    return this.request('/whatsapp/connections', { method: 'POST', body: JSON.stringify(data) })
+  }
+
+  /** Desconexión (admin): destruye el token cifrado. `revoked` marca revocación. */
+  async disconnectWaConnection(id: string, opts?: { revoked?: boolean }) {
+    return this.request(`/whatsapp/connections/${id}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ revoked: opts?.revoked === true }),
+    })
+  }
+
+  /** Revalida el token contra Graph API y actualiza el estado. */
+  async verifyWaConnection(id: string) {
+    return this.request(`/whatsapp/connections/${id}/verify`, { method: 'POST', body: '{}' })
+  }
+
+  /** Config PÚBLICA + estado firmado anti-CSRF para lanzar Embedded Signup. */
+  async getEmbeddedSignupConfig() {
+    return this.request('/whatsapp/embedded-signup')
+  }
+
+  /** Callback oficial Embedded Signup: code de Meta → conexión cifrada. */
+  async completeEmbeddedSignup(data: { code: string; state: string; phoneNumberId: string; wabaId?: string }) {
+    return this.request('/whatsapp/embedded-signup', { method: 'POST', body: JSON.stringify(data) })
+  }
+
   async getWhatsAppConversations(params?: Record<string, string>) {
     const query = params ? `?${new URLSearchParams(params).toString()}` : ''
     return this.proxyGet(`/conversations${query}`)

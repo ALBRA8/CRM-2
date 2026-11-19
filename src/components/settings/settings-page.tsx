@@ -69,6 +69,7 @@ import { TemplatesTab } from './templates-tab'
 import { CustomFieldsTab } from './custom-fields-tab'
 import { CurrencySelector } from './currency-selector'
 import { InstagramTab } from './instagram-tab'
+import { ConnectionsTab } from './connections-tab'
 import { TikTokTab } from './tiktok-tab'
 import { FacebookTab, MessengerIcon } from './facebook-tab'
 import { PushNotificationsCard } from './push-notifications-card'
@@ -1079,6 +1080,9 @@ export function SettingsPage() {
           <TabsTrigger value="whatsapp" className="gap-1.5 text-xs">
             <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
           </TabsTrigger>
+          <TabsTrigger value="conexiones" className="gap-1.5 text-xs">
+            <Smartphone className="w-3.5 h-3.5" /> Números WA
+          </TabsTrigger>
           <TabsTrigger value="instagram" className="gap-1.5 text-xs">
             <Instagram className="w-3.5 h-3.5" /> Instagram
           </TabsTrigger>
@@ -2088,6 +2092,11 @@ export function SettingsPage() {
               </CardContent>
             </Card>
           </motion.div>
+        </TabsContent>
+
+        {/* ============ TAB: (F2) Conexiones multi-número ============ */}
+        <TabsContent value="conexiones" className="space-y-6 mt-4">
+          <ConnectionsTab />
         </TabsContent>
 
         {/* ============ TAB: Instagram ============ */}
