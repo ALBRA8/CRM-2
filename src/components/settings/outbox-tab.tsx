@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dialog'
 import { AlertTriangle, CheckCircle2, Loader2, RefreshCw, ShieldAlert, Clock } from 'lucide-react'
 import { toast } from 'sonner'
+import { mensajeDeError } from '@/lib/errores'
 import { motion } from 'framer-motion'
 import {
   validateReconciliationEvidence, canSubmitReconciliation, resolutionLabel,
@@ -65,7 +66,7 @@ export function OutboxTab() {
       const res = (await api.getUncertainOutbox()) as { uncertain?: UncertainRow[] }
       setRows(res.uncertain || [])
     } catch (err) {
-      if (initial) toast.error(err instanceof Error ? err.message : 'No se pudo cargar la conciliación')
+      if (initial) { const e = mensajeDeError(err); toast.error(e.titulo, { description: e.solucion }) }
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -103,7 +104,7 @@ export function OutboxTab() {
       setPending(null)
       await load(false)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'No se pudo conciliar')
+      const e = mensajeDeError(err); toast.error(e.titulo, { description: e.solucion })
     } finally {
       setSubmitting(false)
     }

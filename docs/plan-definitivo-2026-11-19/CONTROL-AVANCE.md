@@ -15,10 +15,11 @@ Este documento se actualiza por tarea al cerrarla, con estado, archivos y prueba
 | M7 | Criterio unificación doble bandeja | **Terminada 2026-11-20** | CRITERIO-BANDEJA-UNICA-M7.md; dedup + 14 tests |
 | F3 | Filtros canal/cuenta + búsqueda bandeja | **Terminada 2026-11-20** | API + UI + 24 tests (unit 15, integ 9) |
 | M8 | Reconciliación operable UNCERTAIN | **Terminada 2026-11-20** | vista operador + API + 22 tests |
+| U3 | Catálogo de errores accionables | **Terminada 2026-11-20** | catálogo 20+ errores + 31 tests + ErrorAlert |
 | E4 | Readiness/CHANGELOG | En desarrollo | — |
 | D4 | Check de cifras en CI | En desarrollo | — |
 | E3 | Análisis | En desarrollo | — |
-| F4 | — (fase 3/4) | Pendiente (siguiente en cola) | — |
+| U1 | Navegación única 5+1 | Pendiente (siguiente en cola) | — |
 | F5 | Salud / monitor de conexiones | Pendiente (orden recomendado tras F2/M7) | — |
 | U1–U5 | Experiencia de usuario | Pendiente | U1 nav 5+1 aprobada por instrucción global |
 | I1–I3 | Comerciales/instalación | Pendiente | — |
@@ -141,3 +142,29 @@ caso — cumplido.
 **Reversión.** Vista y ruta aditivas; endpoints internos intactos; `git revert` limpia.
 Nota de dependencia externa: los inciertos que solo existen dentro de WP (fuera de CRM-ALBRA)
 quedan fuera de esta vista, según el plan.
+
+## U3 — Catálogo de errores accionables (cerrada 2026-11-20)
+
+**Alcance.** Catálogo central `src/lib/errores.ts` con los 20 errores más frecuentes del CRM:
+
+- Cada entrada: código estable, título (qué pasó), solución (qué hacer) y paso a paso.
+- Mapea los códigos reales del sistema: `META_ERROR_<n>` (131047 re-engaje 24 h, 131056 rate limit,
+  131030/131026 número inválido, 132xxx plantillas, 136/137 cuenta restringida), `META_HTTP_<status>`,
+  `INVALID_PROVIDER_INPUT`, estados de outbox (queued/unknown) y errores HTTP (401/402/403/404/429/5xx).
+- `mensajeDeError()` NUNCA lanza: cualquier entrada (string, Error, `{error}` de la API) se traduce;
+  lo no reconocido cae en `ERROR_DESCONOCIDO` con el detalle técnico preservado para soporte.
+- Componente unificado `src/components/ui/error-alert.tsx`: título + solución + paso, con el detalle
+  técnico colapsado (“Detalle técnico para soporte”).
+- Reemplazo progresivo aplicado en las superficies más frecuentes: bandeja (carga/envío),
+  Conexiones (crear/verificar/desconectar/Embedded Signup) y Envíos (conciliación): los toasts
+  ahora muestran título y solución del catálogo en lugar del texto técnico crudo.
+
+**Invariantes testeadas** (`tests/unit/errores.test.ts`, 31 pruebas): cero archivos/rutas/comandos/
+SQL en los textos; campos completos y accionables; códigos únicos; traducción correcta de códigos
+Meta y respuestas de API; fallback seguro.
+
+**Criterios de aceptación.** Los 20 errores más frecuentes con título, solución y paso a paso;
+test de invariantes en verde — cumplido (cobertura progresiva iniciada en las 3 superficies
+principales; el resto de pantallas migran con el mismo patrón).
+
+**Reversión.** Catálogo y componente aditivos; `git revert` limpia.

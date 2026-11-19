@@ -37,6 +37,7 @@ import {
   History, AlertTriangle, CheckCircle, WifiOff, ExternalLink,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { mensajeDeError } from '@/lib/errores'
 import { motion } from 'framer-motion'
 import {
   connectionStatusBadge, connectionSourceLabel, eventTypeLabel, planUsageText,
@@ -118,7 +119,7 @@ export function ConnectionsTab() {
       const res = (await api.getWaConnections()) as WaConnectionsResponse
       setData(res)
     } catch (err) {
-      if (initial) toast.error('No se pudieron cargar las conexiones')
+      if (initial) { const e = mensajeDeError(err); toast.error(e.titulo, { description: e.solucion }) }
       console.error(err)
     } finally {
       setLoading(false)
@@ -185,7 +186,7 @@ export function ConnectionsTab() {
             esStateRef.current = ''
             await load(false)
           } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Embedded Signup falló')
+            const e = mensajeDeError(err); toast.error(e.titulo, { description: e.solucion })
           } finally {
             setEsBusy(false)
           }
@@ -215,7 +216,7 @@ export function ConnectionsTab() {
       )
     } catch (err) {
       setEsBusy(false)
-      toast.error(err instanceof Error ? err.message : 'No se pudo iniciar el flujo de Meta')
+      const e = mensajeDeError(err); toast.error(e.titulo, { description: e.solucion })
     }
   }
 
@@ -238,7 +239,7 @@ export function ConnectionsTab() {
       setShowForm(false)
       await load(false)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'No se pudo registrar la conexión')
+      const e = mensajeDeError(err); toast.error(e.titulo, { description: e.solucion })
     } finally {
       setCreating(false)
     }
@@ -258,7 +259,7 @@ export function ConnectionsTab() {
       setPendingDisconnect(null)
       await load(false)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'No se pudo desconectar')
+      const e = mensajeDeError(err); toast.error(e.titulo, { description: e.solucion })
     } finally {
       setDisconnecting(false)
     }
@@ -270,7 +271,7 @@ export function ConnectionsTab() {
       toast.success(`Token verificado contra Meta (${res.status})`)
       await load(false)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Verificación fallida')
+      const e = mensajeDeError(err); toast.error(e.titulo, { description: e.solucion })
       await load(false)
     }
   }
@@ -281,7 +282,7 @@ export function ConnectionsTab() {
       const d = (await api.getWaConnection(c.id)) as WaConnectionDetail
       setDetail(d)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'No se pudo cargar el detalle')
+      const e = mensajeDeError(err); toast.error(e.titulo, { description: e.solucion })
     } finally {
       setDetailLoading(false)
     }

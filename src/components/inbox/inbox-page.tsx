@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Inbox as InboxIcon, MessageCircle, Send as SendIcon, Instagram, RefreshCw, Loader2, Mic, Music2, Search } from 'lucide-react'
 import { toast } from 'sonner'
+import { mensajeDeError } from '@/lib/errores'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { api } from '@/lib/api'
@@ -87,8 +88,8 @@ export function InboxPage() {
       const res = (await api.getInbox(params)) as { conversations?: InboxConversation[]; accounts?: string[] }
       setConversations(res.conversations || [])
       if (res.accounts) setAccounts(res.accounts)
-    } catch {
-      if (!silent) toast.error('No se pudo cargar la bandeja')
+    } catch (err) {
+      if (!silent) { const e = mensajeDeError(err); toast.error(e.titulo, { description: e.solucion }) }
     } finally {
       setLoadingList(false)
     }
@@ -104,7 +105,7 @@ export function InboxPage() {
       // Abierta → ya no está "sin leer" en la lista local
       setConversations((prev) => prev.map((c) => (c.key === conv.key ? { ...c, unreadCount: 0 } : c)))
     } catch {
-      toast.error('No se pudo cargar la conversación')
+      toast.error(mensajeDeError('CONEXION_CAIDA').titulo, { description: 'Vuelve a abrir la conversación en unos segundos.' })
     } finally {
       setLoadingThread(false)
     }
@@ -194,7 +195,7 @@ export function InboxPage() {
       } else {
         setMessages((prev) => prev.filter((m) => m.id !== optimistic.id))
         setDraft(text)
-        toast.error(err instanceof Error ? err.message : 'No se pudo enviar el mensaje')
+        const e = mensajeDeError(err); toast.error(e.titulo, { description: e.solucion })
       }
     } finally {
       setSending(false)
