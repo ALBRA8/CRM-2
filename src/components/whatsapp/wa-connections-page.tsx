@@ -43,6 +43,7 @@ import {
   QrCode, AlertTriangle, ExternalLink, Phone, Landmark, Link2,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { ErrorAlert } from '@/components/ui/error-alert'
 import {
   type WaConnectionView, type WaPlanInfo, type WaEventView,
   statusMeta, isActiveStatus, sortConnections, planUsageSummary,
@@ -412,18 +413,7 @@ export function WaConnectionsPage() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             {embeddedPhase === 'error' ? (
-              <div className="flex items-start gap-2 text-red-700">
-                <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div className="text-sm">
-                  <p className="font-semibold">El flujo de Meta no se completó</p>
-                  <p className="text-xs mt-0.5 text-red-600">{embeddedError}</p>
-                  {isAdmin && (
-                    <p className="text-xs mt-1 text-slate-500">
-                      Puedes registrar el número manualmente con el token directo.
-                    </p>
-                  )}
-                </div>
-              </div>
+              <ErrorAlert input={embeddedError ?? 'generic'} tone="error" />
             ) : (
               <div className="flex items-center gap-2 text-slate-600 text-sm">
                 <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
