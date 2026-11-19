@@ -233,6 +233,27 @@ restaurada.
 
 ---
 
+## 8b. Instalador/actualizador idempotente (sin Docker — O3)
+
+Para instalar o actualizar SIN Docker (Node en la máquina, SQLite en archivo),
+un solo comando seguro e idempotente:
+
+```bash
+./scripts/instalar-crm.sh               # instalar
+./scripts/instalar-crm.sh --actualizar  # actualizar (no crea .env si falta)
+```
+
+Qué hace, en orden: (1) comprueba prerequisitos (Node 20+); (2) **respalda
+`.env` y todas las `*.db` ANTES de tocar nada** en `backups/<fecha>/` (rotación
+de los últimos 10); (3) preserva tu `.env` existente — jamás lo sobrescribe;
+(4) `npm ci`; (5) `npx prisma migrate deploy` (migraciones versionadas,
+deterministas — jamás `db push`); (6) `npm run build`; (7) valida
+`/api/health` si la app ya está corriendo y deja log completo en
+`logs/instalar-crm.log`. Ejecutarlo dos veces seguidas no pierde nada
+(idempotencia verificada: `.env` y BD con hash idéntico tras doble pasada).
+
+---
+
 ## 9. Actualizar la app
 
 ```bash
