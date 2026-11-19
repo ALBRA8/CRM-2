@@ -1410,6 +1410,19 @@ export function SettingsPage() {
                     {isWaConnected ? 'Online' : waStatus.status === 'qr_expired' ? 'QR Expirado' : isWaWaitingQr ? 'QR Listo' : isWaConnecting ? 'Conectando...' : 'Offline'}
                   </Badge>
                 </div>
+                {/* (U1) La pantalla clásica de QR salió del menú 5+1: queda
+                    accesible aquí, en Canales. La ruta /whatsapp sigue viva. */}
+                <div className="mt-3 pt-3 border-t border-slate-100">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-[11px] gap-1.5"
+                    onClick={() => useAppStore.getState().setView('whatsapp')}
+                  >
+                    <QrCode className="w-3.5 h-3.5" />
+                    Abrir la pantalla clásica de conexión (QR)
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </motion.div>

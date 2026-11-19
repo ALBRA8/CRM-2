@@ -15,8 +15,8 @@ export interface ViewState {
   quoteId?: string
 }
 
-/** Vistas sin parámetros → ruta estática. */
-const STATIC_VIEW_PATH: Record<string, string> = {
+/** Vistas sin parámetros → ruta estática. (Exportado para el check de nav U1.) */
+export const STATIC_VIEW_PATH: Record<string, string> = {
   dashboard: '/dashboard',
   clients: '/clients',
   opportunities: '/pipeline',

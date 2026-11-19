@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useAppStore } from '@/lib/store'
 import { can } from '@/lib/rbac'
+import { navSectionsFor, allNavItems, type NavSection } from '@/lib/nav'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
@@ -27,6 +28,7 @@ import {
   Clock,
   Layers,
   HeartPulse,
+  type LucideIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -45,35 +47,38 @@ import {
 } from '@/components/ui/tooltip'
 import { motion, AnimatePresence } from 'framer-motion'
 
-// Fase 2 RBAC: `perm` = capacidad mínima requerida para ver el ítem.
-// El servidor SIEMPRE re-valida (requirePermission); aquí es solo UX.
-const navItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, perm: 'clients.read' },
-  { id: 'clients', label: 'Clientes', icon: Users, perm: 'clients.read' },
-  { id: 'opportunities', label: 'Oportunidades', icon: TrendingUp, perm: 'opportunities.read' },
-  { id: 'products', label: 'Productos', icon: Package, perm: 'services.read' },
-  { id: 'calendar', label: 'Calendario', icon: Calendar, perm: 'reservations.read' },
-  { id: 'quotes', label: 'Cotizaciones', icon: FileText, perm: 'quotes.read' },
-  { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, perm: 'whatsapp.read' },
-  { id: 'inbox', label: 'Bandeja', icon: Inbox, perm: 'whatsapp.read' },
-  { id: 'automations', label: 'Automatizaciones', icon: Zap, perm: 'automations.read' },
-  { id: 'health', label: 'Salud', icon: HeartPulse, perm: 'team.manage' },
-  { id: 'finances', label: 'Finanzas', icon: DollarSign, perm: 'transactions.read' },
-  { id: 'reports', label: 'Reportes', icon: BarChart3, perm: 'reports.read' },
-  { id: 'team', label: 'Equipo', icon: Shield, perm: 'team.manage' },
-  { id: 'activity', label: 'Actividad', icon: Clock, perm: 'activity.read' },
-  { id: 'settings', label: 'Configuración', icon: Settings, perm: 'settings.read' },
-  // Plano de control multi-organización: solo visible con rol superadmin.
-  { id: 'super', label: 'Super Admin', icon: ShieldCheck, perm: 'platform.read' },
-]
+// (U1) Navegación 5+1: el modelo vive en src/lib/nav.ts (puro, testeado);
+// aquí solo el mapa de iconos y el render. `whatsapp` (QR clásica) sale del
+// menú: sigue routable en /whatsapp y accesible desde Ajustes → Canales.
+const NAV_ICONS: Record<string, LucideIcon> = {
+  dashboard: LayoutDashboard,
+  clients: Users,
+  inbox: Inbox,
+  opportunities: TrendingUp,
+  quotes: FileText,
+  products: Package,
+  calendar: Calendar,
+  finances: DollarSign,
+  reports: BarChart3,
+  settings: Settings,
+  automations: Zap,
+  health: HeartPulse,
+  team: Shield,
+  activity: Clock,
+  super: ShieldCheck,
+}
+
+function visibleSections(role: string | undefined): NavSection[] {
+  return navSectionsFor(role, can)
+}
 
 export function Sidebar() {
   const { view, setView, user, sidebarCollapsed, toggleSidebar, logout } = useAppStore()
   // (ecosistema 2026-11-17) acceso directo a la capa 2A y 2B desde el CRM
   const [ecoOpen, setEcoOpen] = useState(false)
 
-  // El usuario solo ve los módulos que su rol puede ejercer
-  const visibleNavItems = navItems.filter((item) => can(user?.role, item.perm))
+  // El usuario solo ve los módulos que su rol puede ejercer (secciones 5+1)
+  const sections = visibleSections(user?.role)
 
   const initials = user?.name
     ?.split(' ')
@@ -110,61 +115,77 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Navigation */}
+      {/* Navigation (secciones 5+1) */}
       <nav className="flex-1 py-2 px-1.5 space-y-0.5 overflow-y-auto">
-        {visibleNavItems.map((item) => {
-          const isActive = view === item.id
-          const Icon = item.icon
-
-          const navButton = (
-            <button
-              onClick={() => setView(item.id)}
-              className={cn(
-                'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 relative group',
-                isActive
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              )}
+        {sections.map((section) => {
+          // Cabecera de sección: oculta en modo colapsado (queda el divisor).
+          const header = !sidebarCollapsed ? (
+            <div
+              key={`h-${section.id}`}
+              className="text-[9px] font-bold uppercase tracking-widest text-slate-500 px-2.5 pt-2.5 pb-1 select-none"
             >
-              {/* Active left border accent */}
-              {isActive && (
-                <motion.div
-                  layoutId="activeNavBorder"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-300 rounded-r-full"
-                  transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                />
-              )}
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              <AnimatePresence>
-                {!sidebarCollapsed && (
-                  <motion.span
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 'auto' }}
-                    exit={{ opacity: 0, width: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="text-[13px] font-medium whitespace-nowrap overflow-hidden"
-                  >
-                    {item.label}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </button>
+              {section.title}
+            </div>
+          ) : (
+            <div key={`h-${section.id}`} className="border-t border-slate-700/40 my-1.5 mx-1" />
           )
 
-          if (sidebarCollapsed) {
-            return (
-              <Tooltip key={item.id}>
-                <TooltipTrigger asChild>
-                  {navButton}
-                </TooltipTrigger>
-                <TooltipContent side="right" sideOffset={8}>
-                  {item.label}
-                </TooltipContent>
-              </Tooltip>
-            )
-          }
+          const buttons = section.items.map((item) => {
+            const isActive = view === item.id
+            const Icon = NAV_ICONS[item.id] ?? Layers
 
-          return <div key={item.id}>{navButton}</div>
+            const navButton = (
+              <button
+                onClick={() => setView(item.id)}
+                className={cn(
+                  'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 relative group',
+                  isActive
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                )}
+              >
+                {/* Active left border accent */}
+                {isActive && (
+                  <motion.div
+                    layoutId="activeNavBorder"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-300 rounded-r-full"
+                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                  />
+                )}
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                <AnimatePresence>
+                  {!sidebarCollapsed && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: 'auto' }}
+                      exit={{ opacity: 0, width: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="text-[13px] font-medium whitespace-nowrap overflow-hidden"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </button>
+            )
+
+            if (sidebarCollapsed) {
+              return (
+                <Tooltip key={item.id}>
+                  <TooltipTrigger asChild>
+                    {navButton}
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={8}>
+                    {item.label}
+                  </TooltipContent>
+                </Tooltip>
+              )
+            }
+
+            return <div key={item.id}>{navButton}</div>
+          })
+
+          return [header, ...buttons]
         })}
       </nav>
 
@@ -301,33 +322,40 @@ export function MobileSidebar({ open, onClose }: { open: boolean; onClose: () =>
               </Button>
             </div>
 
-            {/* Navigation */}
+            {/* Navigation (secciones 5+1) */}
             <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-              {navItems.filter((item) => can(user?.role, item.perm)).map((item) => {
-                const isActive = view === item.id
-                const Icon = item.icon
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setView(item.id)
-                      onClose()
-                    }}
-                    className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 relative',
-                      isActive
-                        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25'
-                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                    )}
-                  >
-                    {isActive && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-300 rounded-r-full" />
-                    )}
-                    <Icon className="w-5 h-5 flex-shrink-0" />
-                    <span className="text-sm font-medium">{item.label}</span>
-                  </button>
-                )
-              })}
+              {visibleSections(user?.role).map((section) => (
+                <div key={section.id}>
+                  <div className="text-[9px] font-bold uppercase tracking-widest text-slate-500 px-3 pt-2.5 pb-1 select-none">
+                    {section.title}
+                  </div>
+                  {section.items.map((item) => {
+                    const isActive = view === item.id
+                    const Icon = NAV_ICONS[item.id] ?? Layers
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setView(item.id)
+                          onClose()
+                        }}
+                        className={cn(
+                          'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 relative',
+                          isActive
+                            ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25'
+                            : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                        )}
+                      >
+                        {isActive && (
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-300 rounded-r-full" />
+                        )}
+                        <Icon className="w-5 h-5 flex-shrink-0" />
+                        <span className="text-sm font-medium">{item.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              ))}
             </nav>
 
             {/* Acceso directo al ecosistema (capa 2A y 2B) */}
