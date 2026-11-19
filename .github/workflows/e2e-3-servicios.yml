@@ -1,0 +1,85 @@
+# (I1 / F7-T01) E2E de 3 servicios con corrida programada.
+#
+# El flujo oficial `npm run e2e:3` (scripts/e2e-3-servicios.mjs, 20 verificaciones,
+# ALLOW_REAL_DISPATCH=false) verifica los contratos entre CRM, WHATSPOWER (2A) y
+# ULTRA (2B) levantando los tres servicios localmente.
+#
+# REQUISITO (decisión A7 del propietario): el runner necesita leer los repos
+# privados WP/ULTRA. Configure el secreto E2E_REPOS_TOKEN (PAT con permiso de
+# LECTURA a ALBRA8/WHATSPOWER y ALBRA8/WHATSPOWER-Ultra). Sin el secreto, el job
+# SE OMITE con aviso (no falla: no rompe el CI mientras la decisión esté abierta).
+#
+# Disparos: cron diario 04:30 UTC + manual (workflow_dispatch). Los resultados
+# quedan visibles en la pestaña Actions; una corrida roja indica deriva de contrato.
+name: E2E 3 servicios (contratos CRM-WP-ULTRA)
+
+on:
+  schedule:
+    - cron: '30 4 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: E2E de 3 servicios
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout CRM-ALBRA
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verificar token de lectura a WP/ULTRA (A7)
+        id: token
+        run: |
+          if [ -z "${{ secrets.E2E_REPOS_TOKEN }}" ]; then
+            echo "::notice::E2E_REPOS_TOKEN no configurado (decisión A7 abierta): la corrida programada se OMITE. Configure el PAT de lectura para habilitar el E2E multi-repo."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Clonar WHATSPOWER y ULTRA en modo lectura
+        if: steps.token.outputs.skip == 'false'
+        run: |
+          git clone --depth 1 "https://x-access-token:${{ secrets.E2E_REPOS_TOKEN }}@github.com/ALBRA8/WHATSPOWER.git" ../WHATSPOWER
+          git clone --depth 1 "https://x-access-token:${{ secrets.E2E_REPOS_TOKEN }}@github.com/ALBRA8/WHATSPOWER-Ultra.git" ../WHATSPOWER-Ultra
+          # Modo lectura estricto: nada del E2E modifica los repos fuente.
+          git -C ../WHATSPOWER remote set-url --push origin DISABLED
+          git -C ../WHATSPOWER-Ultra remote set-url --push origin DISABLED
+
+      - name: Instalar dependencias de los tres repos
+        if: steps.token.outputs.skip == 'false'
+        run: |
+          npm ci --no-audit --no-fund
+          (cd ../WHATSPOWER && npm install --no-audit --no-fund)
+          (cd ../WHATSPOWER-Ultra && npm install --no-audit --no-fund)
+
+      - name: Generar secretos efímeros (dummy, solo para el E2E)
+        if: steps.token.outputs.skip == 'false'
+        run: |
+          echo "APP_SECRET=$(openssl rand -hex 32)" >> e2e.env
+          echo "APP_ENCRYPTION_KEY=$(openssl rand -hex 32)" >> e2e.env
+          echo "INTERNAL_API_SECRET=$(openssl rand -hex 32)" >> e2e.env
+          echo "ECOSYSTEM_SSO_SECRET=$(openssl rand -hex 32)" >> e2e.env
+          echo "ALLOW_REAL_DISPATCH=false" >> e2e.env
+
+      - name: Ejecutar E2E de 3 servicios (envío real JAMÁS activado)
+        if: steps.token.outputs.skip == 'false'
+        run: |
+          set -a; source e2e.env; set +a
+          E2E_CRM_DIR="$PWD" E2E_WP_DIR="$PWD/../WHATSPOWER" E2E_ULTRA_DIR="$PWD/../WHATSPOWER-Ultra" \
+            npm run e2e:3
+
+      - name: Publicar resultado en el resumen del run
+        if: always() && steps.token.outputs.skip == 'false'
+        run: |
+          echo "### E2E 3 servicios" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Resultado: ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Envío real: desactivado (ALLOW_REAL_DISPATCH=false)" >> "$GITHUB_STEP_SUMMARY"

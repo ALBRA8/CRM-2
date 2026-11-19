@@ -12,7 +12,7 @@
 | 6 | APIs verificadas | ✅ CRM 125 rutas auditadas (todas con guard o pública justificada; cifra conciliada 2026-11-20, ver bloque canónico); WP/ULTRA con puerta Bearer + HMAC | AUD-2 + verify-doc-figures |
 | 7 | Autenticación y autorización | ✅ JWT org-scoped + RBAC; QR/admin gated; rate limiting login/forgot/reset | suites de seguridad |
 | 8 | Funcionalidades principales | ✅ Salvo lo documentado en AUDIT_REPORT §6 (A2 wiring, studios: Historial/addNode) | AUD-3 |
-| 9 | Pruebas unitarias | ✅ CRM 935/935 en 106 archivos (2026-11-20, cifras del cierre E4/D4); WP/ULTRA fuera de este repositorio | suite + verify-doc-figures |
+| 9 | Pruebas unitarias | ✅ CRM 955/955 en 107 archivos (2026-11-20, cifras del cierre E4/D4/I2); WP/ULTRA fuera de este repositorio | suite + verify-doc-figures |
 | 10 | Pruebas de integración | ✅ Incluidas en las suites (bridge, contracts, e2e simulado) | suites |
 | 11 | E2E | ⚠️ CRM: smoke histórico ok; ULTRA: pilot-safeguards/bajas requieren `.env` (fuera de CI, documentado) | AUD-5 #6 |
 | 12 | Seguridad revisada | ✅ 57 hallazgos consolidados; 0 críticos abiertos; OWASP top revisado | AUDIT_REPORT |
@@ -49,7 +49,7 @@ sigue se escribe a mano:
 
 <!-- FIGURAS-CANONICAS-INICIO (verificado por scripts/verify-doc-figures.mjs — no editar a mano) -->
 rutas_api: 125
-archivos_prueba: 106
+archivos_prueba: 107
 modelos_prisma: 46
 migraciones: 17
 componentes_ui: 104
@@ -57,7 +57,7 @@ componentes_ui: 104
 
 Estado verificado en esta fecha (repositorio CRM-ALBRA, rama de construcción):
 
-- Suite completa en verde: **935/935 pruebas en 106 archivos**; `tsc --noEmit` 0 errores; eslint limpio; `next build` OK.
+- Suite completa en verde: **955/955 pruebas en 107 archivos**; `tsc --noEmit` 0 errores; eslint limpio; `next build` OK.
 - Las cifras históricas de entradas anteriores (475, 569, 781… 920) son el registro de SU fecha y no se reescriben: la historia no se miente, se ancla.
 - Las secciones de WP/ULTRA de este documento corresponden a sus propios repos (dependencia externa); sus suites no se cuentan aquí.
 - Re-ejecutar en cada release: `node scripts/verify-doc-figures.mjs` (o `--print` para actualizar el bloque).
