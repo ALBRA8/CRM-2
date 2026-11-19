@@ -26,6 +26,7 @@ const STATIC_VIEW_PATH: Record<string, string> = {
   whatsapp: '/whatsapp',
   inbox: '/inbox',
   automations: '/automations',
+  health: '/health',
   finances: '/finances',
   reports: '/reports',
   team: '/team',
@@ -52,6 +53,9 @@ export const VIEW_PERMISSIONS: Record<string, string> = {
   whatsapp: 'whatsapp.read',
   inbox: 'whatsapp.read',
   automations: 'automations.read',
+  // Salud (F5): mismo alcance que la API del doctor (requireAdmin); en el
+  // plano UX se aproxima con 'team.manage', capacidad exclusiva de owner/admin.
+  health: 'team.manage',
   finances: 'transactions.read',
   reports: 'reports.read',
   team: 'team.manage',

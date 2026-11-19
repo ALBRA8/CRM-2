@@ -33,6 +33,8 @@ import { format, formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
+import { OnboardingWizard } from '@/components/health/onboarding-wizard'
+import { wizardComplete, wizardSteps, type DoctorResponse } from '@/lib/health-ui'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -440,6 +442,9 @@ export function DashboardPage() {
         <p className="text-sm text-slate-500 mt-1">Resumen general de tu negocio</p>
       </div>
 
+      {/* (F5) Puesta en marcha guiada: solo admins y solo si falta un paso */}
+      <DashboardOnboarding />
+
       {/* ─── KPI Cards ─── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi, index) => {
@@ -748,4 +753,28 @@ export function DashboardPage() {
       `}</style>
     </div>
   )
+}
+
+/* ──── (F5) Puesta en marcha guiada en el dashboard ────
+ * Consulta el doctor (aislado por org) y muestra el wizard SOLO si el
+ * usuario es admin (403 → nada) y algún paso está sin validar de verdad.
+ * Una instalación completa nunca lo ve. */
+function DashboardOnboarding() {
+  const [steps, setSteps] = useState<ReturnType<typeof wizardSteps> | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    fetch('/api/doctor', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+      .then((j: DoctorResponse) => {
+        if (!alive) return
+        const s = wizardSteps(j)
+        setSteps(wizardComplete(s) ? null : s)
+      })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [])
+
+  if (!steps) return null
+  return <OnboardingWizard steps={steps} />
 }

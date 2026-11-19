@@ -26,6 +26,7 @@ import {
   ShieldCheck,
   Clock,
   Layers,
+  HeartPulse,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -56,6 +57,7 @@ const navItems = [
   { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, perm: 'whatsapp.read' },
   { id: 'inbox', label: 'Bandeja', icon: Inbox, perm: 'whatsapp.read' },
   { id: 'automations', label: 'Automatizaciones', icon: Zap, perm: 'automations.read' },
+  { id: 'health', label: 'Salud', icon: HeartPulse, perm: 'team.manage' },
   { id: 'finances', label: 'Finanzas', icon: DollarSign, perm: 'transactions.read' },
   { id: 'reports', label: 'Reportes', icon: BarChart3, perm: 'reports.read' },
   { id: 'team', label: 'Equipo', icon: Shield, perm: 'team.manage' },

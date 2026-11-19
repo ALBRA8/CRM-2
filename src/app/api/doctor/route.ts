@@ -153,7 +153,25 @@ export async function GET(req: NextRequest) {
       data: { activas: active, fallidas24h: failed24h, enEspera: waiting, huerfanas: orphans, atrasadas: overdue },
     })
 
-    // ---------- 8) Integraciones (solo booleans, jamás secretos) ----------
+    // ---------- 8) Primer envío de canal (F5: wizard paso 4, solo lectura) ----------
+    // Valida de verdad que la organización ya sacó al menos un mensaje de la
+    // cola de canales (sent o unknown — un incierto también probó el camino).
+    try {
+      const salidos = await db.channelOutboundMessage.count({
+        where: { status: { in: ['sent', 'unknown'] }, conversation: { organizationId: auth.orgId } },
+      })
+      checks.push({
+        id: 'test-send',
+        label: 'Primer envío de canal',
+        status: salidos > 0 ? 'ok' : 'warn',
+        detail: salidos > 0 ? undefined : 'Aún no hay envíos salidos de la cola: envía un mensaje de prueba desde la Bandeja',
+        data: { salidos },
+      })
+    } catch {
+      checks.push({ id: 'test-send', label: 'Primer envío de canal', status: 'warn', detail: 'No se pudo consultar la cola de canales' })
+    }
+
+    // ---------- 9) Integraciones (solo booleans, jamás secretos) ----------
     const integ = (await db.integration.findUnique({ where: { organizationId: auth.orgId } })) as
       | { telegramBotTokenEnc?: string | null; instagramTokenEnc?: string | null; enableGoogle?: boolean } | null
     checks.push({
