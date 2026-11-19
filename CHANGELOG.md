@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 2026-11-20 — Construcción del plan definitivo v2.0 (oleadas F2→O2) y cifras conciliadas (E4)
+
+- **Construcción** (rama `docs/plan-definitivo-crm-2026-11-19` + ramas `impl/*`): F2 (UI de conexiones WhatsApp multi-número), M7 (criterio de unificación de bandeja), F3 (filtros y búsqueda server-side), M8 (conciliación operable UNCERTAIN), E7 (test backup/restore roundtrip), F4 (agenda semana/día), F5 (pantalla de Salud + wizard de puesta en marcha), U1 (navegación 5+1, una sola bandeja), U2 (dashboard "Requiere atención"), U3 (catálogo de errores accionables), U4 (ajustes por dominio), I3 (contratos del ecosistema), O3 (instalador idempotente), S6 (saneamiento de scripts e2e históricos), O2 (runbook único).
+- **Suite**: 781/781 → **930/930** pruebas en 105 archivos; `tsc --noEmit` 0 errores; eslint limpio; `next build` OK.
+- **E4 — cifras conciliadas**: `PRODUCTION_READINESS.md` deja de citar cifras viejas (107 rutas, 475/569 pruebas) y ahora incluye un **bloque canónico** recalcado por `scripts/verify-doc-figures.mjs` (rutas_api=125, archivos_prueba=105, modelos_prisma=46, migraciones=17, componentes_ui=104). El script es re-ejecutable en cada release; una cifra desalineada sale con exit 1 y la diferencia exacta. Las entradas históricas de este archivo NO se reescriben (son el registro de su fecha).
+- **Control de avance**: `docs/CONTROL-AVANCE.md` con el estado de las 48 tareas del plan.
+
 ## 2026-11-17 — check:pii sin datos reales (hashes con sal, denylist local y whitelist exacta)
 
 - **`fix(pii)`**:

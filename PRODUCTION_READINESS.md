@@ -9,10 +9,10 @@
 | 3 | Aplicación inicia correctamente | ✅ Guards fail-fast de producción validados por tests (ENV-01..03 WP, ENV ULTRA) | suites |
 | 4 | Base de datos funcional | ✅ Prisma (CRM) + SQLite con migraciones aditivas reversibles (WP/ULTRA) | `docs/MIGRACIONES.md` |
 | 5 | Migraciones verificadas | ✅ Aditivas + rollback documentado (columnas claimed_by/claimed_at/organization_id; tablas payment_*/replay_seen) | docs |
-| 6 | APIs verificadas | ✅ CRM 107 rutas auditadas (todas con guard o pública justificada); WP/ULTRA con puerta Bearer + HMAC | AUD-2 |
+| 6 | APIs verificadas | ✅ CRM 125 rutas auditadas (todas con guard o pública justificada; cifra conciliada 2026-11-20, ver bloque canónico); WP/ULTRA con puerta Bearer + HMAC | AUD-2 + verify-doc-figures |
 | 7 | Autenticación y autorización | ✅ JWT org-scoped + RBAC; QR/admin gated; rate limiting login/forgot/reset | suites de seguridad |
 | 8 | Funcionalidades principales | ✅ Salvo lo documentado en AUDIT_REPORT §6 (A2 wiring, studios: Historial/addNode) | AUD-3 |
-| 9 | Pruebas unitarias | ✅ CRM 475/475 · WP 104/104 · ULTRA 76/76 | Ciclo 2 |
+| 9 | Pruebas unitarias | ✅ CRM 930/930 en 105 archivos (2026-11-20); WP/ULTRA fuera de este repositorio | suite + verify-doc-figures |
 | 10 | Pruebas de integración | ✅ Incluidas en las suites (bridge, contracts, e2e simulado) | suites |
 | 11 | E2E | ⚠️ CRM: smoke histórico ok; ULTRA: pilot-safeguards/bajas requieren `.env` (fuera de CI, documentado) | AUD-5 #6 |
 | 12 | Seguridad revisada | ✅ 57 hallazgos consolidados; 0 críticos abiertos; OWASP top revisado | AUDIT_REPORT |
@@ -38,6 +38,29 @@
 
 **APTO PARA STAGING / PRE-PRODUCCIÓN HOY.** Producción plena tras completar los 5 puntos anteriores. Ningún criterio se declaró aprobado sin evidencia; lo no ejecutable desde este entorno está marcado como ⚠️ con su causa.
 
+
+---
+
+## Verificación 2026-11-20 — cifras conciliadas con el código (E4)
+
+La «falsa confianza» documental se cierra con un bloque canónico que un script
+recuenta del código en cada corrida (CI lo valida — tarea D4). Nada de lo que
+sigue se escribe a mano:
+
+<!-- FIGURAS-CANONICAS-INICIO (verificado por scripts/verify-doc-figures.mjs — no editar a mano) -->
+rutas_api: 125
+archivos_prueba: 105
+modelos_prisma: 46
+migraciones: 17
+componentes_ui: 104
+<!-- FIGURAS-CANONICAS-FIN -->
+
+Estado verificado en esta fecha (repositorio CRM-ALBRA, rama de construcción):
+
+- Suite completa en verde: **930/930 pruebas en 105 archivos**; `tsc --noEmit` 0 errores; eslint limpio; `next build` OK.
+- Las cifras históricas de entradas anteriores (475, 569, 781… 920) son el registro de SU fecha y no se reescriben: la historia no se miente, se ancla.
+- Las secciones de WP/ULTRA de este documento corresponden a sus propios repos (dependencia externa); sus suites no se cuentan aquí.
+- Re-ejecutar en cada release: `node scripts/verify-doc-figures.mjs` (o `--print` para actualizar el bloque).
 
 ---
 
