@@ -33,7 +33,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import {
-  Smartphone, QrCode, RefreshCw, Loader2, Plus, ShieldCheck, Trash2,
+  Smartphone, QrCode, RefreshCw, Loader2, Plus, ShieldCheck, Trash2, MessageCircle,
   History, AlertTriangle, CheckCircle, WifiOff, ExternalLink,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -82,6 +82,7 @@ declare global {
 
 export function ConnectionsTab() {
   const isAdmin = useAppStore((s) => s.isAdmin)
+  const setView = useAppStore((s) => s.setView)
 
   const [data, setData] = useState<WaConnectionsResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -426,6 +427,14 @@ export function ConnectionsTab() {
           </CardContent>
         </Card>
       )}
+
+      {/* U1: la pantalla clásica (QR de sesión única) vive fuera del menú; acceso aquí */}
+      <div className="flex justify-end">
+        <Button variant="ghost" size="sm" className="text-slate-500" onClick={() => setView('whatsapp')}>
+          <MessageCircle className="w-4 h-4" />
+          Abrir la pantalla clásica de WhatsApp (QR)
+        </Button>
+      </div>
 
       {/* Lista de conexiones */}
       <div className="space-y-3" data-testid="connection-list">

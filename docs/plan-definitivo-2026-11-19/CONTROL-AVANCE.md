@@ -16,10 +16,11 @@ Este documento se actualiza por tarea al cerrarla, con estado, archivos y prueba
 | F3 | Filtros canal/cuenta + búsqueda bandeja | **Terminada 2026-11-20** | API + UI + 24 tests (unit 15, integ 9) |
 | M8 | Reconciliación operable UNCERTAIN | **Terminada 2026-11-20** | vista operador + API + 22 tests |
 | U3 | Catálogo de errores accionables | **Terminada 2026-11-20** | catálogo 20+ errores + 31 tests + ErrorAlert |
+| U1 | Navegación única 5+1 | **Terminada 2026-11-20** | MENU_GROUPS + sidebar agrupado + 9 tests |
 | E4 | Readiness/CHANGELOG | En desarrollo | — |
 | D4 | Check de cifras en CI | En desarrollo | — |
 | E3 | Análisis | En desarrollo | — |
-| U1 | Navegación única 5+1 | Pendiente (siguiente en cola) | — |
+| U2 | Dashboard “requiere atención” | Pendiente (siguiente en cola) | — |
 | F5 | Salud / monitor de conexiones | Pendiente (orden recomendado tras F2/M7) | — |
 | U1–U5 | Experiencia de usuario | Pendiente | U1 nav 5+1 aprobada por instrucción global |
 | I1–I3 | Comerciales/instalación | Pendiente | — |
@@ -168,3 +169,27 @@ test de invariantes en verde — cumplido (cobertura progresiva iniciada en las 
 principales; el resto de pantallas migran con el mismo patrón).
 
 **Reversión.** Catálogo y componente aditivos; `git revert` limpia.
+
+## U1 — Navegación única 5+1 y una sola bandeja (cerrada 2026-11-20)
+
+**Alcance.** Menú reorganizado en 5 secciones + Admin:
+
+- **Hoy** (Inicio) · **Clientes** (Clientes, Calendario, Actividad) · **Bandeja** (ÚNICA, `inbox`)
+  · **Comercial** (Oportunidades, Productos, Cotizaciones, Finanzas, Reportes, Automatizaciones)
+  · **Ajustes** (Configuración, Equipo) · **Admin** (Super Admin, solo superadmin).
+- La QR clásica (`/whatsapp`) SALE del menú principal y queda accesible desde
+  Ajustes → Conexiones → “Abrir la pantalla clásica de WhatsApp (QR)”; la RUTA sigue viva
+  (deep-link, PWA y enlaces guardados: `viewFromPath('/whatsapp')` intacto).
+- Los ítems, orden y permisos viven en `src/lib/views.ts` (`MENU_GROUPS`, `MENU_HIDDEN_VIEWS`);
+  el sidebar de escritorio y el móvil renderizan los mismos grupos (headers visibles,
+  separadores al colapsar, tooltips con sección).
+
+**Pruebas.** `tests/unit/nav-51.test.ts` (9): estructura 5+1, bandeja única, QR oculta pero viva,
+todas las rutas anteriores resolvibles, permisos RBAC reales (con comodines), sin duplicados.
+tsc y ESLint limpios; suite completa **903/903**; arranque verificado (/, /whatsapp, /inbox
+responden igual que antes).
+
+**Criterios de aceptación.** Una sola bandeja en el menú; ninguna funcionalidad queda inaccesible
+— cumplido.
+
+**Reversión.** Cambio de layout y definición de menú; `git revert` limpia.
