@@ -43,5 +43,7 @@ jobs:
         run: node scripts/lint-baseline.mjs
       - name: Suite de tests
         run: npx vitest run
+      - name: Cifras documentales conciliadas con el código (E4/D4)
+        run: node scripts/verify-doc-figures.mjs
       - name: Build de producción
         run: npm run build

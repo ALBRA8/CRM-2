@@ -33,13 +33,30 @@ function sh(cmd) {
   return execSync(cmd, { encoding: 'utf8', cwd: ROOT }).trim()
 }
 
+/** Conteo tolerante: en un árbol sin la pieza (p. ej. entorno de prueba), cuenta 0. */
+function shSoft(cmd, fallback = 0) {
+  try {
+    return Number(sh(cmd).split('\n').pop())
+  } catch {
+    return fallback
+  }
+}
+
+function readFileSoft(path) {
+  try {
+    return readFileSync(path, 'utf8')
+  } catch {
+    return null
+  }
+}
+
 export function realFigures() {
-  const rutasApi = sh('find src/app/api -name "route.ts" | wc -l').split('\n').pop()
-  const archivosPrueba = sh('find tests -name "*.test.ts" | wc -l').split('\n').pop()
-  const schema = readFileSync(join(ROOT, 'prisma/schema.prisma'), 'utf8')
+  const rutasApi = shSoft('find src/app/api -name "route.ts" | wc -l')
+  const archivosPrueba = shSoft('find tests -name "*.test.ts" | wc -l')
+  const schema = readFileSoft(join(ROOT, 'prisma/schema.prisma')) ?? ''
   const modelos = (schema.match(/^model\s+\w+/gm) ?? []).length
-  const migraciones = sh('ls -1 prisma/migrations | grep -v migration_lock | wc -l').split('\n').pop()
-  const componentes = sh('find src/components -name "*.tsx" | wc -l').split('\n').pop()
+  const migraciones = shSoft('ls -1 prisma/migrations | grep -v migration_lock | wc -l')
+  const componentes = shSoft('find src/components -name "*.tsx" | wc -l')
   return {
     rutas_api: Number(rutasApi),
     archivos_prueba: Number(archivosPrueba),
@@ -67,6 +84,21 @@ function parseCanonicalBlock(text) {
   return figs
 }
 
+// Orden de fallos: primero el documento (falla ruidoso si falta el bloque),
+// después las cifras reales (cuento con fallo suave para entornos parciales).
+if (!existsSync(DOC)) {
+  console.error('No se encontró PRODUCTION_READINESS.md')
+  process.exit(1)
+}
+
+let declared
+try {
+  declared = parseCanonicalBlock(readFileSync(DOC, 'utf8'))
+} catch (e) {
+  console.error(`ERROR: ${e.message}`)
+  process.exit(1)
+}
+
 const figs = realFigures()
 
 if (process.argv.includes('--json')) {
@@ -79,19 +111,6 @@ if (process.argv.includes('--print')) {
   for (const [k, v] of Object.entries(figs)) console.log(`${k}: ${v}`)
   console.log('<!-- FIGURAS-CANONICAS-FIN -->')
   process.exit(0)
-}
-
-if (!existsSync(DOC)) {
-  console.error('No se encontró PRODUCTION_READINESS.md')
-  process.exit(1)
-}
-
-let declared
-try {
-  declared = parseCanonicalBlock(readFileSync(DOC, 'utf8'))
-} catch (e) {
-  console.error(`ERROR: ${e.message}`)
-  process.exit(1)
 }
 
 const mismatches = []
