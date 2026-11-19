@@ -15,9 +15,14 @@ import { db } from './db'
  *  - El merge es READ-ONLY sobre las fuentes (no migra datos): Telegram/Instagram
  *    ya viven como timeline y WhatsApp como tablas propias; la bandeja es una
  *    vista coherente encima. Cero riesgo de duplicación o pérdida.
- *  - WhatsApp manda en la conversación "global": si el mismo teléfono aparece en
- *    timeline whatsapp (Cloud API) y en el daemon, se prioriza la del daemon
- *    (es el canal principal del producto) y el timeline queda en la ficha del cliente.
+ *  - (M7, criterio 2026-11-20) UNIFICACIÓN DE LA DOBLE BANDEJA: conviven dos
+ *    generaciones de modelo (tablas WhatsApp* del daemon legacy y el modelo
+ *    canónico Channel*) y un mismo contacto podía aparecer DOS veces. El
+ *    criterio vigente es "CANÓNICO PRIMERO, LEGACY COMO RESPALDO" (la opción
+ *    recomendada del plan, reversible sin perder datos; pendiente de firma
+ *    A10 del propietario): ver dedupeInboxConversations() y
+ *    docs/CRITERIO-BANDEJA-UNICA.md. El historial completo sigue visible en
+ *    la ficha 360 — la dedup es SOLO de vista, nunca borra datos.
  *  - Nunca lanza: si un canal falla, se degrada a lista vacía de ese canal.
  */
 
@@ -116,6 +121,100 @@ function safeMetadata(raw: string | null | undefined): Record<string, unknown> {
   } catch {
     return {}
   }
+}
+
+// ---------- (M7) unificación de la doble bandeja (puros, testeables) ----------
+
+/**
+ * TRUE si la key pertenece al modelo CANÓNICO (ChannelConversation) —
+ * la generación nueva con outbox durable, estado de entrega y conexión
+ * explícita. Las legacy (wa:/tg:/ig:/fb:) son la generación anterior.
+ */
+export function isCanonicalInboxKey(key: string): boolean {
+  return typeof key === 'string' && key.startsWith('cc:')
+}
+
+/**
+ * Identidad de deduplicación de una conversación: canal + handle normalizado.
+ *  - WhatsApp: SOLO dígitos (el daemon guarda E.164 sin '+' y el webhook
+ *    canónico guarda normalizePhone, que puede incluir '+'): las dos formas
+ *    deben colisionar en la MISMA identidad.
+ *  - Telegram/Instagram/Facebook/TikTok: handle tal cual, recortado
+ *    (conservador: ante la duda NO se unifica — un falso negativo solo
+ *    muestra dos filas como hoy; un falso positivo ocultaría un hilo).
+ * Devuelve null si no hay handle útil: sin identidad no se deduplica nada.
+ */
+export function inboxIdentity(
+  conversation: Pick<InboxConversation, 'channel' | 'contactHandle'>,
+): string | null {
+  if (!conversation || typeof conversation.contactHandle !== 'string') return null
+  const handle = conversation.contactHandle.trim()
+  if (!handle) return null
+  if (conversation.channel === 'whatsapp') {
+    const digits = normalizeWaPhone(handle)
+    return digits ? `whatsapp:${digits}` : null
+  }
+  return `${conversation.channel}:${handle}`
+}
+
+/**
+ * (M7 / F3-T03) Criterio de unificación de la doble bandeja.
+ *
+ * DECISIÓN POR DEFECTO — reversible — pendiente de firma A10 del propietario:
+ *   "CANÓNICO PRIMERO, LEGACY COMO RESPALDO".
+ *
+ * Reglas, en orden:
+ *  1. Las canónicas (cc:*) SIEMPRE pasan: son el modelo a futuro. Entre sí
+ *     NO se deduplican — dos números conectados de la org son dos hilos
+ *     reales, y cada fila ya muestra su cuenta (connectionName).
+ *  2. Una legacy (wa:/tg:/ig:/fb:) se OCULTA si existe una canónica con la
+ *     MISMA identidad (canal + handle): el contacto aparece UNA sola vez, con
+ *     canal y cuenta claros. Su historial sigue íntegro en la ficha 360 y en
+ *     el dashboard: aquí solo se deja de repetir la fila.
+ *  3. Legacy duplicada dentro de su propia generación (defensa defensiva,
+ *     p. ej. dos filas daemon del mismo teléfono): gana la MÁS RECIENTE
+ *     (la lista llega ordenada desc por lastMessageAt; se conserva la
+ *     primera aparición).
+ *  4. Sin identidad útil (handle vacío/raro): pasa tal cual — nunca se
+ *     oculta información por una normalización dudosa (fail-open
+ *     informativo; el peaje de equivocarse aquí es mostrar una fila extra).
+ *
+ * REVERSIBILIDAD: función pura aplicada SOLO en la vista (listInbox). Girar
+ * el criterio a "daemon primero" es invertir las reglas 1 y 2; restaurar el
+ * comportamiento anterior es no llamarla. Sin migraciones ni borrados.
+ */
+export function dedupeInboxConversations(conversations: InboxConversation[]): InboxConversation[] {
+  if (!Array.isArray(conversations)) return []
+
+  // Identidades que ya tiene cobertura canónica.
+  const canonicalIdentities = new Set<string>()
+  for (const c of conversations) {
+    if (!isCanonicalInboxKey(c.key)) continue
+    const id = inboxIdentity(c)
+    if (id) canonicalIdentities.add(id)
+  }
+
+  const out: InboxConversation[] = []
+  const seenLegacy = new Set<string>()
+  for (const c of conversations) {
+    const id = inboxIdentity(c)
+    if (isCanonicalInboxKey(c.key)) {
+      out.push(c)
+      continue
+    }
+    // Regla 4: sin identidad, pasa sin deduplicar.
+    if (!id) {
+      out.push(c)
+      continue
+    }
+    // Regla 2: legacy tapada por una canónica de la misma identidad.
+    if (canonicalIdentities.has(id)) continue
+    // Regla 3: duplicada dentro de su generación (primera aparición gana).
+    if (seenLegacy.has(id)) continue
+    seenLegacy.add(id)
+    out.push(c)
+  }
+  return out
 }
 
 /** Eventos de timeline → mensajes normalizados (asc por fecha). */
@@ -284,7 +383,9 @@ async function listCanonicalChannelConversations(orgId: string, limit: number): 
   }
 }
 
-/** Lista unificada, ordenada por actividad reciente. Las fuentes legacy siguen visibles durante expand. */
+/** Lista unificada, ordenada por actividad reciente y UNIFICADA por contacto (M7).
+ *  Las fuentes legacy tapadas por una canónica no se repiten; el historial
+ *  completo sigue en la ficha 360. */
 export async function listInbox(orgId: string, limit = 100): Promise<InboxConversation[]> {
   const [canonical, wa, tg, ig, fb] = await Promise.all([
     listCanonicalChannelConversations(orgId, limit),
@@ -293,9 +394,10 @@ export async function listInbox(orgId: string, limit = 100): Promise<InboxConver
     listTimelineConversations(orgId, 'instagram', limit),
     listTimelineConversations(orgId, 'facebook', limit),
   ])
-  return [...canonical, ...wa, ...tg, ...ig, ...fb]
-    .sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''))
-    .slice(0, limit)
+  return dedupeInboxConversations(
+    [...canonical, ...wa, ...tg, ...ig, ...fb]
+      .sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || '')),
+  ).slice(0, limit)
 }
 
 // ---------- canales disponibles por cliente (IA de cierre) ----------

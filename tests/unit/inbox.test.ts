@@ -87,3 +87,131 @@ describe('orden del merge (invariante del listado)', () => {
     expect(merged.map((c) => c.key)).toEqual(['tg:2', 'wa:1', 'ig:3'])
   })
 })
+
+// ---------- (M7 / F3-T03) unificación de la doble bandeja ----------
+
+import { dedupeInboxConversations, inboxIdentity, isCanonicalInboxKey } from '@/lib/inbox'
+
+function makeConv(key: string, opts: Partial<InboxConversation> = {}): InboxConversation {
+  const channel = key.startsWith('cc:') ? 'whatsapp' : key.startsWith('wa:') ? 'whatsapp' : key.startsWith('tg:') ? 'telegram' : 'instagram'
+  return {
+    key,
+    channel,
+    channelLabel: 'WhatsApp',
+    contactName: `contacto ${key}`,
+    contactHandle: '573001110000',
+    clientId: null,
+    lastMessage: 'hola',
+    lastMessageAt: '2026-01-01T00:00:00Z',
+    lastMessageFrom: 'in',
+    unreadCount: 0,
+    isAutoReply: false,
+    ...opts,
+  }
+}
+
+describe('M7 · isCanonicalInboxKey / inboxIdentity', () => {
+  it('reconoce canónicas cc: y rechaza legacy', () => {
+    expect(isCanonicalInboxKey('cc:conv-1')).toBe(true)
+    expect(isCanonicalInboxKey('wa:conv-1')).toBe(false)
+    expect(isCanonicalInboxKey('tg:-100')).toBe(false)
+  })
+
+  it('whatsapp: identidad por dígitos — el + del webhook canónico y el daemon colisionan', () => {
+    expect(inboxIdentity({ channel: 'whatsapp', contactHandle: '+573001110000' }))
+      .toBe('whatsapp:573001110000')
+    expect(inboxIdentity({ channel: 'whatsapp', contactHandle: '57 300 111 0000' }))
+      .toBe('whatsapp:573001110000')
+    expect(inboxIdentity({ channel: 'whatsapp', contactHandle: 'abc' })).toBeNull()
+    expect(inboxIdentity({ channel: 'whatsapp', contactHandle: '' })).toBeNull()
+  })
+
+  it('otros canales: identidad por handle tal cual (conservador)', () => {
+    expect(inboxIdentity({ channel: 'telegram', contactHandle: '-100123' })).toBe('telegram:-100123')
+    expect(inboxIdentity({ channel: 'instagram', contactHandle: ' albra_shop ' })).toBe('instagram:albra_shop')
+    // case-sensitive: NO se unifica albra_shop vs ALBRA_SHOP (falso negativo solo muestra 2 filas)
+    expect(inboxIdentity({ channel: 'instagram', contactHandle: 'ALBRA_SHOP' })).toBe('instagram:ALBRA_SHOP')
+  })
+})
+
+describe('M7 · dedupeInboxConversations — contacto presente en AMBAS fuentes', () => {
+  it('canónica + daemon del mismo teléfono: aparece UNA vez (la canónica)', () => {
+    const list = [
+      makeConv('cc:canon-1', { contactHandle: '+573001110000', connectionName: 'ALBRA Ventas', lastMessageAt: '2026-01-02T00:00:00Z' }),
+      makeConv('wa:daemon-1', { contactHandle: '573001110000', lastMessageAt: '2026-01-01T00:00:00Z' }),
+    ].sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''))
+    const out = dedupeInboxConversations(list)
+    expect(out.map((c) => c.key)).toEqual(['cc:canon-1'])
+    expect(out[0].connectionName).toBe('ALBRA Ventas')
+  })
+
+  it('canónica + timeline del mismo handle: la legacy tg:/ig: se oculta', () => {
+    const list = [
+      makeConv('cc:canon-tg', { channel: 'telegram', contactHandle: '-100123', lastMessageAt: '2026-01-03T00:00:00Z' }),
+      makeConv('tg:client-9', { channel: 'telegram', contactHandle: '-100123', lastMessageAt: '2026-01-02T00:00:00Z' }),
+    ].sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''))
+    expect(dedupeInboxConversations(list).map((c) => c.key)).toEqual(['cc:canon-tg'])
+  })
+
+  it('la canónica gana AUNQUE la legacy sea más reciente (criterio de modelo, no de fecha)', () => {
+    const list = [
+      makeConv('wa:daemon-1', { contactHandle: '573001110000', lastMessageAt: '2026-01-10T00:00:00Z' }),
+      makeConv('cc:canon-1', { contactHandle: '+573001110000', lastMessageAt: '2026-01-01T00:00:00Z' }),
+    ].sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''))
+    expect(dedupeInboxConversations(list).map((c) => c.key)).toEqual(['cc:canon-1'])
+  })
+
+  it('legacy SIN canónica con su identidad: sigue visible (respaldo)', () => {
+    const list = [
+      makeConv('cc:canon-otro', { contactHandle: '+573999999999', lastMessageAt: '2026-01-05T00:00:00Z' }),
+      makeConv('wa:daemon-1', { contactHandle: '573001110000', lastMessageAt: '2026-01-01T00:00:00Z' }),
+    ].sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''))
+    expect(dedupeInboxConversations(list).map((c) => c.key)).toEqual(['cc:canon-otro', 'wa:daemon-1'])
+  })
+
+  it('dos canónicas del mismo teléfono por distinta cuenta: NO se colapsan (hilos reales)', () => {
+    const list = [
+      makeConv('cc:c1', { contactHandle: '+573001110000', connectionName: 'Ventas', lastMessageAt: '2026-01-02T00:00:00Z' }),
+      makeConv('cc:c2', { contactHandle: '+573001110000', connectionName: 'Soporte', lastMessageAt: '2026-01-01T00:00:00Z' }),
+    ].sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''))
+    expect(dedupeInboxConversations(list).map((c) => c.key)).toEqual(['cc:c1', 'cc:c2'])
+  })
+
+  it('duplicadas legacy del mismo teléfono: gana la más reciente (defensa interna)', () => {
+    const list = [
+      makeConv('wa:reciente', { contactHandle: '573001110000', lastMessageAt: '2026-01-03T00:00:00Z' }),
+      makeConv('wa:vieja', { contactHandle: '573001110000', lastMessageAt: '2026-01-01T00:00:00Z' }),
+    ].sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''))
+    expect(dedupeInboxConversations(list).map((c) => c.key)).toEqual(['wa:reciente'])
+  })
+
+  it('sin handle útil: pasa tal cual (fail-open informativo, nada se oculta)', () => {
+    const list = [
+      makeConv('cc:canon-x', { contactHandle: '', lastMessageAt: '2026-01-02T00:00:00Z' }),
+      makeConv('wa:daemon-x', { contactHandle: '573001110000', lastMessageAt: '2026-01-01T00:00:00Z' }),
+    ]
+    const out = dedupeInboxConversations(list)
+    expect(out.map((c) => c.key)).toEqual(['cc:canon-x', 'wa:daemon-x'])
+  })
+
+  it('no muta la entrada y tolera listas vacías / basura', () => {
+    const list = [makeConv('wa:1'), makeConv('cc:1', { contactHandle: '+573001110000' })]
+    const snapshot = JSON.stringify(list)
+    dedupeInboxConversations(list)
+    expect(JSON.stringify(list)).toBe(snapshot)
+    expect(dedupeInboxConversations([])).toEqual([])
+    expect(dedupeInboxConversations(undefined as unknown as InboxConversation[])).toEqual([])
+  })
+
+  it('mezcla completa: 3 canónicas + 3 legacy (1 tapada, 1 dup, 1 visible)', () => {
+    const list = [
+      makeConv('cc:a', { contactHandle: '+571110000', connectionName: 'Cuenta A', lastMessageAt: '2026-01-06T00:00:00Z' }),
+      makeConv('wa:tapada', { contactHandle: '571110000', lastMessageAt: '2026-01-05T00:00:00Z' }), // identidad de cc:a → fuera
+      makeConv('cc:b', { contactHandle: '+572220000', connectionName: 'Cuenta B', lastMessageAt: '2026-01-04T00:00:00Z' }),
+      makeConv('tg:dup', { channel: 'telegram', contactHandle: '-777', lastMessageAt: '2026-01-03T00:00:00Z' }),
+      makeConv('tg:dup-2', { channel: 'telegram', contactHandle: '-777', lastMessageAt: '2026-01-02T00:00:00Z' }), // dup intra-legacy → fuera
+      makeConv('ig:visible', { channel: 'instagram', contactHandle: 'shop', lastMessageAt: '2026-01-01T00:00:00Z' }), // sin canónica → visible
+    ].sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''))
+    expect(dedupeInboxConversations(list).map((c) => c.key)).toEqual(['cc:a', 'cc:b', 'tg:dup', 'ig:visible'])
+  })
+})
