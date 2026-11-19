@@ -11,6 +11,7 @@ Memoria documental del repositorio **ALBRA8/CRM-ALBRA**. Esta carpeta pertenece 
 - [Roadmap resumido](ROADMAP.md)
 - [Historial](HISTORIAL_CAMBIOS.md)
 - [Auditorías](AUDITORIAS.md)
+- [Auditoría futura de redundancias y simplificación (posterior a las 48 tareas)](AUDITORIA_REDUNDANCIAS_Y_SIMPLIFICACION_FASE_POSTERIOR.md)
 - [Pendientes](PENDIENTES.md)
 - [Runbook operativo de canales](RUNBOOK_CANALES.md)
 - [Ingeniería inversa y lecciones operativas de WhatsON (Webinar oficial)](INGENIERIA_INVERSA_WHATSON_WEBINAR.md)
