@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
+import { AttentionCard } from '@/components/dashboard/attention-card'
 import {
   Users,
   TrendingUp,
@@ -439,6 +440,9 @@ export function DashboardPage() {
         <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
         <p className="text-sm text-slate-500 mt-1">Resumen general de tu negocio</p>
       </div>
+
+      {/* ─── Requiere atención (F4/U2): motivos accionables en 1 clic ─── */}
+      <AttentionCard />
 
       {/* ─── KPI Cards ─── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

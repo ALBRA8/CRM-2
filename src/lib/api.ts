@@ -379,6 +379,11 @@ class ApiClient {
     return this.request('/whatsapp/embedded-signup', { method: 'POST', body: JSON.stringify(data) })
   }
 
+  // ── Dashboard "Requiere atención" (F4/U2): motivos accionables ──
+  async getAttentionMotives() {
+    return this.request('/dashboard/attention')
+  }
+
   // ── Reconciliación de envíos UNCERTAIN (M8, solo administradores) ──
   // Lista de intenciones unknown de la organización y resolución con evidencia
   // obligatoria (providerChecked + nota auditada). Nunca reintenta: registra.
