@@ -362,6 +362,15 @@ class ApiClient {
     return this.request('/whatsapp/embedded-signup', { method: 'POST', body: JSON.stringify(data) })
   }
 
+  // M8 — reconciliación operable de envíos UNCERTAIN (vista de operador)
+  async getUncertainOutbox() {
+    return this.request('/crm/outbox/uncertain')
+  }
+
+  async reconcileUncertainOutbox(data: Record<string, unknown>) {
+    return this.request('/crm/outbox/uncertain', { method: 'POST', body: JSON.stringify(data) })
+  }
+
   // Bandeja omnicanal (Fase 4) — unifica WhatsApp + Telegram + Instagram
   async getInbox(params?: Record<string, string>) {
     const query = params ? `?${new URLSearchParams(params).toString()}` : ''

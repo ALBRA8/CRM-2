@@ -72,6 +72,7 @@ import { InstagramTab } from './instagram-tab'
 import { TikTokTab } from './tiktok-tab'
 import { FacebookTab, MessengerIcon } from './facebook-tab'
 import { ConnectionsTab } from './connections-tab'
+import { OutboxTab } from './outbox-tab'
 import { PushNotificationsCard } from './push-notifications-card'
 import { TwoFactorCard } from './two-factor-card'
 import { KnowledgeCard } from './knowledge-card'
@@ -1080,6 +1081,9 @@ export function SettingsPage() {
           <TabsTrigger value="conexiones" className="gap-1.5 text-xs">
             <Smartphone className="w-3.5 h-3.5" /> Conexiones
           </TabsTrigger>
+          <TabsTrigger value="outbox" className="gap-1.5 text-xs">
+            <Shield className="w-3.5 h-3.5" /> Envíos
+          </TabsTrigger>
           <TabsTrigger value="whatsapp" className="gap-1.5 text-xs">
             <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
           </TabsTrigger>
@@ -1118,6 +1122,11 @@ export function SettingsPage() {
         {/* ============ TAB: Conexiones WhatsApp multi-número (F2) ============ */}
         <TabsContent value="conexiones" className="mt-4">
           <ConnectionsTab />
+        </TabsContent>
+
+        {/* ============ TAB: Conciliación de envíos UNCERTAIN (M8) ============ */}
+        <TabsContent value="outbox" className="mt-4">
+          <OutboxTab />
         </TabsContent>
 
         {/* ============ TAB: Chat AI / LLM ============ */}

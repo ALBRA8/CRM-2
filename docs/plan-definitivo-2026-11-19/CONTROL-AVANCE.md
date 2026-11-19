@@ -14,11 +14,11 @@ Este documento se actualiza por tarea al cerrarla, con estado, archivos y prueba
 | F2 | UI de conexiones WhatsApp multi-número | **Terminada 2026-11-20** | commit F2; 803/803 tests |
 | M7 | Criterio unificación doble bandeja | **Terminada 2026-11-20** | CRITERIO-BANDEJA-UNICA-M7.md; dedup + 14 tests |
 | F3 | Filtros canal/cuenta + búsqueda bandeja | **Terminada 2026-11-20** | API + UI + 24 tests (unit 15, integ 9) |
+| M8 | Reconciliación operable UNCERTAIN | **Terminada 2026-11-20** | vista operador + API + 22 tests |
 | E4 | Readiness/CHANGELOG | En desarrollo | — |
 | D4 | Check de cifras en CI | En desarrollo | — |
 | E3 | Análisis | En desarrollo | — |
-| M8 | Reconciliación operable UNCERTAIN | Pendiente (siguiente en cola) | — |
-| F4 | — (fase 3/4) | Pendiente | — |
+| F4 | — (fase 3/4) | Pendiente (siguiente en cola) | — |
 | F5 | Salud / monitor de conexiones | Pendiente (orden recomendado tras F2/M7) | — |
 | U1–U5 | Experiencia de usuario | Pendiente | U1 nav 5+1 aprobada por instrucción global |
 | I1–I3 | Comerciales/instalación | Pendiente | — |
@@ -112,3 +112,32 @@ conserva los filtros activos.
 por nombre y teléfono — cumplido (verificado en integración con semilla multi-cuenta + legacy).
 
 **Reversión.** Parámetros aditivos a la API; `git revert` limpia.
+
+## M8 — Reconciliación operable de envíos UNCERTAIN (cerrada 2026-11-20)
+
+**Alcance.** El operador resuelve un envío `unknown` desde la UI, sin SQL manual y con la MISMA
+política de evidencia del endpoint interno (contrato del worker sin cambios):
+
+- `GET /api/crm/outbox/uncertain` (JWT + admin, por organización): inciertos y `sending`
+  sospechosos (≥3 intentos), con canal, contacto, cuerpo truncado, intentos y código del proveedor.
+- `POST /api/crm/outbox/uncertain` (JWT + admin): concilia UN intento reutilizando
+  `reconcileUnknownChannelOutboundMessage` (CAS anti-doble-conciliación + verificación de eco).
+  Evidencia obligatoria: `providerMessageId` (4-256 chars, sin saltos) O nota ≥10 caracteres.
+  Sin evidencia → 400; ya resuelto → 409; de otra organización → 404 sin revelar nada.
+- Auditoría: la librería registra `outbound_manually_reconciled_sent/failed` en la conexión.
+- Vista admin: nueva pestaña “Envíos” en Ajustes (`outbox-tab.tsx`) con diálogo de conciliación;
+  el botón queda deshabilitado sin evidencia (misma validación en cliente y servidor).
+
+**Archivos.** `src/lib/outbox-ui.ts` (helpers puros), `src/app/api/crm/outbox/uncertain/route.ts`,
+`src/components/settings/outbox-tab.tsx`, `src/lib/api.ts` (2 métodos), settings-page (pestaña);
+tests `tests/unit/outbox-ui.test.ts` (11) y `tests/integration/outbox-uncertain.test.ts` (11).
+
+**Pruebas.** tsc y ESLint limpios; suite completa **863/863**. Flujo probado de punta a punta con
+BD efímera: unknown → evidencia → sent/failed auditado; denegación sin evidencia; 409/404/403.
+
+**Criterios de aceptación.** El operador resuelve un incierto sin SQL manual, con auditoría del
+caso — cumplido.
+
+**Reversión.** Vista y ruta aditivas; endpoints internos intactos; `git revert` limpia.
+Nota de dependencia externa: los inciertos que solo existen dentro de WP (fuera de CRM-ALBRA)
+quedan fuera de esta vista, según el plan.
