@@ -366,6 +366,21 @@ class ApiClient {
     return this.request('/whatsapp/embedded-signup', { method: 'POST', body: JSON.stringify(data) })
   }
 
+  // ---------- (M8) Salud de envíos: conciliación de UNCERTAIN (operador) ----------
+
+  /** Inciertos de la organización + conteos por estado de la outbox (admin). */
+  async getUncertainOutbox() {
+    return this.request('/admin/outbox/uncertain')
+  }
+
+  /**
+   * Concilia un envío unknown tras verificar el proveedor (admin).
+   * 'sent' exige providerMessageId como evidencia; nunca reintenta por red.
+   */
+  async reconcileOutboxMessage(data: { id: string; resolution: 'sent' | 'failed'; providerChecked: boolean; providerMessageId?: string }) {
+    return this.request('/admin/outbox/uncertain/reconcile', { method: 'POST', body: JSON.stringify(data) })
+  }
+
   async getWhatsAppConversations(params?: Record<string, string>) {
     const query = params ? `?${new URLSearchParams(params).toString()}` : ''
     return this.proxyGet(`/conversations${query}`)

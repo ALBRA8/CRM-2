@@ -70,6 +70,8 @@ import { CustomFieldsTab } from './custom-fields-tab'
 import { CurrencySelector } from './currency-selector'
 import { InstagramTab } from './instagram-tab'
 import { ConnectionsTab } from './connections-tab'
+import { OutboxTab } from './outbox-tab'
+import { useAppStore } from '@/lib/store'
 import { TikTokTab } from './tiktok-tab'
 import { FacebookTab, MessengerIcon } from './facebook-tab'
 import { PushNotificationsCard } from './push-notifications-card'
@@ -337,6 +339,7 @@ function AgentMemoryCard() {
 }
 
 export function SettingsPage() {
+  const isAdminUser = useAppStore((s) => s.isAdmin)
   const [settings, setSettings] = useState<SettingsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -1110,6 +1113,11 @@ export function SettingsPage() {
           <TabsTrigger value="team" className="gap-1.5 text-xs">
             <Users className="w-3.5 h-3.5" /> Equipo
           </TabsTrigger>
+          {isAdminUser && (
+            <TabsTrigger value="envios" className="gap-1.5 text-xs">
+              <Zap className="w-3.5 h-3.5" /> Envíos
+            </TabsTrigger>
+          )}
           <TabsTrigger value="backup" className="gap-1.5 text-xs">
             <Database className="w-3.5 h-3.5" /> Respaldo
           </TabsTrigger>
@@ -2520,6 +2528,13 @@ export function SettingsPage() {
             </Card>
           </motion.div>
         </TabsContent>
+
+        {/* ============ TAB: (M8) Salud de envíos / conciliación ============ */}
+        {isAdminUser && (
+          <TabsContent value="envios" className="space-y-6 mt-4">
+            <OutboxTab />
+          </TabsContent>
+        )}
 
         {/* ============ TAB: Backup/Restore ============ */}
         <TabsContent value="backup" className="space-y-6 mt-4">
