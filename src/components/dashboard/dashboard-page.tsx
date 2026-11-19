@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { useAppStore } from '@/lib/store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { TasksCard } from './tasks-card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
@@ -699,6 +700,15 @@ export function DashboardPage() {
           </Card>
         </motion.div>
       </div>
+
+      {/* ─── Tareas prioritarias (cierre integral, bloque C) ─── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.38 }}
+      >
+        <TasksCard />
+      </motion.div>
 
       {/* ─── Recent Activity (Chat Logs) ─── */}
       <motion.div

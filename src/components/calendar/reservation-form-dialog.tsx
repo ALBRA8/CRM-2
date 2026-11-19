@@ -25,9 +25,11 @@ interface ReservationFormDialogProps {
   defaultDate?: Date
   /** Hora preseleccionada 'HH:mm' (F4: crear desde un hueco libre en 2 clics). */
   defaultTime?: string
+  /** Cliente preseleccionado al abrir (cierre integral: quick-actions de la ficha 360). */
+  defaultClientId?: string
 }
 
-export function ReservationFormDialog({ open, onClose, defaultDate, defaultTime }: ReservationFormDialogProps) {
+export function ReservationFormDialog({ open, onClose, defaultDate, defaultTime, defaultClientId }: ReservationFormDialogProps) {
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
   const [form, setForm] = useState({
     clientId: '',
@@ -50,8 +52,11 @@ export function ReservationFormDialog({ open, onClose, defaultDate, defaultTime 
       if (defaultTime) {
         setForm((p) => ({ ...p, time: defaultTime }))
       }
+      if (defaultClientId) {
+        setForm((p) => ({ ...p, clientId: defaultClientId }))
+      }
     }
-  }, [open, defaultDate, defaultTime])
+  }, [open, defaultDate, defaultTime, defaultClientId])
 
   const loadClients = async () => {
     try {
