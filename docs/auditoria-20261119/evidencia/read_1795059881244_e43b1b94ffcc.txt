@@ -1,0 +1,402 @@
+   100→
+   101→---
+   102→
+   103→## 4. Mapa de arquitectura y dependencias externas
+   104→
+   105→CRM-ALBRA es la aplicación multiempresa donde viven usuarios, clientes, ficha 360, bandeja, agenda, comercial y canales. Dos motores externos la complementan: WHATSPOWER (automatización de WhatsApp: flujos, secuencias, growth tools) y WHATSPOWER-ULTRA (campañas masivas con salvaguardas). El CRM los orquesta mediante contratos firmados; en esta fase esos contratos **solo se consumen, no se modifican**.
+   106→
+   107→![Figura 1: Mapa de arquitectura CRM-ALBRA con dependencias externas](MAPA-DE-ARQUITECTURA-CRM-ALBRA.png)
+   108→
+   109→*Figura 1: Mapa de arquitectura CRM-ALBRA (estado verificado). En gris, los motores externos que permanecen intactos; los contratos con firma y eco de organización se conservan tal cual.*
+   110→
+   111→**Tabla 4.1: Contratos vigentes que el plan conserva sin cambios** (verificados en código, evidencia del plan v1 re-confirmada hoy)
+   112→
+   113→| Sentido | Contrato | Uso en el plan |
+   114→|---|---|---|
+   115→| CRM → WP | `POST /api/inbound` con HMAC-SHA256 v2, timestamp y anti-replay durable | Ninguna tarea lo modifica; I2-mod añade prueba de compatibilidad del lado CRM |
+   116→| CRM → WP | `POST /api/crm/stage-change` con credencial por organización | Se conserva |
+   117→| WP → CRM | `POST /api/crm/actions` con `CRM_API_KEYS` por organización y eco de `organizationId` | Se conserva |
+   118→| WP/ULTRA → CRM | `GET /api/internal/whatsapp/credentials` (`CRM_INTERNAL_CREDENTIAL`) | Se conserva; F2 expone su estado en la nueva UI |
+   119→| ULTRA → Daemon CRM | `POST /send` vía proxy con `INTERNAL_API_SECRET` + `X-Org-Id` y kill-switch `ALLOW_REAL_DISPATCH` | Se conserva; M1 no toca el contrato, añade el proceso que consume la cola |
+   120→| CRM (SSO) | `GET /api/auth/ecosystem/links`; fail-closed en producción (403) | Se conserva; I2-mod lo cubre con fixtures |
+   121→
+   122→**Dependencias externas que condicionan funcionalidad del CRM** (sección 5, categoría DEPENDENCIA EXTERNA): la ventana de 24 h y el registro de plantillas de Meta solo se cablean en el despacho dentro de WP/ULTRA (M3, I6 externas) — hasta entonces, el CRM envía texto libre por el canal Baileys y Cloud API sin esa protección, lo que el propietario debe conocer antes de campañas reales; el consentimiento masivo de ULTRA (M2 externa) bloquea campañas reales fuera del CRM; el pago real vive en WP (F6 externa).
+   123→
+   124→---
+   125→
+   126→## 5. Revisión y clasificación de las 48 tareas
+   127→
+   128→Cada tarea del Excel original fue reevaluada con esta regla: solo se conserva si aporta valor real **y** es ejecutable dentro de CRM-ALBRA. La justificación completa (evidencia, beneficio, solución, riesgos, pruebas, aceptación, reversión) de cada tarea está en la hoja *Matriz* del [libro Excel](MATRIZ-DE-TAREAS-CRM-ALBRA.xlsx); aquí se presenta la decisión y su motivo, y las fichas completas de las ejecutables están en la sección 7.
+   129→
+   130→**Tabla 5.1: Resultado de la clasificación**
+   131→
+   132→| Decisión | Tareas | Total |
+   133→|---|---|---|
+   134→| **CONSERVAR** — valor real, ejecutable en CRM tal cual (con evidencia corregida donde aplica) | S1, S5, S6, M1, M7, I3, E1, E2, E3, E4, F1, F2, F3, F4, F5, U1, U2, U3, U4, U5, O3, D1, D4 | **23** |
+   135→| **MODIFICAR** — válida, pero su alcance se acota al CRM (la parte externa queda como dependencia documentada) | S2, M8, I1, I2, E7, O1, O2, O4, D2 | **9** |
+   136→| **POSPONER** — valor demostrativo, no prioritaria para producción | U6 | **1** |
+   137→| **DESCARTAR** — ya resuelta en la base o duplicada con otra tarea | M5, D3 | **2** |
+   138→| **DEPENDENCIA EXTERNA** — requiere modificar WHATSPOWER o ULTRA; fuera de alcance | S3, S4, S7, M2, M3, M4, M6, I4, I5, I6, E5, E6, F6 | **13** |
+   139→
+   140→### 5.1 CONSERVAR (23)
+   141→
+   142→| ID | Tarea | Justificación con evidencia |
+   143→|---|---|---|
+   144→| S1 | Rotar PAT de GitHub y credenciales aparecidas en chats | Acción del propietario sin cambio de repos; protege los tres repos incluido el CRM. Evidencia: OWNER_TODO sección 1; baseline de secretos con entradas ROTACION-PENDIENTE |
+   145→| S5 | Pepper obligatorio en CI para `check:pii` | Verificado hoy: el paso de CI declara `PII_PEPPER` opcional con aviso; el escáner degrada a patrones genéricos si falta |
+   146→| S6 | Saneamiento de scripts `e2e-*` históricos | 26 scripts en la base con rutas de otra máquina y secretos literales; el flujo oficial es `scripts/e2e-3-servicios.mjs` |
+   147→| M1 | Worker de outbox de canales en el despliegue | Verificado hoy: solo el monitor pasivo de CI existe; sin worker, el envío omnicanal queda en `queued` para siempre |
+   148→| M7 | Criterio de unificación de la doble bandeja | Verificado hoy: `inbox.ts` prioriza daemon sobre timeline para el mismo teléfono |
+   149→| I3 | Documento único de contratos del ecosistema | Vive en el CRM (`docs/API_CONTRACT.md`, `docs/INTEGRATION_CONTRACT.md`); es documentación del repositorio autorizado |
+   150→| E1 | Diagnóstico del CI rojo del PR #5 | Evidencia de terceros: run 44428835497, paso 11 failure; sin diagnóstico no hay integración |
+   151→| E2 | Numeración de migraciones consistente | Migraciones `10_`/`11_` se aplican lexicográficamente entre `1_` y `2_`; patrón peligroso para instalaciones limpias |
+   152→| E3 | Limpieza de código y dependencias muertas | Verificado hoy: 8 dependencias sin uso y supervisor sin referencias |
+   153→| E4 | Readiness y CHANGELOG conciliados con el código | 107 rutas declaradas vs 125 reales; cifras de suites divergentes |
+   154→| F1 | Integrar el PR #6 (tareas + quick-actions) | CI de terceros en verde; módulo de tareas ausente de la base (verificado hoy) |
+   155→| F2 | UI de conexiones WhatsApp multi-número | Verificado hoy: API `wa-connections` + tests en base, cero componentes de UI |
+   156→| F3 | Filtros por canal/cuenta y búsqueda en la bandeja | Bandeja canónica sin filtros; `inbox.ts` ya expone el origen |
+   157→| F4 | Agenda con vistas semana/día | Solo vista mensual; Google Calendar en API sin UI |
+   158→| F5 | Pantalla de Salud y puesta en marcha guiada | `/api/doctor` aislado por org sin pantalla propia |
+   159→| U1 | Navegación única 5+1, una sola bandeja en el menú | Verificado hoy: `/whatsapp` y `/inbox` coexisten; 17 páginas |
+   160→| U2 | Dashboard "qué te toca ahora" con motivos accionables | El dashboard actual no prioriza por atención requerida |
+   161→| U3 | Catálogo de errores accionables | Errores orientados a desarrollador; patrón de la referencia (`lib/errores.ts` con invariante) |
+   162→| U4 | Ajustes agrupados por dominio | Verificado hoy: 2715 líneas en una sola pantalla, 14 tabs |
+   163→| U5 | Pulido visual: tipografía, dark mode, estados vacíos | Tipografía 9–11px y 36 usos de `dark:` incompletos (diagnóstico v1) |
+   164→| O3 | Instalador/actualizador idempotente del CRM | Patrón de la referencia (`instalar.sh` preserva datos); el CRM no lo tiene |
+   165→| D1 | Resolver las ramas de integración pendientes del CRM | PR #4 abierto hacia main y `fix/migration-safety-audit` (tests multiproceso del scheduler) sin destino decidido |
+   166→| D4 | Matriz de trazabilidad afirmación→evidencia + check en CI | Origen de la "falsa confianza" documental; aplica al CRM como repositorio documental central |
+   167→
+   168→### 5.2 MODIFICAR (9)
+   169→
+   170→| ID | Cambio de alcance y justificación |
+   171→|---|---|
+   172→| S2 | La purga del historial se limita a **CRM-ALBRA** (filter-repo + force-push coordinado con clones y PR abiertos del CRM). La purga en WP y ULTRA es una operación futura independiente. El resto de la solución no cambia: primero rotar (S1), después purgar |
+   173→| M8 | La reconciliación de UNCERTAIN se construye **sobre los endpoints del CRM** (`/api/internal/channel-outbox/reconcile`, ya existentes y protegidos): pantalla o CLI de operador. La parte de inciertos que solo vive en WP queda como nota externa |
+   174→| I1 | El E2E de 3 servicios se programa como **job del CI del CRM** (clona los otros dos repos en modo lectura) o como corrida nocturna del propietario; no se crea CI en los repos externos |
+   175→| I2 | La suite de contratos se reduce a **fixtures del lado CRM** (SSO espejado, HMAC v2, eco de organización); la matriz cross-repo completa requiere CI en los tres repos y queda como fase externa |
+   176→| E7 | El test automatizado de backup/restore y el drill con evidencia se ejecutan **sobre el backup del CRM** (`scripts/sqlite-backup.cjs`, API `/api/backup`); el backup de ULTRA queda externo |
+   177→| O1 | El compose del CRM ya tiene healthchecks (verificado hoy): la tarea pasa a ser **ejecutar `docker compose build/up` en la máquina del propietario** y registrar evidencia; los healthchecks de WP/ULTRA son externos |
+   178→| O2 | El runbook unificado se escribe **en el CRM** y cubre el arranque del CRM, su daemon y el worker de outbox; las secciones de operación de WP/ULTRA se marcan como dependencia externa |
+   179→| O4 | El monitor programado, healthchecks y unidades systemd se definen **para el CRM y su daemon**; las unidades de WP/ULTRA quedan externas |
+   180→| D2 | La consolidación/archivo de ramas se limita a las ramas del CRM (incluida la recién descubierta `impl/wave2-wa-connections`, contenida al 100 %); las ramas de WP/ULTRA quedan externas |
+   181→
+   182→### 5.3 POSPONER (1)
+   183→
+   184→| ID | Motivo |
+   185→|---|---|
+   186→| U6 | Semillas sectoriales para demos reproducibles: valor para ventas/demostraciones, cero impacto en estabilidad, seguridad o producción. Posponerla no bloquea nada; reactivarla cuesta ~1 d cuando haya demos reales programadas |
+   187→
+   188→### 5.4 DESCARTAR (2)
+   189→
+   190→| ID | Motivo con evidencia |
+   191→|---|---|
+   192→| M5 | **Ya resuelta en la base.** El plan v1 pedía deduplicación por organización en el daemon Baileys; `src/whatsapp-daemon/idempotency.mjs` implementa exactamente ese contrato (clave `(organization_id, idem_key)`, estados IN_FLIGHT/DONE/FAILED/UNCERTAIN, lease vencido → UNCERTAIN permanente sin reenvío) y `tests/unit/daemon-idempotency.test.ts` lo prueba. Verificado hoy sobre `a72cc95`. La tarea quedó obsoleta; solo queda su verificación en CI al integrar |
+   193→| D3 | **Duplicada en su parte CRM.** Alinear el CHANGELOG del CRM con cifras reales ya está cubierto por E4 (readiness + changelog conciliados). La parte de changelogs de WP/ULTRA no es ejecutable bajo el alcance y quedó absorbida por las dependencias externas |
+   194→
+   195→### 5.5 DEPENDENCIA EXTERNA (13)
+   196→
+   197→Estas tareas son válidas como diagnóstico, pero su solución exige modificar WHATSPOWER o ULTRA. Ninguna se ejecuta en esta fase; se documenta qué aporta, qué exige y qué pasa mientras no exista.
+   198→
+   199→| ID | Reside en | Qué aporta | Qué exige | Consecuencia mientras no se haga |
+   200→|---|---|---|---|---|
+   201→| S3 | WP | Elimina el secreto operador global que concentra acceso a todas las organizaciones | Credenciales de servicio por organización y coordinación con flows existentes | El riesgo de acceso cross-org vía `X-Org-Id` arbitrario persiste en WP |
+   202→| S4 | WP + ULTRA | jti y rate limit sobreviven reinicios | Persistir en SQLite (patrón DurableReplayCache) | Replay tras reinicio sigue siendo posible en los motores; el CRM no está afectado (SSO bloqueado en producción) |
+   203→| S7 | WP + ULTRA | Credenciales por organización cifradas en reposo | AES-256-GCM + clave externa (patrón v1 del CRM) | Tokens Meta en env plano persisten |
+   204→| M2 | ULTRA | Alta masiva de consentimiento (Ley 1581) | Columna `consent_origin`, endpoint de bulk, decisión legal del propietario | Las campañas reales de ULTRA saltan a `SKIPPED_NO_CONSENT` o incitan a fabricar consentimientos: **no operar campañas** |
+   205→| M3 | WP + ULTRA | Ventana 24 h, plantillas y clasificador Meta en el despacho real | Invocar los stores ya probados; plantillas aprobadas en Meta (acción del dueño) | Rechazos evitables 131047/131048 degradan la calidad del número |
+   206→| M4 | ULTRA | El `/step` manual respeta el pacing durable | Pasar `durablePacing` al server | Despachos manuales sin ritmo |
+   207→| M6 | ULTRA | `smoke-live` deja de borrar campañas ajenas | Revisar e integrar la rama `impl/fix-funcionales-20261112` de ULTRA | Riesgo destructivo si alguien corre smoke-live en producción |
+   208→| I4 | WP | Reconcilia la rama divergida `fix/fase-correctiva-final` (953 líneas) con la solución B2 ya fusionada | Decisión de diseño del propietario + revisión | Un merge ciego revertiría protección ya fusionada |
+   209→| I5 | ULTRA | Reconcilia `fix/fase2-seguridad-ultra` con el escáner HMAC+pepper vigente | Decisión de diseño del propietario | Un merge ciego revertiría el denylist |
+   210→| I6 | WP + ULTRA | Selector de transporte por política por organización | Cablear `transport-selector.ts` (ya probado aislado) | La elección de transporte sigue siendo la variable global `TRANSPORT` |
+   211→| E5 | WP | Decide el destino del ws-server y la SPA inerte del dashboard | Autorización de eliminación o cableado | Código muerto referenciado por docs |
+   212→| E6 | ULTRA | Docs operativas (`MIGRACIONES.md`, `.env.example`) alineadas con el código | PR de docs en ULTRA | Expectativas operativas erróneas |
+   213→| F6 | WP | Cobro real (WOMPI/MP/Stripe) | Credenciales de pasarela del propietario | El simulador sigue blindado; no hay cobro real desde el CRM ni WP |
+   214→
+   215→---
+   216→
+   217→## 6. Revisión de los PR #4, #5 y #6
+   218→
+   219→Ninguno se fusiona ni se cierra: la decisión de integrar corresponde al propietario. Esta revisión actualiza las fichas del plan v1 con los diffs verificados hoy contra su base real (`a72cc95`) y añade el PR #4 con detalle completo.
+   220→
+   221→### 6.1 PR #4 — prueba del ACK ambiguo de la outbox de workflows (hacia `main`)
+   222→
+   223→| Campo | Detalle |
+   224→|---|---|
+   225→| Valor que aporta | Convierte en test permanente el agujero más fino de la outbox de workflows: un envío que el proveedor aceptó pero cuya confirmación no se pudo persistir. Usa un trigger SQLite que aborta la persistencia del ACK y exige que el sistema no pierda ni reenvíe a ciegas |
+   226→| Riesgos | Casi nulos: **2 archivos, +153** (test +89, `docs/CONTEXTO-CRM.md` +64); no toca código productivo |
+   227→| Pruebas que faltan | Ninguna propia: el PR **es** una prueba; su CI corre al crear el PR (no se re-verificó el run hoy — sin API autenticada; declarado expresamente) |
+   228→| Migraciones | Ninguna |
+   229→| Duplicidades | Ninguna; su patrón se reutiliza en M8 |
+   230→| Problema estructural | Está abierto hacia `main`, que está 29 commits detrás de la base de integración; el diff contra `repair/produccion-real` es grande solo porque le faltan esos 29 commits |
+   231→| Decisión recomendada | **CONSERVAR ABIERTO.** Al decidir el propietario cómo fluye `repair/produccion-real` → `main` (A3), retarget o rebase del PR y luego integrar; su patrón alimenta M8 |
+   232→
+   233→### 6.2 PR #5 — estabilización y deuda (head `1e5c9ae`, base `a72cc95`)
+   234→
+   235→| Campo | Detalle |
+   236→|---|---|
+   237→| Valor que aporta | Elimina 8 dependencias muertas (next-auth, next-intl, @dnd-kit/\*, @tanstack/react-query, @tanstack/react-table, @mdxeditor/editor, @hapi/boom) y 2 componentes sin referencias (sidebar de 726 líneas, use-mobile); añade migración `10_quoteitem_org_backfill` (UPDATE aditivo de `organizationId` NULL tomando el org del Quote padre) y su test de 97 líneas. −3416 líneas netas de superficie mantenida |
+   238→| Riesgos | CI de terceros en **FAILURE** (paso 11 *Suite de tests*; pasos 1–10 en verde, build omitido): contradice el mensaje de commit que reclama 784/784. Causa raíz sin determinar hasta ejecutar la batería (E1). Numeración `10_` a corregir con E2 antes de fusionar |
+   239→| Pruebas que faltan | Diagnóstico del fallo ejecutando la batería sobre la rama; re-CI en verde |
+   240→| Migraciones | `10_` puramente aditiva (no borra filas); riesgo de orden lexicográfico |
+   241→| Duplicidades | Su limpieza es exactamente el contenido de E3: si se integra, E3 pasa a ser verificación en lugar de trabajo nuevo |
+   242→| Qué conservar / corregir / descartar | **CONSERVAR el contenido completo**; CORREGIR el CI (E1) y la numeración (E2); no descartar nada de su diff |
+   243→| Decisión recomendada | No fusionar hasta CI verde; luego integrar por decisión del propietario (A3) |
+   244→
+   245→### 6.3 PR #6 — tareas y recordatorios + quick-actions (head `dfd926a`, base `a72cc95`)
+   246→
+   247→| Campo | Detalle |
+   248→|---|---|
+   249→| Valor que aporta | Módulo de tareas org-scoped (migración `11_tareas`, API con aislamiento por organización, tarjeta en el dashboard) y quick-actions reales en la ficha 360 (inbox/cotización/agenda en 1 clic); +576/−6 en 11 archivos |
+   250→| Riesgos | Numeración `11_` (se aplica entre `1_` y `2_`): inocuo hoy porque `Task` es tabla nueva, pero hereda el patrón peligroso; resolver con E2 antes de fusionar |
+   251→| Pruebas | **Terceros:** CI success sobre `dfd926a` (suite, tsc, escáneres, build). **Propias en esta fase: ninguna** (congelación). Incluye `tests/integration/tasks.test.ts` (109 líneas) con aislamiento por organización |
+   252→| Migraciones | `11_tareas`: CREATE TABLE aditiva |
+   253→| Duplicidades | Ninguna; nada en la base implementa tareas (verificado hoy) |
+   254→| Qué conservar / corregir / descartar | **CONSERVAR todo**; CORREGIR la numeración con E2; añadir `cierre/**` a los triggers de CI para futuras ramas de cierre |
+   255→| Decisión recomendada | **Integrable** tras E2, por decisión del propietario (A3) |
+   256→
+   257→**Conclusión de los tres PR:** los tres aportan valor y ninguno contiene funcionalidad duplicada ni eliminaciones de funcionalidad de usuario. El orden seguro es E2 (numeración) → E1 (diagnóstico CI #5) → integración de #6 y #5, todo bajo autorización expresa (A3). Mientras tanto permanecen abiertos y congelados.
+   258→
+   259→
+   260→---
+   261→
+   262→## 7. Hoja de ruta en 7 fases
+   263→
+   264→Las fases siguen el orden obligatorio del encargo (seguridad primero, preparación para producción al final), ajustado por dependencias reales verificadas. Cada tarea lleva su decisión, su carácter (OBLIGATORIA = necesaria para el nivel "listo para producción"; OPCIONAL = mejora que no bloquea), y los doce campos exigidos. El libro Excel contiene la misma matriz completa en formato filtrable.
+   265→
+   266→**Regla transversal de cierre:** toda tarea de código cierra con batería del repositorio en verde localmente y en CI de GitHub más la prueba específica que añade; toda tarea de despliegue cierra con evidencia de ejecución en la máquina del propietario; toda tarea documental cierra con la matriz de trazabilidad actualizada. Ninguna tarea declara terminado algo que solo esté documentado.
+   267→
+   268→**Regla transversal de reversión:** ninguna tarea requiere reconstruir nada. Las de código se revierten con `git revert` del PR de trabajo; las de migración conservan copia de la base antes de operar; las de repositorio (purga de historial) exigen un bundle git previo conservado por el propietario; las de cuenta (rotación de PAT) se documentan antes de ejecutarse.
+   269→
+   270→### 7.1 Fase 1 — Seguridad y protección de datos (4 tareas, 2,25 d)
+   271→
+   272→Objetivo: cerrar las fugas de credenciales y la superficie de secretos del CRM antes de tocar cualquier otra cosa. Criterio de salida de la fase: `security:scan` y `security:scan:history` en verde, `check:pii` con pepper obligatorio, cero scripts con secretos literales, y acta de rotación firmada por el propietario.
+   273→
+   274→**F1-T01 · S1 · Rotar el PAT de GitHub y toda credencial aparecida en chats — OBLIGATORIA · CONSERVAR**
+   275→
+   276→- **Problema real.** El PAT usado en sesiones de trabajo y credenciales reales aparecidas en chats siguen vigentes; las baselines de secretos arrastran entradas ROTACION-PENDIENTE.
+   277→- **Evidencia en el código.** OWNER_TODO del CRM (sección 1); `scripts/security/secret-baseline.json` del CRM.
+   278→- **Beneficio para el usuario.** Ningún tercero con acceso a un chat antiguo puede operar el repositorio ni el CI; el propietario recupera el control completo de la superficie de acceso.
+   279→- **Solución recomendada.** Revocar el PAT y generar uno nuevo de alcance mínimo (repo CRM-ALBRA y los repos que haga falta leer); actualizar el remote local y los secretos de Actions que lo usen; inventariar y rotar toda credencial aparecida en conversaciones.
+   280→- **Archivos y módulos afectados.** Fuera del repositorio (GitHub → Settings → Developer settings; secretos de Actions). En el repo solo se actualiza la documentación de rotación y las baselines si procede.
+   281→- **Riesgos.** Interrupción temporal de integraciones que usaban el PAT viejo (mitigable documentando cada uso antes de rotar).
+   282→- **Dependencias.** Decisión A1 del propietario. Precede a F1-T02 (no se purga un historial con credenciales vivas).
+   283→- **Pruebas necesarias.** `security:scan` en verde tras rotar; acceso a los repos con el PAT nuevo; login de Actions correcto.
+   284→- **Criterios de aceptación.** PAT viejo revocado, nuevo en uso con alcance mínimo, y registro de rotación con fecha.
+   285→- **Estimación.** 0,5 d.
+   286→- **Reversión.** No aplica (acción de cuenta). Mitigación: documentar el PAT sustituido antes de revocar para poder restaurar cualquier uso.
+   287→
+   288→**F1-T02 · S2 (MODIFICADA: solo CRM-ALBRA) · Purgar el historial git del CRM — OBLIGATORIA · MODIFICAR**
+   289→
+   290→- **Problema real.** El historial del CRM contiene secretos históricos y artefactos de E2E con credenciales literales, recuperables por cualquiera que clone el repositorio.
+   291→- **Evidencia en el código.** `scripts/scan-secrets.mjs` con modo history; `scripts/security/secret-baseline.json` con entradas ROTACION-PENDIENTE.
+   292→- **Beneficio para el usuario.** Los secretos históricos dejan de ser extraíbles del repositorio; el riesgo de fuga se limita a lo ya rotado.
+   293→- **Solución recomendada.** Tras rotar (F1-T01): `git filter-repo` en una ventana acordada, force-push a `main` y `repair/produccion-real`, reclonar los entornos de trabajo, y recrear/rebasar los PR abiertos (#4, #5, #6) sobre el historial nuevo. La purga en WHATSPOWER y ULTRA queda como operación externa futura.
+   294→- **Archivos y módulos afectados.** Historial completo del repositorio; documentación operativa de la ventana.
+   295→- **Riesgos.** Destructivo e irreversible: cambian todos los SHA; los clones desincronizados dejan de empujar; los PR abiertos deben recrearse. Mitigación completa en el procedimiento de reversión.
+   296→- **Dependencias.** F1-T01 completada; decisión A2 (autorización destructiva expresa).
+   297→- **Pruebas necesarias.** `security:scan:history` en verde; CI verde en las tres ramas afectadas tras el rebasado.
+   298→- **Criterios de aceptación.** Baseline del CRM sin ROTACION-PENDIENTE; PRs rebasados y CI verde; acta de la ventana con SHAs antes/después.
+   299→- **Estimación.** 0,5 d (reducido del original de 1 d al limitarse a un repositorio).
+   300→- **Reversión.** Bundle git completo del repositorio creado y guardado por el propietario antes de la purga; si la ventana falla, se restaura desde el bundle y no se fuerza nada.
+   301→
+   302→**F1-T03 · S5 · Pepper obligatorio del escáner de PII en CI — OBLIGATORIA · CONSERVAR**
+   303→
+   304→- **Problema real.** Si `PII_PEPPER` falta en Actions, `check:pii` continúa con patrones genéricos y solo emite un aviso: la protección anti-falsa-negativo del denylist de PII queda degradada sin que nadie se entorne.
+   305→- **Evidencia en el código.** `.github/workflows/ci.yml` (comentario literal del paso "Escáner de PII y teléfonos reales"); `scripts/check-pii.mjs` ya soporta pepper y prueba negativa (verificada en sesión previa: exit 1 sin pepper).
+   306→- **Beneficio para el usuario.** Los datos personales de clientes reales quedan protegidos en cada PR; una mala configuración de CI rompe el pipeline en vez de pasar inadvertida.
+   307→- **Solución recomendada.** Configurar `PII_PEPPER` como secret de Actions (acción del propietario) y ajustar el paso para fallar si el pepper no está presente (fail-fast), sin cambiar la lógica del escáner.
+   308→- **Archivos y módulos afectados.** `.github/workflows/ci.yml`; flag fail-fast en `scripts/check-pii.mjs` si no existe aún.
+   309→- **Riesgos.** Bajo; el primer run fallará si el secret no se configuró antes (procedimiento: configurar primero, luego activar el fail-fast).
+   310→- **Dependencias.** El propietario configura el secret de Actions (parte de A1).
+   311→- **Pruebas necesarias.** Prueba negativa local (falla sin pepper); run de CI verde con pepper.
+   312→- **Criterios de aceptación.** `check:pii` corre con pepper en todos los runs; el CI es rojo si falta.
+   313→- **Estimación.** 0,25 d.
+   314→- **Reversión.** Revertir el commit del workflow; el script sigue funcionando en modo actual.
+   315→
+   316→**F1-T04 · S6 · Saneamiento de los 26 scripts e2e-* históricos — OBLIGATORIA · CONSERVAR**
+   317→
+   318→- **Problema real.** 26 scripts `e2e-*` en `scripts/` conservan rutas de otra máquina y secretos literales; conviven con el flujo oficial autocontenido `scripts/e2e-3-servicios.mjs`, generando confusión y superficie de fuga.
+   319→- **Evidencia en el código.** `git ls-tree origin/repair/produccion-real scripts/` (26 entradas e2e-*); `scripts/security/secret-baseline.json` que los admite por excepción.
+   320→- **Beneficio para el usuario.** Menos superficie de fuga de credenciales y un solo flujo oficial de pruebas; la operación deja de depender de scripts que solo corrían en una máquina desaparecida.
+   321→- **Solución recomendada.** Archivar en `docs/historia/scripts/` (o eliminar con etiqueta previa) los scripts no oficiales; conservar `e2e-3-servicios.mjs` y los referenciados por `package.json`, CI o documentación vigente; regenerar la baseline de secretos.
+   322→- **Archivos y módulos afectados.** `scripts/e2e-*` (26), `scripts/security/secret-baseline.json`, documentación operativa.
+   323→- **Riesgos.** Perder material histórico (mitigado con archivo o etiqueta); romper una referencia viva (mitigado verificando `package.json`/workflows antes de mover cada script).
+   324→- **Dependencias.** Decisión A4 (autorización de eliminaciones con archivo previo).
+   325→- **Pruebas necesarias.** `security:scan` en verde tras la limpieza; `npm run build` y batería intactos.
+   326→- **Criterios de aceptación.** Ningún script con secretos literales ni rutas ajenas; inventario final en la documentación operativa.
+   327→- **Estimación.** 1 d.
+   328→- **Reversión.** `git revert` del PR; el archivo o la etiqueta conserva el contenido original íntegro.
+   329→
+   330→### 7.2 Fase 2 — Estabilidad y confiabilidad del CRM (6 tareas, 3,5 d)
+   331→
+   332→Objetivo: dejar la base de integración estable y los PR resueltos, porque casi todo el resto del plan se construye sobre ella. Criterio de salida: CI verde en `repair/produccion-real` con los PR #5 y #6 integrados (o su destino decidido), migraciones deterministas en instalación limpia, cero código muerto referenciado, y documentación de readiness conciliada con el código.
+   333→
+   334→**F2-T01 · E2 · Numeración consistente de migraciones Prisma — OBLIGATORIA · CONSERVAR**
+   335→
+   336→- **Problema real.** Las migraciones `10_quoteitem_org_backfill` (PR #5) y `11_tareas` (PR #6) se aplicarían lexicográficamente entre `1_` y `2_`, estableciendo un patrón que en instalaciones limpias futuras aplica en un orden no intencional.
+   337→- **Evidencia en el código.** Orden lexicográfico de `prisma/migrations/` verificado hoy; convención vigente: `0_`–`9_`, luego `z_*` con nombre semántico.
+   338→- **Beneficio para el usuario.** Toda instalación nueva (incluida la del propio propietario en producción) aplica el esquema en un orden determinista y reproducible; elimina una clase entera de fallos de despliegue.
+   339→- **Solución recomendada.** Renombrar las migraciones nuevas al formato semántico vigente (`z_quoteitem_org_backfill`, `z_tareas`) en sus ramas, o consolidar la convención en `docs/MIGRACIONES.md` si el equipo prefiere prefijos numéricos estrictos; documentar la regla elegida.
+   340→- **Archivos y módulos afectados.** `prisma/migrations/*` de las ramas de los PR #5 y #6; `docs/MIGRACIONES.md`.
+   341→- **Riesgos.** Si alguna migración ya se aplicó en una base real, el renombrado requiere `prisma migrate resolve` sobre copia; hoy no hay evidencia de bases con `10_`/`11_` aplicadas (los PR no están fusionados), por lo que el renombrado es seguro ahora mismo.
+   342→- **Dependencias.** Decisión A5 (autorización de renumeración). Precede a la integración de los PR #5 y #6.
+   343→- **Pruebas necesarias.** Instalación limpia (migraciones sobre SQLite temporal) aplica en orden determinista; batería en verde.
+   344→- **Criterios de aceptación.** Instalación limpia determinista; CI verde en las ramas afectadas; regla documentada.
+   345→- **Estimación.** 0,5 d.
+   346→- **Reversión.** `git revert` del renombrado; las migraciones son aditivas y no tocan datos.
+   347→
+   348→**F2-T02 · E1 · Diagnosticar el CI rojo del PR #5 — OBLIGATORIA · CONSERVAR**
+   349→
+   350→- **Problema real.** El CI del PR #5 falla en el paso 11 (Suite de tests) según GitHub Actions, mientras el mensaje de su commit reclama una batería 784/784 en verde: una de las dos afirmaciones es falsa y no se puede fusionar sin saber cuál.
+   351→- **Evidencia en el código.** Run 44428835497, job 135240625938 (terceros): pasos 1–10 verdes, paso 11 FAILURE, build omitido.
+   352→- **Beneficio para el usuario.** Permite integrar la limpieza de deuda sin arrastrar un fallo real a la base; si el fallo es del backfill de QuoteItem, lo detecta antes de producción.
+   353→- **Solución recomendada.** Reproducir la batería localmente sobre un worktree de la rama `1e5c9ae`, identificar el test que falla, corregir la causa (test o código), y re-CI en verde.
+   354→- **Archivos y módulos afectados.** Rama `cierre/a-estabilizacion-y-deuda`; el test específico que falle; `tests/integration/quote-item-org-backfill.test.ts` como candidato principal.
+   355→- **Riesgos.** El fallo puede revelar un problema real del backfill (es la función de la prueba, no un riesgo del procedimiento).
+   356→- **Dependencias.** Decisión A3 (autorizar trabajo sobre la rama del PR); posterior a F2-T01 si se renumeran las migraciones en la misma pasada.
+   357→- **Pruebas necesarias.** Batería local de la rama en verde; re-run de CI en verde.
+   358→- **Criterios de aceptación.** CI success en la cabeza del PR; causa documentada en el propio PR.
+   359→- **Estimación.** 0,5 d.
+   360→- **Reversión.** Los cambios de diagnóstico viven en la rama del PR y se descartan con ella si no convencen; la base no se toca.
+   361→
+   362→**F2-T03 · F1 · Integrar el PR #6 (tareas y quick-actions) — OBLIGATORIA · CONSERVAR**
+   363→
+   364→- **Problema real.** El módulo de tareas y recordatorios y las quick-actions de la ficha 360 existen completos en el PR #6 con CI de terceros en verde, pero la base no los tiene: los usuarios no disponen de la funcionalidad y el dashboard de atención (U2) la necesita.
+   365→- **Evidencia en el código.** Head `dfd926a`: 11 archivos, +576/−6, migración `11_tareas` aditiva, API org-scoped, `tests/integration/tasks.test.ts` (109 líneas); CI success 2026-11-19. La base no tiene `src/app/api/tasks/` (verificado hoy).
+   366→- **Beneficio para el usuario.** Tareas y recordatorios disponibles desde el dashboard y la ficha; acciones de inbox/cotización/agenda en un clic desde el cliente.
+   367→- **Solución recomendada.** Tras F2-T01: renumerar su migración si aplica, re-CI y fusionar a `repair/produccion-real` por decisión del propietario; añadir `cierre/**` a los triggers de CI.
+   368→- **Archivos y módulos afectados.** Los 11 archivos del PR; `.github/workflows/ci.yml` (triggers).
+   369→- **Riesgos.** Numeración (resuelta por F2-T01); ninguna otra — el PR es aditivo y no toca contratos.
+   370→- **Dependencias.** F2-T01; decisión A3.
+   371→- **Pruebas necesarias.** Suite + tests de tareas incluidos en CI; verificación de la migración en instalación limpia.
+   372→- **Criterios de aceptación.** Módulo de tareas en la base con CI verde; tarjeta visible en el dashboard.
+   373→- **Estimación.** 0,5 d.
+   374→- **Reversión.** Merge revertible con `git revert -m 1`; migración aditiva cuya tabla puede dejarse sin uso o eliminarse con una migración inversa si el propietario lo pide.
+   375→
+   376→**F2-T04 · D1 · Resolver las ramas de integración pendientes del CRM — OBLIGATORIA · CONSERVAR**
+   377→
+   378→- **Problema real.** El PR #4 (test de ACK ambiguo) está abierto hacia `main` en lugar de hacia la base de integración, y `fix/migration-safety-audit` (pruebas multiproceso del scheduler con lease) no tiene destino decidido.
+   379→- **Evidencia en el código.** PR #4 head `611e418` con 2 archivos +153; rama `fix/migration-safety-audit` con tests de lease entre procesos verificados por la auditoría v1.
+   380→- **Beneficio para el usuario.** Las garantías de no-pérdida y no-duplicación del scheduler quedan protegidas por tests permanentes en la base; la topología de ramas queda limpia y explicable.
+   381→- **Solución recomendada.** Con la decisión A3 del propietario sobre el flujo `repair/produccion-real` → `main`: retarget del PR #4 a la base de integración (o rebase) e integración; portar los tests multiproceso del scheduler a la base en un PR pequeño.
+   382→- **Archivos y módulos afectados.** `tests/unit|integration/` del scheduler; PR #4; `src/lib/workflow-outbox.ts` (solo como sujeto de los tests).
+   383→- **Riesgos.** Bajo; son tests, no código productivo.
+   384→- **Dependencias.** Decisión A3; coherente con F2-T02/F2-T03 en la misma ventana de PRs.
+   385→- **Pruebas necesarias.** Suite ampliada con los tests portados; CI verde.
+   386→- **Criterios de aceptación.** Pruebas multiproceso del scheduler en la base; PR #4 con destino correcto, integrado o cerrado con decisión escrita.
+   387→- **Estimación.** 1 d.
+   388→- **Reversión.** `git revert` de los PR de tests; no afecta datos ni contratos.
+   389→
+   390→**F2-T05 · E3 · Completar la limpieza de código y dependencias muertas — OBLIGATORIA · CONSERVAR**
+   391→
+   392→- **Problema real.** Ocho dependencias sin uso en `package.json` y `whatsapp-daemon-supervisor.ts` (172 líneas) sin ninguna referencia en archivos trackeados; el PR #5 ya trae la mayor parte, pero su integración debe verificarse y completar lo que falte.
+   393→- **Evidencia en el código.** `git grep` sin resultados para el supervisor (verificado hoy); `package.json` de la base con `next-auth`, `next-intl`, `@hapi/boom`, `@mdxeditor/editor`, `@dnd-kit/*`, `@tanstack/react-query`, `@tanstack/react-table`.
+   394→- **Beneficio para el usuario.** Instalaciones más ligeras y rápidas (menos dependencias que instalar y actualizar); superficie de vulnerabilidades de dependencias reducida.
+   395→- **Solución recomendada.** Tras integrar el PR #5: verificar con `tsc`, build y suite que la limpieza quedó completa; eliminar cualquier resto (js-yaml si queda solo de scripts, imports ocultos) con el ratchet de lint.
+   396→- **Archivos y módulos afectados.** `package.json`, `package-lock.json`, `src/whatsapp-daemon-supervisor.ts` si sigue en la base, `scripts/lint-baseline.mjs`.
+   397→- **Riesgos.** Import oculto no detectado (mitigado con `tsc` + build + suite; el ratchet de lint bloquea errores nuevos).
+   398→- **Dependencias.** Integración del PR #5 (que a su vez depende de F2-T01/F2-T02); decisión A4 para cualquier eliminación extra.
+   399→- **Pruebas necesarias.** `tsc`, build de producción y batería en verde.
+   400→- **Criterios de aceptación.** Cero referencias a módulos muertos; cero dependencias sin uso; CI verde.
+   401→- **Estimación.** 0,5 d (verificación + restos; el grueso lo hace el PR #5).
+   402→- **Reversión.** `git revert` del PR de limpieza; dependencias re-instalables sin efecto en datos.
+   403→
+   404→**F2-T06 · E4 · Conciliar PRODUCTION_READINESS y CHANGELOG con el código — OBLIGATORIA · CONSERVAR**
+   405→
+   406→- **Problema real.** La documentación de readiness declara 107 rutas frente a 125 reales y cifras de suites que cambiaron sin actualizarse; la "falsa confianza" documental es el origen de decisiones basadas en documentos y no en código.
+   407→- **Evidencia en el código.** `PRODUCTION_READINESS.md` y `CHANGELOG.md` de la base vs conteo real de rutas y archivos de prueba de esta auditoría.
+   408→- **Beneficio para el usuario.** El propietario y cualquier operador leen cifras verdaderas; las decisiones de cierre se toman sobre hechos.
+   409→- **Solución recomendada.** Regenerar cifras con conteo real (rutas, modelos, migraciones, tests) mediante un script verificador reutilizable, y reescribir las secciones afectadas; dejar el script en `scripts/` para re-ejecutarlo en cada release.
+   410→- **Archivos y módulos afectados.** `PRODUCTION_READINESS.md`, `CHANGELOG.md`, nuevo `scripts/verify-doc-figures.mjs`.
+   411→- **Riesgos.** Bajo.
+   412→- **Dependencias.** Preferible tras integrar los PR de la fase para no congelar cifras que van a cambiar.
+   413→- **Pruebas necesarias.** Revisión cruzada de cada cifra contra código; el script verificador pasa.
+   414→- **Criterios de aceptación.** Cero cifras contradictorias entre documentos y código.
+   415→- **Estimación.** 0,5 d.
+   416→- **Reversión.** `git revert` del PR de docs.
+   417→
+   418→### 7.3 Fase 3 — Mensajería y conversaciones (5 tareas, 7,5 d)
+   419→
+   420→Objetivo: que la mensajería del CRM funcione de punta a punta sin intervención manual y que la bandeja sea una sola experiencia confiable. Criterio de salida: un mensaje canónico pasa de `queued` a `sent`/`unknown` con worker en el despliegue, un contacto aparece una sola vez, la bandeja filtra por canal y cuenta, y un operador resuelve un envío UNCERTAIN sin SQL manual. Las salvaguardas de campaña (ventana 24 h, plantillas, consentimiento) permanecen como dependencia externa (M2/M3/I6) y se documentan como límite del alcance.
+   421→
+   422→**F3-T01 · M1 · Worker de la outbox de canales en el despliegue — OBLIGATORIA · CONSERVAR**
+   423→
+   424→- **Problema real.** La outbox de canales solo avanza si un proceso externo llama a `POST /api/internal/channel-outbox` con secreto de 32+ caracteres y bandera habilitada; ni el compose, ni el entrypoint, ni los scripts del repositorio levantan ese proceso, así que el envío omnicanal queda encolado indefinidamente.
+   425→- **Evidencia en el código.** `src/lib/channel-outbox.ts` (intent→claim→dispatch→sent/failed/unknown); única referencia de despliegue: monitor pasivo `.github/workflows/outbox-monitor.yml`; documentación interna: "No se registró cron, scheduler ni ejecución automática".
+   426→- **Beneficio para el usuario.** Los mensajes salen solos: el usuario escribe en la bandeja y el mensaje llega; sin esto, la promesa central del producto (omnicanal) no se cumple.
+   427→- **Solución recomendada.** Añadir el worker como servicio del compose (o unidad systemd separada) que hace push periódico a la API interna con su propio secreto y bandera; mantener la bandera `CHANNEL_OUTBOUND_DISPATCH_ENABLED` desactivada por defecto y activarla solo en entornos con envío autorizado.
+   428→- **Archivos y módulos afectados.** `docker-compose.yml`, `scripts/docker-entrypoint.sh`, posible `scripts/channel-outbox-worker.mjs`, `.env.example`, `docs/CONTEXTO CRM/RUNBOOK_CANALES.md`.
+   429→- **Riesgos.** Envíos reales si la bandera se activa sin control (mitigado: bandera + secreto + kill-switch ya existentes); doble procesamiento si se levantan dos workers (mitigado: el claim de la outbox ya es atómico).
+   430→- **Dependencias.** Decisión A7 (despliegue del worker); prueba de punta en fase 7 con el E2E.
+   431→- **Pruebas necesarias.** E2E local con mensaje ficticio `queued→sent` (o `unknown`) con ALLOW_REAL_DISPATCH=false; monitor en verde.
+   432→- **Criterios de aceptación.** `docker compose up` levanta el worker y un mensaje de prueba sale de la cola con evidencia de log; runbook actualizado.
+   433→- **Estimación.** 1 d.
+   434→- **Reversión.** Quitar el servicio del compose y desactivar la bandera; la cola queda intacta y el sistema vuelve al estado actual sin pérdida.
+   435→
+   436→**F3-T02 · F2 · UI de conexiones WhatsApp multi-número — OBLIGATORIA · CONSERVAR**
+   437→
+   438→- **Problema real.** La API de conexiones multi-número (Baileys por organización y Cloud API) está completa y probada en la base, pero no existe ninguna pantalla: conectar, desconectar o ver el estado de un número exige llamadas manuales a la API.
+   439→- **Evidencia en el código.** `src/lib/wa-connections.ts`, modelo de conexiones y `tests/integration/wa-connections.test.ts` en la base; cero componentes en `src/components` que referencien conexiones (verificado hoy); rama `impl/wave2-wa-connections` contenida al 100 % (el trabajo API ya está fusionado).
+   440→- **Beneficio para el usuario.** El propietario de cada organización conecta sus números desde Ajustes → Canales: estado, QR o Cloud, desconexión y reconexión, sin tocar la API.
+   441→- **Solución recomendada.** Pantalla de conexiones por organización: lista de números con estado (veredicto de sesión existente), acción conectar (QR vía daemon o Cloud API), desconectar con confirmación, y registro de eventos de conexión; permisos de administración aplicados.
+   442→- **Archivos y módulos afectados.** Nuevo `src/components/settings/connections-tab.tsx` (o equivalente), `src/lib/wa-connections.ts` (solo lectura), `src/app/api/` (consumo).
+   443→- **Riesgos.** Operaciones delicadas expuestas en UI (mitigado: permisos RBAC existentes + confirmaciones dobles para desconectar).
+   444→- **Dependencias.** Ninguna técnica bloqueante; orden recomendado F2 → F3(bandeja) → F5(Salud).
+   445→- **Pruebas necesarias.** Test de componentes del flujo conectar/desconectar; prueba con stub del daemon; capturas.
+   446→- **Criterios de aceptación.** Conectar, desconectar y ver estado desde la UI sin API manual; el estado refleja el veredicto real de sesión.
+   447→- **Estimación.** 2 d.
+   448→- **Reversión.** El componente es aditivo; revertir el PR no toca la API ni datos.
+   449→
+   450→**F3-T03 · M7 · Criterio de unificación de la doble bandeja — OBLIGATORIA · CONSERVAR**
+   451→
+   452→- **Problema real.** Conviven dos generaciones de modelo (tablas WhatsApp* del daemon legacy y el modelo canónico Channel*), y `inbox.ts` prioriza el daemon para el mismo teléfono: un contacto puede aparecer dos veces en la bandeja y el historial puede verse dividido.
+   453→- **Evidencia en el código.** Cabecera de `src/lib/inbox.ts` (documenta la prioridad daemon sobre timeline); migraciones 6–8 del modelo canónico.
+   454→- **Beneficio para el usuario.** Un contacto, una conversación, un historial completo: el operador deja de perder respuestas que quedaron en la "otra" bandeja.
+   455→- **Solución recomendada.** Definir y documentar el criterio de fuente ganadora por contacto (canónico primero con respaldo del daemon, o el criterio que apruebe el propietario), aplicar el dedup en `inbox.ts` y conservar el historial completo en la ficha 360; **sin borrar modelos ni datos históricos**.
+   456→- **Archivos y módulos afectados.** `src/lib/inbox.ts`, `src/components/inbox/inbox-page.tsx`, documentación del criterio.
+   457→- **Riesgos.** Cambios de orden percibidos por usuarios habituados (mitigable comunicando el cambio); ningún borrado de datos.
+   458→- **Dependencias.** Decisión de producto A10 (criterio de unificación); F3-T04 depende de este criterio.
+   459→- **Pruebas necesarias.** Test de dedup con un contacto presente en ambas fuentes; revisión manual en móvil.
+   460→- **Criterios de aceptación.** Un contacto aparece una sola vez con canal y cuenta claros; el historial completo sigue visible en la ficha.
+   461→- **Estimación.** 2 d.
+   462→- **Reversión.** `git revert` del PR; sin migraciones ni borrados, la vuelta atrás es limpia.
+   463→
+   464→**F3-T04 · F3 · Filtros por canal y cuenta + búsqueda en la bandeja — OBLIGATORIA · CONSERVAR**
+   465→
+   466→- **Problema real.** La bandeja canónica no filtra por canal ni por cuenta y no tiene búsqueda: con varios números y canales por organización, encontrar la conversación correcta es lento y propenso a errores.
+   467→- **Evidencia en el código.** Diagnóstico 5.4–5.6 del plan v1; `inbox.ts` ya expone el origen de cada conversación (la información existe, falta la capa de consulta/UI).
+   468→- **Beneficio para el usuario.** El operador filtra por WhatsApp/Instagram/Telegram/Facebook/TikTok, por cuenta conectada y busca por nombre o teléfono: respuesta al cliente en segundos.
+   469→- **Solución recomendada.** Extender la API de inbox con parámetros de canal, conexión y búsqueda, y añadir los controles en la bandeja; paginar para mantener el rendimiento.
+   470→- **Archivos y módulos afectados.** `src/app/api/inbox/route.ts`, `src/lib/inbox.ts`, `src/components/inbox/inbox-page.tsx`.
+   471→- **Riesgos.** Rendimiento con filtros sobre SQLite (mitigado con paginación e índices existentes).
+   472→- **Dependencias.** F3-T03 (criterio de unificación) para no filtrar sobre duplicados.
+   473→- **Pruebas necesarias.** Test de API con filtros combinados; revisión manual móvil.
+   474→- **Criterios de aceptación.** El filtro por conexión devuelve solo esa cuenta; la búsqueda encuentra por nombre y teléfono.
+   475→- **Estimación.** 1 d.
+   476→- **Reversión.** `git revert`; los parámetros nuevos son aditivos a la API.
+   477→
+   478→**F3-T05 · M8 (MODIFICADA: sobre endpoints del CRM) · Reconciliación operable de envíos UNCERTAIN — OBLIGATORIA · MODIFICAR**
+   479→
+   480→- **Problema real.** Resolver un envío en estado `unknown`/UNCERTAIN exige SQL manual y disciplina: listar inciertos, aportar evidencia del proveedor y confirmar el reenvío es un flujo de desarrollador, no de operador.
+   481→- **Evidencia en el código.** Endpoints `POST /api/internal/channel-outbox` y `/api/internal/channel-outbox/reconcile` protegidos por secreto (documentación interna 2026-11-14); política "unknown jamás reintentado; conciliación exige providerChecked" en `channel-outbox.ts`.
+   482→- **Beneficio para el usuario.** El operador resuelve un incierto en minutos con evidencia, sin tocar la base: cero duplicados y cero mensajes perdidos en la práctica.
+   483→- **Solución recomendada.** Pantalla (o CLI de operador) sobre los endpoints existentes: lista de inciertos por organización, campo de evidencia, botón de confirmar reenvío que exige la evidencia mínima ya implementada. La parte de inciertos que solo existe dentro de WP queda como nota de dependencia externa.
+   484→- **Archivos y módulos afectados.** Nueva vista admin reutilizando `src/lib/channel-outbox.ts`; endpoints existentes sin cambios de contrato.
+   485→- **Riesgos.** Reintento indebido (mitigado: la API ya exige evidencia; la UI no ofrece reenvío sin ella).
+   486→- **Dependencias.** F3-T01 (worker) para que el flujo tenga sentido operativo; patrón del PR #4 reutilizable para tests.
+   487→- **Pruebas necesarias.** Flujo completo con proveedor mock: uncertain → evidencia → resend autorizado; denegación sin evidencia.
+   488→- **Criterios de aceptación.** El operador resuelve un incierto sin SQL manual, con auditoría del caso.
+   489→- **Estimación.** 1,5 d (reducido del original de 2 d al construir solo sobre endpoints ya existentes).
+   490→- **Reversión.** La vista es aditiva; los endpoints y la política no cambian.
+   491→
+   492→### 7.4 Fase 4 — Experiencia de usuario (5 tareas, 8,5 d)
+   493→
+   494→Objetivo: un CRM que se sienta sencillo, moderno y profesional sin sacrificar la capacidad multiempresa ni las funciones comerciales. Se estudia la referencia solo como material de presentación (navegación plana, paradigma "te toca", catálogo de errores, onboarding). Criterio de salida: menú 5+1 con una sola bandeja, dashboard con motivos accionables, ajustes agrupados, cero textos menores a 13px, y los 20 errores más frecuentes con solución clara. Esta fase es la que más nota el usuario final y la más recomendable para cerrar antes de cualquier demo comercial.
+   495→
+   496→**F4-T01 · U1 · Navegación única 5+1 y una sola bandeja — OBLIGATORIA · CONSERVAR**
+   497→
+   498→- **Problema real.** 17 páginas con dos bandejas visibles (`/whatsapp` y `/inbox`) y navegación saturada: el usuario nuevo no sabe dónde atender mensajes.
+   499→- **Evidencia en el código.** Ambas páginas existen en la base (verificado hoy); diagnóstico de navegación del plan v1 (sección 6).
+
+[showing lines 100-499 of 930; use offset=500 with limit to continue reading]

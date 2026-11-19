@@ -1,0 +1,807 @@
+     1→'use client'
+     2→
+     3→const API_BASE = '/api'
+     4→
+     5→class ApiClient {
+     6→  private token: string | null = null
+     7→
+     8→  setToken(token: string | null) {
+     9→    this.token = token
+    10→  }
+    11→
+    12→  getToken(): string | null {
+    13→    return this.token
+    14→  }
+    15→
+    16→  private async request(path: string, options: RequestInit = {}) {
+    17→    const headers: Record<string, string> = {
+    18→      'Content-Type': 'application/json',
+    19→      ...(options.headers as Record<string, string> || {}),
+    20→    }
+    21→    if (this.token) {
+    22→      headers['Authorization'] = `Bearer ${this.token}`
+    23→    }
+    24→    const res = await fetch(`${API_BASE}${path}`, { ...options, headers })
+    25→    if (!res.ok) {
+    26→      const error = await res.json().catch(() => ({ error: 'Error de conexión' }))
+    27→      throw new Error(error.error || `Error ${res.status}`)
+    28→    }
+    29→    return res.json()
+    30→  }
+    31→
+    32→  // Auth
+    33→  async register(data: { name: string; email: string; password: string; company?: string; phone?: string }) {
+    34→    return this.request('/auth/register', { method: 'POST', body: JSON.stringify(data) })
+    35→  }
+    36→
+    37→  async login(data: { email: string; password: string }) {
+    38→    return this.request('/auth/login', { method: 'POST', body: JSON.stringify(data) })
+    39→  }
+    40→
+    41→  // (OLEADA 2) 2FA TOTP: canje del ticket MFA por sesión con el segundo factor.
+    42→  async verify2fa(data: { mfaToken: string; code: string }) {
+    43→    return this.request('/auth/2fa/verify', { method: 'POST', body: JSON.stringify(data) })
+    44→  }
+    45→
+    46→  async get2faStatus() {
+    47→    return this.request('/auth/2fa/status')
+    48→  }
+    49→
+    50→  async setup2fa() {
+    51→    return this.request('/auth/2fa/setup', { method: 'POST', body: '{}' })
+    52→  }
+    53→
+    54→  async enable2fa(data: { code: string }) {
+    55→    return this.request('/auth/2fa/enable', { method: 'POST', body: JSON.stringify(data) })
+    56→  }
+    57→
+    58→  async disable2fa(data: { password: string; code: string }) {
+    59→    return this.request('/auth/2fa/disable', { method: 'POST', body: JSON.stringify(data) })
+    60→  }
+    61→
+    62→  async getMe() {
+    63→    return this.request('/auth/me')
+    64→  }
+    65→
+    66→  // Super Admin (plano de control multi-organización; el servidor exige rol superadmin)
+    67→  async getSuperOverview() {
+    68→    return this.request('/super/overview')
+    69→  }
+    70→
+    71→  async switchSuperOrganization(organizationId: string) {
+    72→    return this.request('/super/switch-organization', {
+    73→      method: 'POST',
+    74→      body: JSON.stringify({ organizationId }),
+    75→    })
+    76→  }
+    77→
+    78→  async demoLogin() {
+    79→    return this.request('/auth/demo', { method: 'POST' })
+    80→  }
+    81→
+    82→  // Clients
+    83→  async getClients(params?: Record<string, string>) {
+    84→    const query = params ? '?' + new URLSearchParams(params).toString() : ''
+    85→    return this.request(`/clients${query}`)
+    86→  }
+    87→
+    88→  async getClient(id: string) {
+    89→    return this.request(`/clients/${id}`)
+    90→  }
+    91→
+    92→  async createClient(data: Record<string, unknown>) {
+    93→    return this.request('/clients', { method: 'POST', body: JSON.stringify(data) })
+    94→  }
+    95→
+    96→  async updateClient(id: string, data: Record<string, unknown>) {
+    97→    return this.request(`/clients/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+    98→  }
+    99→
+   100→  async deleteClient(id: string) {
+   101→    return this.request(`/clients/${id}`, { method: 'DELETE' })
+   102→  }
+   103→
+   104→  async getClientPreferences(id: string) {
+   105→    return this.request(`/clients/${id}/preferences`)
+   106→  }
+   107→
+   108→  async updateClientPreferences(id: string, data: Record<string, unknown>) {
+   109→    return this.request(`/clients/${id}/preferences`, { method: 'PUT', body: JSON.stringify(data) })
+   110→  }
+   111→
+   112→  async getClientHistory(id: string) {
+   113→    return this.request(`/clients/${id}/history`)
+   114→  }
+   115→
+   116→  async addClientHistory(id: string, data: Record<string, unknown>) {
+   117→    return this.request(`/clients/${id}/history`, { method: 'POST', body: JSON.stringify(data) })
+   118→  }
+   119→
+   120→  // Opportunities
+   121→  async getOpportunities(params?: Record<string, string>) {
+   122→    const query = params ? '?' + new URLSearchParams(params).toString() : ''
+   123→    return this.request(`/opportunities${query}`)
+   124→  }
+   125→
+   126→  async getOpportunity(id: string) {
+   127→    return this.request(`/opportunities/${id}`)
+   128→  }
+   129→
+   130→  async createOpportunity(data: Record<string, unknown>) {
+   131→    return this.request('/opportunities', { method: 'POST', body: JSON.stringify(data) })
+   132→  }
+   133→
+   134→  async updateOpportunity(id: string, data: Record<string, unknown>) {
+   135→    return this.request(`/opportunities/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+   136→  }
+   137→
+   138→  // IA de cierre (Fase 4): sugerencia para una oportunidad del pipeline
+   139→  async getDealAiSuggestion(id: string) {
+   140→    return this.request(`/opportunities/${id}/ai-suggest`, { method: 'POST' })
+   141→  }
+   142→
+   143→  // Pipeline
+   144→  async getPipeline() {
+   145→    return this.request('/pipeline')
+   146→  }
+   147→
+   148→  // Reservations
+   149→  async getReservations(params?: Record<string, string>) {
+   150→    const query = params ? '?' + new URLSearchParams(params).toString() : ''
+   151→    return this.request(`/reservations${query}`)
+   152→  }
+   153→
+   154→  async createReservation(data: Record<string, unknown>) {
+   155→    return this.request('/reservations', { method: 'POST', body: JSON.stringify(data) })
+   156→  }
+   157→
+   158→  async updateReservation(id: string, data: Record<string, unknown>) {
+   159→    return this.request(`/reservations/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+   160→  }
+   161→
+   162→  async cancelReservation(id: string) {
+   163→    return this.request(`/reservations/${id}`, { method: 'DELETE' })
+   164→  }
+   165→
+   166→  // Quotes
+   167→  async getQuotes(params?: Record<string, string>) {
+   168→    const query = params ? '?' + new URLSearchParams(params).toString() : ''
+   169→    return this.request(`/quotes${query}`)
+   170→  }
+   171→
+   172→  async getQuote(id: string) {
+   173→    return this.request(`/quotes/${id}`)
+   174→  }
+   175→
+   176→  async createQuote(data: Record<string, unknown>) {
+   177→    return this.request('/quotes', { method: 'POST', body: JSON.stringify(data) })
+   178→  }
+   179→
+   180→  async updateQuoteStatus(id: string, data: { status: string }) {
+   181→    return this.request(`/quotes/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+   182→  }
+   183→
+   184→  async deleteQuote(id: string) {
+   185→    return this.request(`/quotes/${id}`, { method: 'DELETE' })
+   186→  }
+   187→
+   188→  // Automations
+   189→  async getAutomations() {
+   190→    return this.request('/automations')
+   191→  }
+   192→
+   193→  async createAutomation(data: Record<string, unknown>) {
+   194→    return this.request('/automations', { method: 'POST', body: JSON.stringify(data) })
+   195→  }
+   196→
+   197→  async updateAutomation(id: string, data: Record<string, unknown>) {
+   198→    return this.request(`/automations/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+   199→  }
+   200→
+   201→  async deleteAutomation(id: string) {
+   202→    return this.request(`/automations/${id}`, { method: 'DELETE' })
+   203→  }
+   204→
+   205→  async runAutomations() {
+   206→    return this.request('/automations/run', { method: 'POST' })
+   207→  }
+   208→
+   209→  // Knowledge (base de conocimiento del Agente IA)
+   210→  async getKnowledge() {
+   211→    return this.request('/knowledge')
+   212→  }
+   213→
+   214→  async createKnowledge(data: Record<string, unknown>) {
+   215→    return this.request('/knowledge', { method: 'POST', body: JSON.stringify(data) })
+   216→  }
+   217→
+   218→  async updateKnowledge(id: string, data: Record<string, unknown>) {
+   219→    return this.request(`/knowledge/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+   220→  }
+   221→
+   222→  async deleteKnowledge(id: string) {
+   223→    return this.request(`/knowledge/${id}`, { method: 'DELETE' })
+   224→  }
+   225→
+   226→  // Dashboard
+   227→  async getDashboard() {
+   228→    return this.request('/dashboard')
+   229→  }
+   230→
+   231→  // Claves de API (hosts: MCP y acciones CRM)
+   232→  async getApiKeys() {
+   233→    return this.request('/settings/api-keys')
+   234→  }
+   235→
+   236→  async createApiKey(data: { name: string }) {
+   237→    return this.request('/settings/api-keys', { method: 'POST', body: JSON.stringify(data) })
+   238→  }
+   239→
+   240→  async revokeApiKey(id: string) {
+   241→    return this.request(`/settings/api-keys/${id}`, { method: 'DELETE' })
+   242→  }
+   243→
+   244→  // Transactions
+   245→  async getTransactions(params?: Record<string, string>) {
+   246→    const query = params ? '?' + new URLSearchParams(params).toString() : ''
+   247→    return this.request(`/transactions${query}`)
+   248→  }
+   249→
+   250→  async createTransaction(data: Record<string, unknown>) {
+   251→    return this.request('/transactions', { method: 'POST', body: JSON.stringify(data) })
+   252→  }
+   253→
+   254→  // Services
+   255→  async getServices() {
+   256→    return this.request('/services')
+   257→  }
+   258→
+   259→  async createService(data: Record<string, unknown>) {
+   260→    return this.request('/services', { method: 'POST', body: JSON.stringify(data) })
+   261→  }
+   262→
+   263→  async updateService(id: string, data: Record<string, unknown>) {
+   264→    return this.request('/services', { method: 'PUT', body: JSON.stringify({ id, ...data }) })
+   265→  }
+   266→
+   267→  async deleteService(id: string) {
+   268→    return this.request(`/services?id=${id}`, { method: 'DELETE' })
+   269→  }
+   270→
+   271→  // WhatsApp — SIEMPRE vía /api/whatsapp/daemon-proxy con JWT (auditoría Antigravity
+   272→  // críticos #3/#4: antes el frontend hablaba directo al puerto 3002, sin auth;
+   273→  // el envío manual devolvía 401 y las conversaciones eran públicamente legibles).
+   274→  private async proxyGet(path: string) {
+   275→    const headers: Record<string, string> = {}
+   276→    if (this.token) headers['Authorization'] = `Bearer ${this.token}`
+   277→    const res = await fetch(`/api/whatsapp/daemon-proxy?path=${encodeURIComponent(path)}`, { headers, cache: 'no-store' })
+   278→    return res.json()
+   279→  }
+   280→
+   281→  private async proxyPost(path: string, data: Record<string, unknown> = {}) {
+   282→    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+   283→    if (this.token) headers['Authorization'] = `Bearer ${this.token}`
+   284→    const res = await fetch('/api/whatsapp/daemon-proxy', {
+   285→      method: 'POST',
+   286→      headers,
+   287→      body: JSON.stringify({ path, ...data }),
+   288→    })
+   289→    return res.json()
+   290→  }
+   291→
+   292→  private async proxyPut(path: string, data: Record<string, unknown>) {
+   293→    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+   294→    if (this.token) headers['Authorization'] = `Bearer ${this.token}`
+   295→    const res = await fetch('/api/whatsapp/daemon-proxy', {
+   296→      method: 'PUT',
+   297→      headers,
+   298→      body: JSON.stringify({ path, ...data }),
+   299→    })
+   300→    return res.json()
+   301→  }
+   302→
+   303→  async getWhatsAppStatus() {
+   304→    return this.proxyGet('/status')
+   305→  }
+   306→
+   307→  async getWhatsAppQr() {
+   308→    return this.proxyGet('/qr')
+   309→  }
+   310→
+   311→  async connectWhatsApp() {
+   312→    return this.proxyPost('/connect')
+   313→  }
+   314→
+   315→  async disconnectWhatsApp() {
+   316→    return this.proxyPost('/disconnect')
+   317→  }
+   318→
+   319→  async getWhatsAppConversations(params?: Record<string, string>) {
+   320→    const query = params ? `?${new URLSearchParams(params).toString()}` : ''
+   321→    return this.proxyGet(`/conversations${query}`)
+   322→  }
+   323→
+   324→  async getWhatsAppConversation(id: string) {
+   325→    return this.proxyGet(`/conversations/${id}`)
+   326→  }
+   327→
+   328→  async updateWhatsAppConversation(id: string, data: Record<string, unknown>) {
+   329→    return this.proxyPut(`/conversations/${id}`, data)
+   330→  }
+   331→
+   332→  async sendWhatsAppMessage(data: Record<string, unknown>) {
+   333→    return this.proxyPost('/send', data)
+   334→  }
+   335→
+   336→  // Bandeja omnicanal (Fase 4) — unifica WhatsApp + Telegram + Instagram
+   337→  async getInbox(params?: Record<string, string>) {
+   338→    const query = params ? `?${new URLSearchParams(params).toString()}` : ''
+   339→    return this.request(`/inbox${query}`)
+   340→  }
+   341→
+   342→  async getInboxMessages(key: string) {
+   343→    return this.request(`/inbox?key=${encodeURIComponent(key)}`)
+   344→  }
+   345→
+   346→  async sendInboxMessage(data: { key: string; contactHandle: string; clientId?: string | null; text: string; clientRequestId?: string }) {
+   347→    return this.request('/inbox/send', { method: 'POST', body: JSON.stringify(data) })
+   348→  }
+   349→
+   350→  // Web-push (Fase 4) — la API dedupe por endpoint, es seguro re-llamar
+   351→  async subscribePush(subscription: { endpoint: string; keys: { p256dh: string; auth: string } }) {
+   352→    return this.request('/push/subscribe', { method: 'POST', body: JSON.stringify(subscription) })
+   353→  }
+   354→
+   355→  // Telegram
+   356→  async getTelegramConfig() {
+   357→    return this.request('/telegram/config')
+   358→  }
+   359→
+   360→  async saveTelegramConfig(data: Record<string, unknown>) {
+   361→    return this.request('/telegram/config', { method: 'PUT', body: JSON.stringify(data) })
+   362→  }
+   363→
+   364→  async disconnectTelegram() {
+   365→    return this.request('/telegram/config', { method: 'DELETE' })
+   366→  }
+   367→
+   368→  async sendTelegramMessage(data: Record<string, unknown>) {
+   369→    return this.request('/telegram/send', { method: 'POST', body: JSON.stringify(data) })
+   370→  }
+   371→
+   372→  async setTelegramWebhook() {
+   373→    return this.request('/telegram/set-webhook', { method: 'POST' })
+   374→  }
+   375→
+   376→  // Instagram
+   377→  async getInstagramConfig() {
+   378→    return this.request('/instagram/config')
+   379→  }
+   380→
+   381→  async saveInstagramConfig(data: Record<string, unknown>) {
+   382→    return this.request('/instagram/config', { method: 'PUT', body: JSON.stringify(data) })
+   383→  }
+   384→
+   385→  async disconnectInstagram() {
+   386→    return this.request('/instagram/config', { method: 'DELETE' })
+   387→  }
+   388→
+   389→  async sendInstagramMessage(data: Record<string, unknown>) {
+   390→    return this.request('/instagram/send', { method: 'POST', body: JSON.stringify(data) })
+   391→  }
+   392→
+   393→  // TikTok
+   394→  async getTikTokConfig() {
+   395→    return this.request('/tiktok/config')
+   396→  }
+   397→
+   398→  async saveTikTokConfig(data: Record<string, unknown>) {
+   399→    return this.request('/tiktok/config', { method: 'PUT', body: JSON.stringify(data) })
+   400→  }
+   401→
+   402→  async disconnectTikTok() {
+   403→    return this.request('/tiktok/config', { method: 'DELETE' })
+   404→  }
+   405→
+   406→  async sendTikTokMessage(data: Record<string, unknown>) {
+   407→    return this.request('/tiktok/send', { method: 'POST', body: JSON.stringify(data) })
+   408→  }
+   409→
+   410→  // Facebook
+   411→  async getFacebookConfig() {
+   412→    return this.request('/facebook/config')
+   413→  }
+   414→
+   415→  async saveFacebookConfig(data: Record<string, unknown>) {
+   416→    return this.request('/facebook/config', { method: 'PUT', body: JSON.stringify(data) })
+   417→  }
+   418→
+   419→  async disconnectFacebook() {
+   420→    return this.request('/facebook/config', { method: 'DELETE' })
+   421→  }
+   422→
+   423→  async sendFacebookMessage(data: Record<string, unknown>) {
+   424→    return this.request('/facebook/send', { method: 'POST', body: JSON.stringify(data) })
+   425→  }
+   426→
+   427→  /**
+   428→   * OAuth Messenger (flujo ManyChat) en modo JSON: devuelve { url, redirectUri }
+   429→   * del diálogo de Meta SIN redirigir (misma conducta que /api/google/auth).
+   430→   * Requiere App ID + App Secret de Meta guardados (los comparte con Instagram).
+   431→   */
+   432→  async startFacebookOAuth(): Promise<{ url: string; redirectUri: string; appId?: string; scope?: string }> {
+   433→    const headers: Record<string, string> = {
+   434→      'Content-Type': 'application/json',
+   435→      ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+   436→    }
+   437→    const res = await fetch(`${API_BASE}/facebook/oauth/start`, { headers })
+   438→    if (!res.ok) {
+   439→      const error = await res.json().catch(() => ({ error: 'Error de conexión' }))
+   440→      throw new Error(error.error || `Error ${res.status}`)
+   441→    }
+   442→    return res.json()
+   443→  }
+   444→
+   445→  async getInstagramConversations() {
+   446→    return this.request('/instagram/conversations')
+   447→  }
+   448→
+   449→  async getInstagramConversation(id: string) {
+   450→    return this.request(`/instagram/conversations/${id}`)
+   451→  }
+   452→
+   453→  async updateInstagramConversation(id: string, data: Record<string, unknown>) {
+   454→    return this.request(`/instagram/conversations/${id}`, {
+   455→      method: 'PUT',
+   456→      body: JSON.stringify(data),
+   457→    })
+   458→  }
+   459→
+   460→  // Google
+   461→  async getGoogleConfig() {
+   462→    return this.request('/google/config')
+   463→  }
+   464→
+   465→  async saveGoogleConfig(data: Record<string, unknown>) {
+   466→    return this.request('/google/config', { method: 'PUT', body: JSON.stringify(data) })
+   467→  }
+   468→
+   469→  async connectGoogle() {
+   470→    // This returns a redirect URL for OAuth
+   471→    const headers: Record<string, string> = {
+   472→      'Content-Type': 'application/json',
+   473→      ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+   474→    }
+   475→    const res = await fetch(`${API_BASE}/google/auth`, { headers })
+   476→    return res
+   477→  }
+   478→
+   479→  async disconnectGoogle() {
+   480→    return this.request('/google/disconnect', { method: 'POST' })
+   481→  }
+   482→
+   483→  async sendGmail(data: Record<string, unknown>) {
+   484→    return this.request('/google/gmail/send', { method: 'POST', body: JSON.stringify(data) })
+   485→  }
+   486→
+   487→  async getCalendarEvents() {
+   488→    return this.request('/google/calendar/events')
+   489→  }
+   490→
+   491→  async createCalendarEvent(data: Record<string, unknown>) {
+   492→    return this.request('/google/calendar/events', { method: 'POST', body: JSON.stringify(data) })
+   493→  }
+   494→
+   495→  async readSheet(data: Record<string, unknown>) {
+   496→    return this.request('/google/sheets/read', { method: 'POST', body: JSON.stringify(data) })
+   497→  }
+   498→
+   499→  // Inventory
+   500→  async getInventoryConfig() {
+   501→    return this.request('/inventory/config')
+   502→  }
+   503→
+   504→  async saveInventoryConfig(data: Record<string, unknown>) {
+   505→    return this.request('/inventory/config', { method: 'PUT', body: JSON.stringify(data) })
+   506→  }
+   507→
+   508→  async syncInventory() {
+   509→    return this.request('/inventory/sync', { method: 'POST' })
+   510→  }
+   511→
+   512→  async getInventoryStatus() {
+   513→    return this.request('/inventory/status')
+   514→  }
+   515→
+   516→  // Suggestions
+   517→  async getSuggestions() {
+   518→    return this.request('/suggestions')
+   519→  }
+   520→
+   521→  // Memory
+   522→  async getMemory() {
+   523→    return this.request('/memory')
+   524→  }
+   525→
+   526→  async addMemory(data: Record<string, unknown>) {
+   527→    return this.request('/memory', { method: 'POST', body: JSON.stringify(data) })
+   528→  }
+   529→
+   530→  // Settings
+   531→  async getSettings() {
+   532→    return this.request('/settings')
+   533→  }
+   534→
+   535→  async updateSettings(data: { llm?: { apiKey?: string; baseUrl?: string; model?: string; embedModel?: string }; leadRouting?: { autoAssign?: boolean }; dealAi?: { enabled?: boolean } }) {
+   536→    return this.request('/settings', { method: 'PUT', body: JSON.stringify(data) })
+   537→  }
+   538→
+   539→  // Fase 5: memoria vectorial del agente
+   540→  async getMemoryVector(params: { q?: string; clientId?: string; k?: number } = {}) {
+   541→    const usp = new URLSearchParams()
+   542→    if (params.q) usp.set('q', params.q)
+   543→    if (params.clientId) usp.set('clientId', params.clientId)
+   544→    if (params.k) usp.set('k', String(params.k))
+   545→    const qs = usp.toString()
+   546→    return this.request(`/memory/vector${qs ? `?${qs}` : ''}`)
+   547→  }
+   548→
+   549→  async consolidateMemory(clientId?: string) {
+   550→    return this.request('/memory/vector', { method: 'POST', body: JSON.stringify(clientId ? { clientId } : {}) })
+   551→  }
+   552→
+   553→  async clearSettingsApiKey() {
+   554→    return this.request('/settings', { method: 'DELETE' })
+   555→  }
+   556→
+   557→  // Reports
+   558→  async getReports(period: string) {
+   559→    return this.request(`/reports?period=${period}`)
+   560→  }
+   561→
+   562→  // Notifications
+   563→  async getNotifications() {
+   564→    return this.request('/notifications')
+   565→  }
+   566→
+   567→  async createNotification(data: Record<string, unknown>) {
+   568→    return this.request('/notifications', { method: 'POST', body: JSON.stringify(data) })
+   569→  }
+   570→
+   571→  async markNotificationRead(id: string) {
+   572→    return this.request(`/notifications/${id}`, { method: 'PUT', body: JSON.stringify({ isRead: true }) })
+   573→  }
+   574→
+   575→  async markAllNotificationsRead() {
+   576→    return this.request('/notifications/read-all', { method: 'PUT' })
+   577→  }
+   578→
+   579→  async clearNotifications() {
+   580→    return this.request('/notifications/all', { method: 'DELETE' })
+   581→  }
+   582→
+   583→  // Templates
+   584→  async getTemplates() {
+   585→    return this.request('/templates')
+   586→  }
+   587→
+   588→  async createTemplate(data: Record<string, unknown>) {
+   589→    return this.request('/templates', { method: 'POST', body: JSON.stringify(data) })
+   590→  }
+   591→
+   592→  async updateTemplate(id: string, data: Record<string, unknown>) {
+   593→    return this.request(`/templates/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+   594→  }
+   595→
+   596→  async deleteTemplate(id: string) {
+   597→    return this.request(`/templates/${id}`, { method: 'DELETE' })
+   598→  }
+   599→
+   600→  // Custom Fields
+   601→  async getCustomFields(entity: string) {
+   602→    return this.request(`/custom-fields?entity=${entity}`)
+   603→  }
+   604→
+   605→  async createCustomField(data: Record<string, unknown>) {
+   606→    return this.request('/custom-fields', { method: 'POST', body: JSON.stringify(data) })
+   607→  }
+   608→
+   609→  async updateCustomField(id: string, data: Record<string, unknown>) {
+   610→    return this.request(`/custom-fields/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+   611→  }
+   612→
+   613→  async deleteCustomField(id: string) {
+   614→    return this.request(`/custom-fields/${id}`, { method: 'DELETE' })
+   615→  }
+   616→
+   617→  async getCustomFieldValues(entityId: string) {
+   618→    return this.request(`/custom-fields/values?entityId=${entityId}`)
+   619→  }
+   620→
+   621→  async saveCustomFieldValues(data: Record<string, unknown>) {
+   622→    return this.request('/custom-fields/values', { method: 'POST', body: JSON.stringify(data) })
+   623→  }
+   624→
+   625→  // Activity Log
+   626→  async getActivityLog(params?: Record<string, string>) {
+   627→    const query = params ? '?' + new URLSearchParams(params).toString() : ''
+   628→    return this.request(`/activity${query}`)
+   629→  }
+   630→
+   631→  // Import/Export
+   632→  async importCsv(file: File, type: string) {
+   633→    const formData = new FormData()
+   634→    formData.append('file', file)
+   635→    formData.append('type', type)
+   636→    const headers: Record<string, string> = {}
+   637→    if (this.token) {
+   638→      headers['Authorization'] = `Bearer ${this.token}`
+   639→    }
+   640→    const res = await fetch(`${API_BASE}/import/csv`, { method: 'POST', headers, body: formData })
+   641→    if (!res.ok) {
+   642→      const error = await res.json().catch(() => ({ error: 'Error de conexión' }))
+   643→      throw new Error(error.error || `Error ${res.status}`)
+   644→    }
+   645→    return res.json()
+   646→  }
+   647→
+   648→  /** (A3-08, auditoría 2026-11-11) Exporta cualquier entidad a CSV con el JWT
+   649→   *  en el HEADER y descarga por blob: el token JAMÁS viaja en la URL (queda en
+   650→   *  logs de servidor, historial del navegador y cabeceras Referer). */
+   651→  async downloadExportCsv(type: string, filename: string) {
+   652→    const headers: Record<string, string> = {}
+   653→    if (this.token) {
+   654→      headers['Authorization'] = `Bearer ${this.token}`
+   655→    }
+   656→    const res = await fetch(`${API_BASE}/export/csv?type=${encodeURIComponent(type)}`, { headers })
+   657→    if (!res.ok) {
+   658→      const error = await res.json().catch(() => ({ error: 'Error de conexión' }))
+   659→      throw new Error(error.error || `Error ${res.status}`)
+   660→    }
+   661→    const blob = await res.blob()
+   662→    const url = URL.createObjectURL(blob)
+   663→    const a = document.createElement('a')
+   664→    a.href = url
+   665→    a.download = filename
+   666→    a.click()
+   667→    URL.revokeObjectURL(url)
+   668→  }
+   669→
+   670→  // Report exports (PDF/Excel) — (A3-08) SOLO descarga con token en header:
+   671→  // los constructores de URL con JWT en query string se eliminaron (sin
+   672→  // llamadores; las vistas de reportes ya usan downloadReportPdf/Excel).
+   673→  async downloadReportPdf(period: string) {
+   674→    const headers: Record<string, string> = {}
+   675→    if (this.token) {
+   676→      headers['Authorization'] = `Bearer ${this.token}`
+   677→    }
+   678→    const res = await fetch(`${API_BASE}/reports/pdf?period=${period}`, { headers })
+   679→    if (!res.ok) {
+   680→      const error = await res.json().catch(() => ({ error: 'Error de conexión' }))
+   681→      throw new Error(error.error || `Error ${res.status}`)
+   682→    }
+   683→    const blob = await res.blob()
+   684→    const url = URL.createObjectURL(blob)
+   685→    const a = document.createElement('a')
+   686→    a.href = url
+   687→    a.download = `reporte_${period}_${new Date().toISOString().split('T')[0]}.pdf`
+   688→    a.click()
+   689→    URL.revokeObjectURL(url)
+   690→  }
+   691→
+   692→  async downloadReportExcel(period: string) {
+   693→    const headers: Record<string, string> = {}
+   694→    if (this.token) {
+   695→      headers['Authorization'] = `Bearer ${this.token}`
+   696→    }
+   697→    const res = await fetch(`${API_BASE}/reports/excel?period=${period}`, { headers })
+   698→    if (!res.ok) {
+   699→      const error = await res.json().catch(() => ({ error: 'Error de conexión' }))
+   700→      throw new Error(error.error || `Error ${res.status}`)
+   701→    }
+   702→    const blob = await res.blob()
+   703→    const url = URL.createObjectURL(blob)
+   704→    const a = document.createElement('a')
+   705→    a.href = url
+   706→    a.download = `reporte_${period}_${new Date().toISOString().split('T')[0]}.xlsx`
+   707→    a.click()
+   708→    URL.revokeObjectURL(url)
+   709→  }
+   710→
+   711→  /** Exporta transacciones a CSV con token en el header (window.open no envía JWT). */
+   712→  async downloadTransactionsCsv() {
+   713→    const headers: Record<string, string> = {}
+   714→    if (this.token) {
+   715→      headers['Authorization'] = `Bearer ${this.token}`
+   716→    }
+   717→    const res = await fetch(`${API_BASE}/export/csv?type=transactions`, { headers })
+   718→    if (!res.ok) {
+   719→      const error = await res.json().catch(() => ({ error: 'Error de conexión' }))
+   720→      throw new Error(error.error || `Error ${res.status}`)
+   721→    }
+   722→    const blob = await res.blob()
+   723→    const url = URL.createObjectURL(blob)
+   724→    const a = document.createElement('a')
+   725→    a.href = url
+   726→    a.download = `transacciones_${new Date().toISOString().split('T')[0]}.csv`
+   727→    a.click()
+   728→    URL.revokeObjectURL(url)
+   729→  }
+   730→
+   731→  // Team Management
+   732→  async getTeam() {
+   733→    return this.request('/team')
+   734→  }
+   735→
+   736→  async inviteTeamMember(data: { name: string; email: string; password: string; role: string; phone?: string }) {
+   737→    return this.request('/team', { method: 'POST', body: JSON.stringify(data) })
+   738→  }
+   739→
+   740→  async updateTeamMember(id: string, data: Record<string, unknown>) {
+   741→    return this.request(`/team/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+   742→  }
+   743→
+   744→  async deactivateTeamMember(id: string) {
+   745→    return this.request(`/team/${id}`, { method: 'DELETE' })
+   746→  }
+   747→
+   748→  // Permissions
+   749→  async getPermissions() {
+   750→    return this.request('/permissions')
+   751→  }
+   752→
+   753→  // Email
+   754→  async sendEmail(data: { to: string; subject: string; html: string; text?: string; templateId?: string; variables?: Record<string, string> }) {
+   755→    return this.request('/email/send', { method: 'POST', body: JSON.stringify(data) })
+   756→  }
+   757→
+   758→  async testEmail(email: string) {
+   759→    return this.request('/email/test', { method: 'POST', body: JSON.stringify({ email }) })
+   760→  }
+   761→
+   762→  // Backup
+   763→  async exportBackup() {
+   764→    const headers: Record<string, string> = {}
+   765→    if (this.token) {
+   766→      headers['Authorization'] = `Bearer ${this.token}`
+   767→    }
+   768→    const res = await fetch(`${API_BASE}/backup`, { headers })
+   769→    if (!res.ok) {
+   770→      const error = await res.json().catch(() => ({ error: 'Error de conexión' }))
+   771→      throw new Error(error.error || `Error ${res.status}`)
+   772→    }
+   773→    const blob = await res.blob()
+   774→    const url = URL.createObjectURL(blob)
+   775→    const a = document.createElement('a')
+   776→    a.href = url
+   777→    a.download = `crm-albra-backup-${new Date().toISOString().split('T')[0]}.json`
+   778→    a.click()
+   779→    URL.revokeObjectURL(url)
+   780→  }
+   781→
+   782→  async importBackup(backupData: Record<string, unknown>) {
+   783→    return this.request('/backup', { method: 'POST', body: JSON.stringify(backupData) })
+   784→  }
+   785→
+   786→  // Forgot Password
+   787→  async forgotPassword(email: string) {
+   788→    const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+   789→      method: 'POST',
+   790→      headers: { 'Content-Type': 'application/json' },
+   791→      body: JSON.stringify({ email }),
+   792→    })
+   793→    return res.json()
+   794→  }
+   795→
+   796→  async resetPassword(token: string, password: string) {
+   797→    const res = await fetch(`${API_BASE}/auth/reset-password`, {
+   798→      method: 'POST',
+   799→      headers: { 'Content-Type': 'application/json' },
+   800→      body: JSON.stringify({ token, password }),
+   801→    })
+   802→    return res.json()
+   803→  }
+   804→}
+   805→
+   806→export const api = new ApiClient()
+   807→

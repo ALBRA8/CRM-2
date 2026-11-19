@@ -1,0 +1,252 @@
+/home/z/my-project/CRM-ALBRA/src/components/quotes/quotes-list.tsx:50:  draft: 'bg-slate-100 text-slate-600',
+/home/z/my-project/CRM-ALBRA/src/components/quotes/quotes-list.tsx:182:            <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+/home/z/my-project/CRM-ALBRA/src/components/quotes/quotes-list.tsx:196:                <tr className="border-b border-slate-100">
+/home/z/my-project/CRM-ALBRA/src/components/quotes/quotes-list.tsx:219:                      <Badge className={`text-xs ${statusColors[quote.status] ?? 'bg-slate-100 text-slate-600'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/quotes/quote-detail.tsx:58:  draft: 'bg-slate-100 text-slate-600',
+/home/z/my-project/CRM-ALBRA/src/components/quotes/quote-detail.tsx:258:                <tr className="border-b-2 border-slate-200">
+/home/z/my-project/CRM-ALBRA/src/components/quotes/quote-detail.tsx:297:              <div className="flex justify-between text-lg font-bold text-slate-900 pt-2 border-t border-slate-200">
+/home/z/my-project/CRM-ALBRA/src/components/quotes/quote-detail.tsx:305:            <div className="mt-6 pt-4 border-t border-slate-100">
+/home/z/my-project/CRM-ALBRA/src/components/quotes/quote-form-dialog.tsx:252:            <div className="flex justify-between text-lg font-bold text-slate-900 pt-2 border-t border-slate-200">
+/home/z/my-project/CRM-ALBRA/src/components/notifications/notification-bell.tsx:55:  system: 'bg-slate-100 text-slate-600',
+/home/z/my-project/CRM-ALBRA/src/components/notifications/notification-bell.tsx:153:        <Button variant="ghost" size="icon" className="relative h-9 w-9 text-slate-500 hover:text-slate-700 hover:bg-slate-100">
+/home/z/my-project/CRM-ALBRA/src/components/notifications/notification-bell.tsx:166:      <PopoverContent align="end" className="w-80 p-0 shadow-xl border-slate-200">
+/home/z/my-project/CRM-ALBRA/src/components/notifications/notification-bell.tsx:196:              <Bell className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+/home/z/my-project/CRM-ALBRA/src/components/notifications/notification-bell.tsx:198:              <p className="text-xs text-slate-300 mt-1">Te notificaremos cuando haya novedades</p>
+/home/z/my-project/CRM-ALBRA/src/components/notifications/notification-bell.tsx:213:                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${typeColors[n.type] || 'bg-slate-100 text-slate-600'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/finances/finances-page.tsx:247:                <div key={t.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
+/home/z/my-project/CRM-ALBRA/src/components/inbox/inbox-page.tsx:265:      <div className="flex items-center justify-between px-4 md:px-8 py-4 border-b border-slate-100">
+/home/z/my-project/CRM-ALBRA/src/components/inbox/inbox-page.tsx:279:        <div className={cn('border-r border-slate-100 flex flex-col min-h-0', selected && 'hidden md:flex')}>
+/home/z/my-project/CRM-ALBRA/src/components/inbox/inbox-page.tsx:286:                  filters.channel === 'all' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+/home/z/my-project/CRM-ALBRA/src/components/inbox/inbox-page.tsx:297:                    filters.channel === ch ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+/home/z/my-project/CRM-ALBRA/src/components/inbox/inbox-page.tsx:353:                <Loader2 className="w-6 h-6 text-slate-300 mx-auto animate-spin" />
+/home/z/my-project/CRM-ALBRA/src/components/inbox/inbox-page.tsx:358:                <InboxIcon className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+/home/z/my-project/CRM-ALBRA/src/components/inbox/inbox-page.tsx:362:                <p className="text-[10px] text-slate-300 mt-1">
+/home/z/my-project/CRM-ALBRA/src/components/inbox/inbox-page.tsx:382:                        <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold">
+/home/z/my-project/CRM-ALBRA/src/components/inbox/inbox-page.tsx:420:                <InboxIcon className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+/home/z/my-project/CRM-ALBRA/src/components/inbox/inbox-page.tsx:427:              <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100 bg-white">
+/home/z/my-project/CRM-ALBRA/src/components/inbox/inbox-page.tsx:451:                    <Loader2 className="w-5 h-5 text-slate-300 animate-spin" />
+/home/z/my-project/CRM-ALBRA/src/components/inbox/inbox-page.tsx:465:                            : 'bg-white text-slate-800 border border-slate-100 rounded-bl-sm'
+/home/z/my-project/CRM-ALBRA/src/components/inbox/inbox-page.tsx:499:              <div className="p-3 border-t border-slate-100 bg-white">
+/home/z/my-project/CRM-ALBRA/src/components/calendar/calendar-page.tsx:79:  completed: { bg: 'bg-slate-50', text: 'text-slate-600', label: 'Completada', dot: 'bg-slate-400', border: 'border-slate-200' },
+/home/z/my-project/CRM-ALBRA/src/components/calendar/calendar-page.tsx:227:            <TabsList className="h-8 bg-slate-100 p-0.5">
+/home/z/my-project/CRM-ALBRA/src/components/calendar/calendar-page.tsx:372:                  <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-slate-100">
+/home/z/my-project/CRM-ALBRA/src/components/calendar/calendar-page.tsx:422:                      <CalendarDays className="w-6 h-6 text-slate-300" />
+/home/z/my-project/CRM-ALBRA/src/components/calendar/calendar-page.tsx:425:                    <p className="text-[10px] text-slate-300 mt-0.5">Este día no tiene citas</p>
+/home/z/my-project/CRM-ALBRA/src/components/calendar/calendar-page.tsx:486:    <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 flex-shrink-0">
+/home/z/my-project/CRM-ALBRA/src/components/calendar/calendar-page.tsx:492:          className="h-7 w-7 text-slate-400 hover:text-slate-900 hover:bg-slate-100"
+/home/z/my-project/CRM-ALBRA/src/components/calendar/calendar-page.tsx:500:          className="h-7 w-7 text-slate-400 hover:text-slate-900 hover:bg-slate-100"
+/home/z/my-project/CRM-ALBRA/src/components/calendar/calendar-page.tsx:508:      <Badge variant="outline" className="text-[10px] px-2 py-0 h-5 border-slate-200 text-slate-500">
+/home/z/my-project/CRM-ALBRA/src/components/calendar/calendar-page.tsx:538:            <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] border-b border-slate-100 flex-shrink-0">
+/home/z/my-project/CRM-ALBRA/src/components/calendar/calendar-page.tsx:565:                  className={`border-l border-slate-100 ${isToday(day) ? 'bg-emerald-50/30' : ''}`}
+/home/z/my-project/CRM-ALBRA/src/components/calendar/calendar-page.tsx:603:              <div className="border-l border-slate-100">
+/home/z/my-project/CRM-ALBRA/src/components/calendar/calendar-page.tsx:616:            <Badge variant="outline" className="text-[10px] px-2 py-0 h-5 border-slate-200 text-slate-500">
+/home/z/my-project/CRM-ALBRA/src/components/calendar/calendar-page.tsx:638:                  <Badge className="bg-white text-slate-500 border border-slate-200 text-[10px] h-5">
+/home/z/my-project/CRM-ALBRA/src/components/calendar/calendar-page.tsx:646:                <p className="text-[10px] text-slate-300 mt-0.5">El día está completamente ocupado</p>
+/home/z/my-project/CRM-ALBRA/src/components/calendar/calendar-page.tsx:692:          className="absolute left-0 right-0 border-t border-slate-100"
+/home/z/my-project/CRM-ALBRA/src/components/calendar/calendar-page.tsx:762:          <p className="text-[10px] text-slate-300 font-medium">Sin citas</p>
+/home/z/my-project/CRM-ALBRA/src/components/opportunities/pipeline-view.tsx:46:  Frio: 'bg-slate-100 text-slate-600',
+/home/z/my-project/CRM-ALBRA/src/components/opportunities/pipeline-view.tsx:251:                  isDragOver ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 bg-white'
+/home/z/my-project/CRM-ALBRA/src/components/opportunities/pipeline-view.tsx:271:                    : 'bg-slate-50 border-slate-200'
+/home/z/my-project/CRM-ALBRA/src/components/opportunities/pipeline-view.tsx:285:                        className={`bg-white p-3 rounded-lg shadow-sm border border-slate-100 cursor-grab hover:shadow-md transition-all active:cursor-grabbing ${
+/home/z/my-project/CRM-ALBRA/src/components/opportunities/pipeline-view.tsx:290:                          <GripVertical className="w-3.5 h-3.5 text-slate-300 mt-0.5 flex-shrink-0" />
+/home/z/my-project/CRM-ALBRA/src/components/opportunities/pipeline-view.tsx:330:                        <div className="mt-1 text-[10px] text-slate-300">
+/home/z/my-project/CRM-ALBRA/src/components/salud/salud-page.tsx:337:                <div key={step.id} className="flex items-start gap-3 p-3 rounded-lg border border-slate-100">
+/home/z/my-project/CRM-ALBRA/src/components/salud/salud-page.tsx:350:                      <Badge variant="outline" className={`text-[10px] border-0 ${step.done ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/salud/salud-page.tsx:374:                  <Badge variant="outline" className={`ml-2 text-[10px] border-0 ${workerEnabled ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/salud/salud-page.tsx:384:                    <div key={c.key} className="rounded-lg border border-slate-100 p-3">
+/home/z/my-project/CRM-ALBRA/src/components/salud/salud-page.tsx:429:                <div className="rounded-lg border border-slate-200 overflow-x-auto">
+/home/z/my-project/CRM-ALBRA/src/components/salud/salud-page.tsx:484:              <div className="rounded-lg bg-slate-50 border border-slate-100 p-3 space-y-1">
+/home/z/my-project/CRM-ALBRA/src/components/salud/salud-page.tsx:510:                <div className={`flex items-start gap-2 rounded-lg border p-3 ${resolution === 'sent' ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/salud/salud-page.tsx:528:                <div className={`flex items-start gap-2 rounded-lg border p-3 ${resolution === 'failed' ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/settings/instagram-tab.tsx:141:                  <Badge variant="outline" className={connection.status === 'connected' ? 'border-emerald-200 text-emerald-700' : 'border-slate-200 text-slate-500'}>
+/home/z/my-project/CRM-ALBRA/src/components/settings/instagram-tab.tsx:357:          <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
+/home/z/my-project/CRM-ALBRA/src/components/settings/instagram-tab.tsx:484:          <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
+/home/z/my-project/CRM-ALBRA/src/components/settings/instagram-tab.tsx:538:            <code className="bg-slate-100 px-1 py-0.5 rounded">
+/home/z/my-project/CRM-ALBRA/src/components/settings/instagram-tab.tsx:545:            <code className="bg-slate-100 px-1 py-0.5 rounded">messages</code> con la URL del webhook
+/home/z/my-project/CRM-ALBRA/src/components/settings/facebook-tab.tsx:266:          <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
+/home/z/my-project/CRM-ALBRA/src/components/settings/facebook-tab.tsx:390:          <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
+/home/z/my-project/CRM-ALBRA/src/components/settings/facebook-tab.tsx:397:              Configura esta URL en Meta Developers → Webhooks → Page → Subscribe (campo <code className="bg-slate-100 px-1 py-0.5 rounded">messages</code>).
+/home/z/my-project/CRM-ALBRA/src/components/settings/facebook-tab.tsx:450:            <code className="bg-slate-100 px-1 py-0.5 rounded">messages</code> (con OAuth el CRM ya
+/home/z/my-project/CRM-ALBRA/src/components/settings/facebook-tab.tsx:455:            <code className="bg-slate-100 px-1 py-0.5 rounded">pages_messaging, pages_manage_metadata</code>{' '}
+/home/z/my-project/CRM-ALBRA/src/components/auth/register-form.tsx:107:                className="pl-10 h-11 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-colors"
+/home/z/my-project/CRM-ALBRA/src/components/auth/register-form.tsx:126:                className="pl-10 h-11 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-colors"
+/home/z/my-project/CRM-ALBRA/src/components/auth/register-form.tsx:145:                className="pl-10 h-11 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-colors"
+/home/z/my-project/CRM-ALBRA/src/components/auth/register-form.tsx:165:                  className="pl-10 h-11 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-colors"
+/home/z/my-project/CRM-ALBRA/src/components/auth/register-form.tsx:181:                  className="pl-10 h-11 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-colors"
+/home/z/my-project/CRM-ALBRA/src/components/settings/push-notifications-card.tsx:156:            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+/home/z/my-project/CRM-ALBRA/src/components/settings/push-notifications-card.tsx:174:            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${state.subscribed ? 'bg-emerald-100' : 'bg-slate-100'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/settings/push-notifications-card.tsx:190:        <div className="rounded-lg bg-slate-50 p-3 border border-slate-200 space-y-1.5 text-xs">
+/home/z/my-project/CRM-ALBRA/src/components/auth/login-form.tsx:160:                    className="pl-10 h-11 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-colors"
+/home/z/my-project/CRM-ALBRA/src/components/auth/login-form.tsx:232:                    className="pl-10 h-11 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-colors font-mono uppercase"
+/home/z/my-project/CRM-ALBRA/src/components/auth/login-form.tsx:337:                className="pl-10 h-11 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-colors"
+/home/z/my-project/CRM-ALBRA/src/components/auth/login-form.tsx:365:                className="pl-10 h-11 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-colors"
+/home/z/my-project/CRM-ALBRA/src/components/settings/two-factor-card.tsx:119:            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${state?.enabled ? 'bg-emerald-100' : 'bg-slate-100'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/settings/two-factor-card.tsx:202:                  <img src={setup.qrDataUrl} alt="QR de configuración TOTP" className="rounded-lg border border-slate-200" width={160} height={160} />
+/home/z/my-project/CRM-ALBRA/src/components/settings/two-factor-card.tsx:208:                        <code className="font-mono text-xs bg-slate-100 rounded px-2 py-1 break-all max-w-[220px]">{setup.secret}</code>
+/home/z/my-project/CRM-ALBRA/src/components/settings/api-keys-card.tsx:159:            <div className="divide-y divide-slate-100">
+/home/z/my-project/CRM-ALBRA/src/components/settings/api-keys-card.tsx:166:                        <Badge variant="secondary" className="bg-slate-100 text-slate-500">Revocada</Badge>
+/home/z/my-project/CRM-ALBRA/src/components/settings/api-keys-card.tsx:206:            <pre className="text-xs bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto whitespace-pre">{snippet}</pre>
+/home/z/my-project/CRM-ALBRA/src/components/settings/api-keys-card.tsx:210:              className="absolute top-2 right-2 w-7 h-7 text-slate-300 hover:text-white hover:bg-slate-700"
+/home/z/my-project/CRM-ALBRA/src/components/settings/api-keys-card.tsx:219:            <code className="bg-slate-100 rounded px-1.5 py-0.5 break-all">{cliCommand}</code>
+/home/z/my-project/CRM-ALBRA/src/components/settings/api-keys-card.tsx:249:                  className="absolute top-2 right-2 w-7 h-7 text-slate-300 hover:text-white hover:bg-slate-700"
+/home/z/my-project/CRM-ALBRA/src/components/reports/reports-page.tsx:463:                    <div key={client.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
+/home/z/my-project/CRM-ALBRA/src/components/settings/templates-tab.tsx:188:          <Mail className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+/home/z/my-project/CRM-ALBRA/src/components/settings/templates-tab.tsx:194:            <div key={t.id} className="flex items-start gap-3 p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
+/home/z/my-project/CRM-ALBRA/src/components/settings/templates-tab.tsx:195:              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${channelColors[t.channel] || 'bg-slate-100 text-slate-600'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/settings/templates-tab.tsx:309:              <div className="mt-1 p-3 bg-slate-50 rounded-lg border border-slate-200 text-sm whitespace-pre-wrap">
+/home/z/my-project/CRM-ALBRA/src/components/settings/custom-fields-tab.tsx:168:            <div key={f.id} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
+/home/z/my-project/CRM-ALBRA/src/components/settings/custom-fields-tab.tsx:169:              <GripVertical className="w-4 h-4 text-slate-300 flex-shrink-0" />
+/home/z/my-project/CRM-ALBRA/src/components/settings/custom-fields-tab.tsx:173:                  <Badge className={`text-[10px] ${fieldTypeColors[f.fieldType] || 'bg-slate-100 text-slate-600'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/settings/knowledge-card.tsx:55:  general: 'bg-slate-100 text-slate-700 border-slate-200',
+/home/z/my-project/CRM-ALBRA/src/components/settings/knowledge-card.tsx:172:              <div className="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center mb-3">
+/home/z/my-project/CRM-ALBRA/src/components/settings/knowledge-card.tsx:185:                  className="flex items-start gap-3 p-3 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors group"
+/home/z/my-project/CRM-ALBRA/src/components/settings/knowledge-card.tsx:194:                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-slate-50 text-slate-400 border-slate-200">
+/home/z/my-project/CRM-ALBRA/src/components/landing/landing-page.tsx:143:            className="md:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors"
+/home/z/my-project/CRM-ALBRA/src/components/landing/landing-page.tsx:157:          className="md:hidden bg-white border-t border-slate-100 shadow-lg"
+/home/z/my-project/CRM-ALBRA/src/components/landing/landing-page.tsx:174:            <div className="pt-3 border-t border-slate-100 space-y-2">
+/home/z/my-project/CRM-ALBRA/src/components/landing/landing-page.tsx:516:                <div className="relative bg-white rounded-2xl p-7 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+/home/z/my-project/CRM-ALBRA/src/components/landing/landing-page.tsx:521:                    <span className="text-5xl font-extrabold text-slate-100 leading-none">
+/home/z/my-project/CRM-ALBRA/src/components/landing/landing-page.tsx:658:              className="relative rounded-2xl p-8 transition-all duration-300 bg-white border border-dashed border-slate-300 text-slate-500 shadow-sm flex flex-col"
+/home/z/my-project/CRM-ALBRA/src/components/landing/landing-page.tsx:660:              <span className="self-start px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-xs font-semibold uppercase tracking-wider">
+/home/z/my-project/CRM-ALBRA/src/components/landing/landing-page.tsx:726:            <h4 className="font-semibold text-sm mb-5 text-slate-200">Producto</h4>
+/home/z/my-project/CRM-ALBRA/src/components/landing/landing-page.tsx:741:            <h4 className="font-semibold text-sm mb-5 text-slate-200">Beta</h4>
+/home/z/my-project/CRM-ALBRA/src/components/landing/landing-page.tsx:755:            <h4 className="font-semibold text-sm mb-5 text-slate-200">Legal</h4>
+/home/z/my-project/CRM-ALBRA/src/components/automations/automations-page.tsx:70:  custom: 'bg-slate-100 text-slate-600',
+/home/z/my-project/CRM-ALBRA/src/components/automations/automations-page.tsx:147:        <div className="mt-1.5 bg-slate-50 border border-slate-100 rounded-lg p-2.5 space-y-1.5">
+/home/z/my-project/CRM-ALBRA/src/components/automations/automations-page.tsx:168:            <p className="text-[11px] text-red-600 border-t border-slate-200 pt-1.5">Error: {lastRun.error}</p>
+/home/z/my-project/CRM-ALBRA/src/components/automations/automations-page.tsx:171:            <p className="text-[10px] text-violet-500 flex items-center gap-1 border-t border-slate-200 pt-1.5">
+/home/z/my-project/CRM-ALBRA/src/components/automations/automations-page.tsx:298:                        <Zap className={`w-4 h-4 ${auto.isActive ? 'text-emerald-500' : 'text-slate-300'}`} />
+/home/z/my-project/CRM-ALBRA/src/components/automations/automations-page.tsx:300:                        <Badge className={`text-xs ${typeColors[auto.type] ?? 'bg-slate-100 text-slate-600'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/automations/automations-page.tsx:372:                <Zap className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+/home/z/my-project/CRM-ALBRA/src/components/automations/suggestions-panel.tsx:32:  Frio: 'bg-slate-100 text-slate-600',
+/home/z/my-project/CRM-ALBRA/src/components/automations/suggestions-panel.tsx:83:                className="p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:333:                  <div key={i} className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:1118:                    : 'h-7 rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50'
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:1126:        <TabsList className="bg-slate-100 min-h-10 h-auto flex-wrap max-w-full">
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:1209:                            : 'border-slate-200 hover:border-slate-300 bg-white'
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:1380:                    isWaConnected ? 'bg-emerald-100' : isWaWaitingQr ? 'bg-amber-100' : 'bg-slate-100'
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:1420:                        : 'border-slate-200 text-slate-500'
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:1474:                            <div className={`bg-white p-4 rounded-2xl shadow-lg border border-slate-200 transition-all ${qrSecondsLeft <= 0 ? 'opacity-20 blur-[1px]' : ''}`}>
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:1550:                      <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:1551:                        <QrCode className="w-10 h-10 text-slate-300" />
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:1916:                    <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:1975:                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${tgConnected ? 'bg-emerald-100' : 'bg-slate-100'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:1988:                  <Badge variant="outline" className={tgConnected ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : 'border-slate-200 text-slate-500'}>
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:2145:                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${googleConnected ? 'bg-emerald-100' : 'bg-slate-100'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:2168:                  <Badge variant="outline" className={googleConnected ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : 'border-slate-200 text-slate-500'}>
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:2231:                    <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:2247:                      className="w-full h-11 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-sm font-medium"
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:2347:                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${settings?.email?.configured ? 'bg-emerald-100' : 'bg-slate-100'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:2360:                  <Badge variant="outline" className={settings?.email?.configured ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : 'border-slate-200 text-slate-500'}>
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:2470:                      <div key={member.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:2483:                            'border-slate-200 text-slate-600'
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:2529:                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:2677:              <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:2708:                  <div className={`w-2 h-2 rounded-full ${isWaConnected ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+/home/z/my-project/CRM-ALBRA/src/components/settings/settings-page.tsx:2729:                <Badge variant="outline" className={`text-xs ${settings?.llm.apiKeyConfigured ? 'border-slate-200 text-slate-500' : 'border-emerald-200 text-emerald-700'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/automations/automation-form-dialog.tsx:399:          <Card className="p-4 border border-slate-100 shadow-sm space-y-3">
+/home/z/my-project/CRM-ALBRA/src/components/automations/automation-form-dialog.tsx:450:          <Card className="p-4 border border-slate-100 shadow-sm space-y-3">
+/home/z/my-project/CRM-ALBRA/src/components/automations/automation-form-dialog.tsx:528:          <Card className="p-4 border border-slate-100 shadow-sm space-y-3">
+/home/z/my-project/CRM-ALBRA/src/components/automations/automation-form-dialog.tsx:562:                  <div key={index} className="border border-slate-100 rounded-lg p-3 bg-white space-y-2">
+/home/z/my-project/CRM-ALBRA/src/components/automations/automation-form-dialog.tsx:564:                      <div className="w-6 h-6 rounded bg-slate-100 text-slate-500 flex items-center justify-center flex-shrink-0" aria-hidden="true">
+/home/z/my-project/CRM-ALBRA/src/components/automations/automation-form-dialog.tsx:643:                          Usa variables como <code className="bg-slate-100 rounded px-1">{'{{nombre}}'}</code>,{' '}
+/home/z/my-project/CRM-ALBRA/src/components/automations/automation-form-dialog.tsx:644:                          <code className="bg-slate-100 rounded px-1">{'{{empresa}}'}</code> o{' '}
+/home/z/my-project/CRM-ALBRA/src/components/automations/automation-form-dialog.tsx:645:                          <code className="bg-slate-100 rounded px-1">{'{{etapa}}'}</code>
+/home/z/my-project/CRM-ALBRA/src/components/settings/tiktok-tab.tsx:234:          <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
+/home/z/my-project/CRM-ALBRA/src/components/settings/tiktok-tab.tsx:333:          <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
+/home/z/my-project/CRM-ALBRA/src/components/products/products-page.tsx:77:  if (!cat) return { bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-200' }
+/home/z/my-project/CRM-ALBRA/src/components/products/products-page.tsx:78:  return categoryColors[cat] ?? { bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-200' }
+/home/z/my-project/CRM-ALBRA/src/components/products/products-page.tsx:273:            className="pl-9 h-9 text-sm bg-white border-slate-200"
+/home/z/my-project/CRM-ALBRA/src/components/products/products-page.tsx:299:          <div className="flex border border-slate-200 rounded-lg overflow-hidden">
+/home/z/my-project/CRM-ALBRA/src/components/products/products-page.tsx:325:              <Package className="w-8 h-8 text-slate-300" />
+/home/z/my-project/CRM-ALBRA/src/components/products/products-page.tsx:369:                          <span className="text-[10px] text-slate-300">Sin categoría</span>
+/home/z/my-project/CRM-ALBRA/src/components/products/products-page.tsx:412:                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
+/home/z/my-project/CRM-ALBRA/src/components/products/products-page.tsx:426:                          <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-slate-100 text-slate-500">
+/home/z/my-project/CRM-ALBRA/src/components/products/products-page.tsx:444:                <tr className="border-b border-slate-100">
+/home/z/my-project/CRM-ALBRA/src/components/products/products-page.tsx:488:                            <span className="text-xs text-slate-300">—</span>
+/home/z/my-project/CRM-ALBRA/src/components/products/products-page.tsx:494:                          <Badge className={`text-[10px] h-5 px-2 border-0 ${service.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/products/products-page.tsx:663:                className="flex-1 h-9 text-sm border border-slate-200 rounded-md px-3 bg-white"
+/home/z/my-project/CRM-ALBRA/src/components/super/super-page.tsx:136:  agent: { label: 'Agente', className: 'bg-slate-100 text-slate-700 border-slate-200', icon: User },
+/home/z/my-project/CRM-ALBRA/src/components/super/super-page.tsx:137:  member: { label: 'Miembro', className: 'bg-slate-100 text-slate-500 border-slate-200', icon: User },
+/home/z/my-project/CRM-ALBRA/src/components/super/super-page.tsx:307:        <TabsList className="bg-slate-100">
+/home/z/my-project/CRM-ALBRA/src/components/super/super-page.tsx:366:                  <div key={sys.id} className="rounded-lg border border-slate-200 p-4 space-y-2">
+/home/z/my-project/CRM-ALBRA/src/components/super/super-page.tsx:369:                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+/home/z/my-project/CRM-ALBRA/src/components/super/super-page.tsx:405:              <div className="rounded-lg border border-slate-200 p-4">
+/home/z/my-project/CRM-ALBRA/src/components/super/super-page.tsx:427:              <div className="rounded-lg border border-slate-200 p-4">
+/home/z/my-project/CRM-ALBRA/src/components/super/super-page.tsx:445:              <div className="rounded-lg border border-slate-200 p-4">
+/home/z/my-project/CRM-ALBRA/src/components/super/super-page.tsx:496:                        <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200">{org.plan}</Badge>
+/home/z/my-project/CRM-ALBRA/src/components/super/super-page.tsx:644:                              <Badge className="bg-slate-100 text-slate-500 border-slate-200" variant="outline">Inactivo</Badge>
+/home/z/my-project/CRM-ALBRA/src/components/team/team-page.tsx:64:  agent: { label: 'Agente', icon: User, color: 'bg-slate-100 text-slate-700', description: 'Acceso a clientes y oportunidades' },
+/home/z/my-project/CRM-ALBRA/src/components/team/team-page.tsx:144:            <Shield className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+/home/z/my-project/CRM-ALBRA/src/components/team/team-page.tsx:313:                        <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-sm font-bold">
+/home/z/my-project/CRM-ALBRA/src/components/team/team-page.tsx:328:                      <Badge className="bg-slate-100 text-slate-500 border-0">
+/home/z/my-project/CRM-ALBRA/src/components/clients/saved-views-bar.tsx:199:            : 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300 hover:text-emerald-700'
+/home/z/my-project/CRM-ALBRA/src/components/clients/saved-views-bar.tsx:224:                  : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-700'
+/home/z/my-project/CRM-ALBRA/src/components/clients/saved-views-bar.tsx:357:          <div className="w-px h-4 bg-slate-200 mx-0.5" aria-hidden="true" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/saved-views-bar.tsx:408:            <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
+/home/z/my-project/CRM-ALBRA/src/components/clients/clients-list.tsx:88:  Frio: { label: 'Frío', color: 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200', icon: <Snowflake className="w-3 h-3" /> },
+/home/z/my-project/CRM-ALBRA/src/components/clients/clients-list.tsx:435:                            {client.email ?? <span className="text-slate-300">—</span>}
+/home/z/my-project/CRM-ALBRA/src/components/clients/clients-list.tsx:441:                            {client.company ?? <span className="text-slate-300">—</span>}
+/home/z/my-project/CRM-ALBRA/src/components/clients/clients-list.tsx:474:                              : <span className="text-slate-300">—</span>}
+/home/z/my-project/CRM-ALBRA/src/components/clients/clients-list.tsx:532:            <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+/home/z/my-project/CRM-ALBRA/src/components/activity/activity-page.tsx:71:  settings: 'bg-slate-100 text-slate-600',
+/home/z/my-project/CRM-ALBRA/src/components/activity/activity-page.tsx:80:  login: 'bg-slate-50 text-slate-700 border-slate-200',
+/home/z/my-project/CRM-ALBRA/src/components/activity/activity-page.tsx:245:            <Clock className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+/home/z/my-project/CRM-ALBRA/src/components/activity/activity-page.tsx:256:                <div className="flex-1 h-px bg-slate-100" />
+/home/z/my-project/CRM-ALBRA/src/components/activity/activity-page.tsx:262:                  const color = entityColors[entry.entity] ?? 'bg-slate-100 text-slate-600'
+/home/z/my-project/CRM-ALBRA/src/components/activity/activity-page.tsx:263:                  const actionColor = actionColors[entry.action] ?? 'bg-slate-50 text-slate-700 border-slate-200'
+/home/z/my-project/CRM-ALBRA/src/components/activity/activity-page.tsx:287:                              <span className="text-xs text-slate-300">·</span>
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-timeline.tsx:91:  manual: 'bg-slate-100 text-slate-600 border-slate-200',
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-timeline.tsx:242:            <Activity className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-timeline.tsx:244:            <p className="text-xs text-slate-300 mt-1">
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-timeline.tsx:257:                  <div className="absolute left-[13px] top-2 bottom-2 w-0.5 bg-slate-100" aria-hidden="true" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-timeline.tsx:261:                        const dotColor = sourceDotColors[ev.source] ?? 'bg-slate-300'
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-timeline.tsx:262:                        const badgeColor = sourceBadgeColors[ev.source] ?? 'bg-slate-100 text-slate-600 border-slate-200'
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-timeline.tsx:279:                            <div className="flex-1 min-w-0 bg-white border border-slate-100 rounded-lg p-3 shadow-sm hover:border-slate-200 transition-colors">
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-timeline.tsx:300:                                      className="text-[10px] bg-slate-50 border border-slate-100 text-slate-400 rounded px-1.5 py-0.5 max-w-full truncate"
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-timeline.tsx:307:                              <p className="text-[10px] text-slate-300 mt-1.5 sm:hidden">
+/home/z/my-project/CRM-ALBRA/src/components/whatsapp/connections-panel.tsx:350:                  <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:175:  Frio: { label: 'Frío', color: 'bg-slate-100 text-slate-700 border-slate-200', icon: <span className="text-xs">❄️</span> },
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:200:  completed: 'bg-slate-100 text-slate-600',
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:214:  draft: 'bg-slate-100 text-slate-600',
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:536:        <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:666:        <TabsList className="bg-slate-100 h-auto flex-wrap gap-1 p-1">
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:705:                      <Edit3 className="w-3 h-3 inline ml-2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:726:                      {client.email ?? <span className="text-slate-300">Sin email</span>}
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:727:                      <Edit3 className="w-3 h-3 inline ml-2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:749:                      <Edit3 className="w-3 h-3 inline ml-2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:770:                      {client.identifier ?? <span className="text-slate-300">Sin identificador</span>}
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:771:                      <Edit3 className="w-3 h-3 inline ml-2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:792:                      {client.company ?? <span className="text-slate-300">Sin empresa</span>}
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:793:                      <Edit3 className="w-3 h-3 inline ml-2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:824:                      {client.address ?? <span className="text-slate-300">Sin dirección</span>}
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:825:                      <Edit3 className="w-3 h-3 inline ml-2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:846:                      {client.city ?? <span className="text-slate-300">Sin ciudad</span>}
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:847:                      <Edit3 className="w-3 h-3 inline ml-2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:865:                      <span className="text-sm text-slate-300">Sin etiquetas</span>
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:878:                      : <span className="text-slate-300">Sin registro</span>}
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:914:                    <Edit3 className="w-3 h-3 ml-1 text-slate-300" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:917:                    <p className="text-sm text-slate-700 mt-1 whitespace-pre-wrap bg-slate-50 p-3 rounded-lg border border-slate-100">
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:922:                      className="text-sm text-slate-300 mt-1 cursor-pointer hover:text-slate-400 transition-colors"
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:960:                        className="flex items-center gap-4 p-4 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer group"
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:971:                              className={`text-xs ${stageColors[opp.stage.name.toLowerCase()] ?? 'bg-slate-100 text-slate-600'}`}
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:989:                        <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors flex-shrink-0" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:996:                  <TrendingUp className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:998:                  <p className="text-xs text-slate-300 mt-1">Las oportunidades aparecerán aquí cuando se creen</p>
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:1061:                          <div className="flex-1 bg-white border border-slate-100 rounded-lg p-3 shadow-sm">
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:1087:                  <Clock className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:1089:                  <p className="text-xs text-slate-300 mt-1">Agrega la primera entrada con el formulario de arriba</p>
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:1137:                    <div key={category} className="bg-white border border-slate-100 rounded-lg p-4 shadow-sm">
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:1163:                  <Sparkles className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:1165:                  <p className="text-xs text-slate-300 mt-1">Agrega preferencias para personalizar la atención</p>
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:1203:                            <Badge className={`text-xs ${statusColors[res.status] ?? 'bg-slate-100 text-slate-600'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:1227:                            <Badge className={`text-xs ${statusColors[res.status] ?? 'bg-slate-100 text-slate-600'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:1238:                  <Calendar className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:1240:                  <p className="text-xs text-slate-300 mt-1">Las reservas aparecerán aquí cuando se agenden</p>
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:1268:                        className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer group"
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:1283:                          <Badge className={`text-xs ${quoteStatusColors[q.status] ?? 'bg-slate-100 text-slate-600'}`}>
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:1286:                          <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:1294:                  <FileText className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+/home/z/my-project/CRM-ALBRA/src/components/clients/client-detail.tsx:1296:                  <p className="text-xs text-slate-300 mt-1">Las cotizaciones aparecerán aquí cuando se creen</p>
+
+[Showing results with pagination = limit: 250]

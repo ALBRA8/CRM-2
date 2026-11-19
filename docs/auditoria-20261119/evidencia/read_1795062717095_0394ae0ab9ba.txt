@@ -1,0 +1,930 @@
+     1→# Plan definitivo CRM-ALBRA
+     2→
+     3→**Reformulación del Plan Maestro de Cierre Integral de ALBRA como hoja de ruta ejecutable exclusivamente sobre CRM-ALBRA**
+     4→
+     5→| | |
+     6→|---|---|
+     7→| Versión | v2.0 — reformula `docs/plan-maestro-2026-11-19/` (rama `docs/plan-maestro-cierre-2026-11-19`) |
+     8→| Fecha | 19 de noviembre de 2026 |
+     9→| Alcance | **Exclusivamente ALBRA8/CRM-ALBRA** |
+    10→| Repos intactos | ALBRA8/WHATSPOWER y ALBRA8/WHATSPOWER-ULTRA (sin modificar archivos, ramas, PR, migraciones ni configuraciones) |
+    11→| Referencia | cuentas-Ailink/crm-whatsapp-ia — solo lectura de patrones de UX, instalación, diagnóstico y simplicidad; **no se copia ni integra código** |
+    12→| Base verificada | `repair/produccion-real` @ `a72cc95` (CRM), con verificaciones puntuales de esta sesión sobre `main` @ `90d62de` |
+    13→| Fase | Análisis y planificación. **Nada se ejecuta sin autorización expresa del propietario.** |
+    14→
+    15→**Paquete de esta versión (misma carpeta):**
+    16→
+    17→- [MATRIZ-DE-TAREAS-CRM-ALBRA.xlsx](MATRIZ-DE-TAREAS-CRM-ALBRA.xlsx) — las 48 tareas evaluadas (incluidas descartadas y pospuestas) con decisión, justificación, los 12 campos de ficha, dependencias externas y decisiones de propietario
+    18→- [RESUMEN-EJECUTIVO-CRM-ALBRA.pdf](RESUMEN-EJECUTIVO-CRM-ALBRA.pdf) — versión ejecutiva con figuras
+    19→- [MAPA-DE-ARQUITECTURA-CRM-ALBRA.png](MAPA-DE-ARQUITECTURA-CRM-ALBRA.png) — mapa CRM + contratos + dependencias externas
+    20→- [ROADMAP-FASES-CRM-ALBRA.png](ROADMAP-FASES-CRM-ALBRA.png) — las 7 fases con tareas y esfuerzo
+    21→
+    22→---
+    23→
+    24→## Tabla de contenido
+    25→
+    26→1. [Resumen ejecutivo](#1-resumen-ejecutivo)
+    27→2. [Alcance y restricciones absolutas](#2-alcance-y-restricciones-absolutas)
+    28→3. [Estado verificado de CRM-ALBRA (2026-11-19)](#3-estado-verificado-de-crm-albra-2026-11-19)
+    29→4. [Mapa de arquitectura y dependencias externas](#4-mapa-de-arquitectura-y-dependencias-externas)
+    30→5. [Revisión y clasificación de las 48 tareas](#5-revisión-y-clasificación-de-las-48-tareas)
+    31→6. [Revisión de los PR #4, #5 y #6](#6-revisión-de-los-pr-4-5-y-6)
+    32→7. [Hoja de ruta en 7 fases](#7-hoja-de-ruta-en-7-fases)
+    33→8. [Análisis económico y de beneficio](#8-análisis-económico-y-de-beneficio)
+    34→9. [Eliminación de complejidad innecesaria](#9-eliminación-de-complejidad-innecesaria)
+    35→10. [Decisiones que requieren autorización del propietario](#10-decisiones-que-requieren-autorización-del-propietario)
+    36→11. [Criterios globales y niveles de madurez](#11-criterios-globales-y-niveles-de-madurez)
+    37→12. [Informe final al propietario](#12-informe-final-al-propietario)
+    38→13. [Anexos: método, evidencia y correspondencia con el plan v1](#13-anexos-método-evidencia-y-correspondencia-con-el-plan-v1)
+    39→
+    40→---
+    41→
+    42→## 1. Resumen ejecutivo
+    43→
+    44→El plan maestro v1 (2026-11-19) diagnosticó el ecosistema completo (CRM-ALBRA, WHATSPOWER, WHATSPOWER-ULTRA) y produjo 48 tareas en 8 bloques con una estimación de 49–75 días-persona repartida entre los tres repositorios. Este plan definitivo reformula ese diagnóstico con una regla nueva y vinculante: **en esta fase solo se puede intervenir CRM-ALBRA**. Cada una de las 48 tareas fue reevaluada individualmente contra esa regla y contra la evidencia de código actualizada, con cinco decisiones posibles: CONSERVAR, MODIFICAR, POSPONER, DESCARTAR o DEPENDENCIA EXTERNA. No se conservó ninguna tarea por el solo hecho de aparecer en el plan original.
+    45→
+    46→El resultado materializa una hoja de ruta más corta y más útil para el negocio. De las 48 tareas originales: **23 se conservan** tal como fueron definidas, **9 se modifican** para acotarlas al alcance CRM (su parte externa queda documentada como dependencia), **1 se pospone** (semillas de demo), **2 se descartan** (una ya está resuelta y probada en la base — M5 de deduplicación del daemon; otra duplica trabajo ya cubierto — D3 de changelogs) y **13 quedan clasificadas como dependencia externa** porque su solución exige modificar WHATSPOWER o ULTRA, lo cual está expresamente prohibido en esta fase. Lo que queda es un proyecto de **36 días-persona puntuales** (aproximadamente 7–8 semanas con un desarrollador con contexto del sistema, o 4 semanas con dos), frente a los 49–75 días y tres frentes simultáneos del plan v1.
+    47→
+    48→La conclusión de fondo no cambia, y es la buena noticia: **ALBRA no necesita reconstruirse**. El CRM ya tiene un núcleo maduro y probado: multiempresa con aislamiento verificado en pruebas, ficha 360 con timeline idempotente, outbox durable de canales y de workflows, idempotencia persistente del daemon Baileys por organización, scheduler con lease y fencing, 2FA con revocación persistente, cifrado AES-256-GCM de credenciales, backups con Online Backup API, y 97 archivos de prueba. La brecha hacia un producto comercial sólido es de **cableado, despliegue, deuda pequeña y presentación**, no de capacidad. Los cuatro focos que concentran el valor son: (1) poner el worker de la outbox de canales en el despliegue para que los mensajes no queden encolados para siempre (M1); (2) desbloquear los PR #5 y #6, que traen limpieza de deuda, backfill de QuoteItem, módulo de tareas y quick-actions (E1, E2, F1); (3) cerrar la seguridad pendiente del CRM: rotación de credenciales, pepper obligatorio en CI y saneamiento de 26 scripts históricos (S1, S2, S5, S6); y (4) construir la experiencia de bandeja única, conexiones multi-número con UI y pantalla de Salud (F2, F3, F5) que el usuario final nota.
+    49→
+    50→Este documento no autoriza ejecución ninguna. Al final (sección 10) está la lista de decisiones que requieren autorización expresa del propietario, y la sección 12 responde directamente a las preguntas del informe final, incluida la pregunta de cierre: qué se implementaría primero y qué NO se implementaría para llevar CRM-ALBRA a producción con la menor inversión y el mayor beneficio.
+    51→
+    52→---
+    53→
+    54→## 2. Alcance y restricciones absolutas
+    55→
+    56→**Repositorio autorizado para intervenciones futuras: ALBRA8/CRM-ALBRA.** Todo el trabajo planificado aquí ocurre dentro de ese repositorio: su código, sus migraciones, su CI, su documentación y sus ramas de trabajo.
+    57→
+    58→**WHATSPOWER y WHATSPOWER-ULTRA permanecen intactos.** Queda expresamente prohibido, sin una autorización independiente y posterior de esta fase: modificar archivos, crear ramas, abrir PR, fusionar cambios, ejecutar migraciones, desplegar o cambiar configuraciones en cualquiera de los dos repositorios. Esta revisión los consultó en modo lectura (`work/WHATSPOWER-b2check` y `work/ULTRA-live`, refs remotas actualizadas con `git fetch`) para identificar dependencias y contratos, y nada más.
+    59→
+    60→**La referencia cuentas-Ailink/crm-whatsapp-ia solo se estudia** para patrones de experiencia de usuario, instalación, diagnóstico y simplicidad (su `instalar.sh`/`comprobar.sh`, su catálogo `lib/errores.ts` con invariante de textos, su onboarding de 4 pasos, sus semillas deterministas). No se copia ni integra código: su arquitectura single-tenant, su estado en memoria y su falta de outbox durable **no son replicables** en un CRM multiempresa, como documentó el plan v1.
+    61→
+    62→**Regla para dependencias externas.** Cuando una tarea del CRM depende de un cambio en WHATSPOWER o ULTRA, se marca como **DEPENDENCIA EXTERNA** con sus consecuencias explícitas y no se resuelve modificando esos repositorios. La consecuencia típica es que el bloque funcional asociado (campañas masivas, ventana de 24 h contra Meta, selector de transporte) queda limitado hasta que el propietario autorice una fase externa separada.
+    63→
+    64→**Esta fase es exclusivamente de análisis y planificación.** No se programaron tareas, no se modificó código, no se crearon ramas de código ni PR, no se fusionó nada, no se ejecutaron migraciones ni se tocaron bases de datos, secretos, historial Git ni despliegues. La única operación de escritura de esta sesión es la publicación de este paquete documental en una rama documental independiente (sección 13), autorizada por el propietario como entregable, sin tocar ninguna rama de código existente y sin abrir PR.
+    65→
+    66→---
+    67→
+    68→## 3. Estado verificado de CRM-ALBRA (2026-11-19)
+    69→
+    70→Las verificaciones de esta sesión son de lectura (`git fetch --prune`, `git ls-tree`, `git grep`, `git show`, `git diff`) sobre los refs remotos actualizados. Comandos y salidas completas en el Anexo A.
+    71→
+    72→**Tabla 3.1: Ramas y PRs verificados hoy**
+    73→
+    74→| Elemento | Estado verificado | Consecuencia para el plan |
+    75→|---|---|---|
+    76→| `origin/main` | `90d62de` | Línea principal; detrás de la rama de integración (sin commits únicos perdidos) |
+    77→| `origin/repair/produccion-real` | `a72cc95` — 29 commits sobre main | Sigue siendo la rama de integración correcta |
+    78→| PR #4 → main | head `611e418` (rama `test/workflow-outbox-ambiguous-ack`); diff contra su base: **2 archivos, +153** (test de ACK ambiguo +89 y docs +64) | Válido y de bajo riesgo; abierto hacia `main`, no hacia la base de integración |
+    79→| PR #5 | head `1e5c9ae` (`cierre/a-estabilizacion-y-deuda`); diff contra `a72cc95`: **6 archivos, +203/−3416**; CI de terceros: FAILURE en paso 11 *Suite de tests* (run 44428835497, job 135240625938) | No fusionar hasta diagnosticar el fallo (E1) y resolver numeración (E2) |
+    80→| PR #6 | head `dfd926a` (`cierre/c-tareas-y-acciones-ficha`); diff contra `a72cc95`: **11 archivos, +576/−6**; CI de terceros: success (2026-11-19) | Integrable tras resolver numeración de migraciones (E2); decisión del propietario |
+    81→| `origin/impl/wave2-wa-connections` | `20323b8` — **totalmente contenida** en la base (0 commits únicos; el trabajo de conexiones ya está fusionado: API + `tests/integration/wa-connections.test.ts`) | Candidata a archivo en la limpieza de ramas (D2); no hay trabajo nuevo que integrar |
+    82→
+    83→**Tabla 3.2: Verificaciones puntuales que cambian decisiones del plan v1**
+    84→
+    85→| Verificación de esta sesión | Resultado | Efecto sobre la tarea |
+    86→|---|---|---|
+    87→| `src/whatsapp-daemon/idempotency.mjs` en la base | Existe: idempotencia **persistente** con clave `(organization_id, idem_key)`, estados `IN_FLIGHT/DONE/FAILED/UNCERTAIN`, lease vencido → UNCERTAIN permanente, sin reenvío automático; tabla `DaemonSendIdempotency` aditiva; test `tests/unit/daemon-idempotency.test.ts` | **M5 se DESCARTA**: el plan v1 la pedía y ya está implementada y probada en la base |
+    88→| `docker-compose.yml` de la base | Ya tiene `healthcheck` para la app (`/api/health`, 30 s) y para el daemon (`/status` con 401 aceptado como vivo) | **O1 se MODIFICA**: ya no es "añadir healthchecks"; es ejecutar el compose en la máquina del propietario y documentar (los healthchecks de WP/ULTRA siguen siendo externos) |
+    89→| Worker de outbox en el despliegue | Solo existe el monitor pasivo de CI (`.github/workflows/outbox-monitor.yml`); ninguna unidad de compose/entrypoint procesa la cola | **M1 se CONFIRMA** como la brecha operativa número 1 |
+    90→| `src/lib/inbox.ts` | Sigue priorizando el daemon sobre el timeline para el mismo teléfono (comentario del propio módulo) | **M7 se CONFIRMA**: un contacto puede aparecer dos veces |
+    91→| `.github/workflows/ci.yml` paso PII | `PII_PEPPER` opcional: si falta, el escáner "continúa con los patrones genéricos y emite un aviso" | **S5 se CONFIRMA** |
+    92→| `package.json` de la base | `next-auth`, `next-intl`, `@hapi/boom`, `@mdxeditor/editor`, `@dnd-kit/*`, `@tanstack/react-query`, `@tanstack/react-table` siguen presentes sin uso en `src/`; `whatsapp-daemon-supervisor.ts` sin referencias (grep vacío) | **E3 se CONFIRMA** (y el PR #5 ya trae la mayor parte de esa limpieza) |
+    93→| Scripts `e2e-*` en `scripts/` | **26** en la base (el plan v1 dijo ~35) | **S6 se CONSERVA** con evidencia corregida |
+    94→| UI de conexiones WhatsApp | Ningún componente referencia `wa-connections` (API y tests existen en la base) | **F2 se CONFIRMA**: API completa sin pantalla |
+    95→| `src/components/settings/settings-page.tsx` | **2715 líneas** exactas | **U4 se CONFIRMA** |
+    96→| Doble bandeja | `src/app/whatsapp/page.tsx` y `src/app/inbox/page.tsx` coexisten | **U1 se CONFIRMA** |
+    97→| Módulo de tareas (PR #6) | `src/app/api/tasks/` **no existe** en la base; solo en la rama del PR #6 | **F1 se CONFIRMA**: hay que integrar el PR #6 |
+    98→
+    99→La batería del repositorio reportada en sesiones anteriores (781/781 en CRM, E2E de 3 servicios 20/20 con SENT=0) y los resultados de CI citados aquí son **evidencia de terceros o de sesiones previas**; esta fase no ejecutó pruebas del producto (congelación). La distinción completa está en el Anexo B.
+   100→
+   101→---
+   102→
+   103→## 4. Mapa de arquitectura y dependencias externas
+   104→
+   105→CRM-ALBRA es la aplicación multiempresa donde viven usuarios, clientes, ficha 360, bandeja, agenda, comercial y canales. Dos motores externos la complementan: WHATSPOWER (automatización de WhatsApp: flujos, secuencias, growth tools) y WHATSPOWER-ULTRA (campañas masivas con salvaguardas). El CRM los orquesta mediante contratos firmados; en esta fase esos contratos **solo se consumen, no se modifican**.
+   106→
+   107→![Figura 1: Mapa de arquitectura CRM-ALBRA con dependencias externas](MAPA-DE-ARQUITECTURA-CRM-ALBRA.png)
+   108→
+   109→*Figura 1: Mapa de arquitectura CRM-ALBRA (estado verificado). En gris, los motores externos que permanecen intactos; los contratos con firma y eco de organización se conservan tal cual.*
+   110→
+   111→**Tabla 4.1: Contratos vigentes que el plan conserva sin cambios** (verificados en código, evidencia del plan v1 re-confirmada hoy)
+   112→
+   113→| Sentido | Contrato | Uso en el plan |
+   114→|---|---|---|
+   115→| CRM → WP | `POST /api/inbound` con HMAC-SHA256 v2, timestamp y anti-replay durable | Ninguna tarea lo modifica; I2-mod añade prueba de compatibilidad del lado CRM |
+   116→| CRM → WP | `POST /api/crm/stage-change` con credencial por organización | Se conserva |
+   117→| WP → CRM | `POST /api/crm/actions` con `CRM_API_KEYS` por organización y eco de `organizationId` | Se conserva |
+   118→| WP/ULTRA → CRM | `GET /api/internal/whatsapp/credentials` (`CRM_INTERNAL_CREDENTIAL`) | Se conserva; F2 expone su estado en la nueva UI |
+   119→| ULTRA → Daemon CRM | `POST /send` vía proxy con `INTERNAL_API_SECRET` + `X-Org-Id` y kill-switch `ALLOW_REAL_DISPATCH` | Se conserva; M1 no toca el contrato, añade el proceso que consume la cola |
+   120→| CRM (SSO) | `GET /api/auth/ecosystem/links`; fail-closed en producción (403) | Se conserva; I2-mod lo cubre con fixtures |
+   121→
+   122→**Dependencias externas que condicionan funcionalidad del CRM** (sección 5, categoría DEPENDENCIA EXTERNA): la ventana de 24 h y el registro de plantillas de Meta solo se cablean en el despacho dentro de WP/ULTRA (M3, I6 externas) — hasta entonces, el CRM envía texto libre por el canal Baileys y Cloud API sin esa protección, lo que el propietario debe conocer antes de campañas reales; el consentimiento masivo de ULTRA (M2 externa) bloquea campañas reales fuera del CRM; el pago real vive en WP (F6 externa).
+   123→
+   124→---
+   125→
+   126→## 5. Revisión y clasificación de las 48 tareas
+   127→
+   128→Cada tarea del Excel original fue reevaluada con esta regla: solo se conserva si aporta valor real **y** es ejecutable dentro de CRM-ALBRA. La justificación completa (evidencia, beneficio, solución, riesgos, pruebas, aceptación, reversión) de cada tarea está en la hoja *Matriz* del [libro Excel](MATRIZ-DE-TAREAS-CRM-ALBRA.xlsx); aquí se presenta la decisión y su motivo, y las fichas completas de las ejecutables están en la sección 7.
+   129→
+   130→**Tabla 5.1: Resultado de la clasificación**
+   131→
+   132→| Decisión | Tareas | Total |
+   133→|---|---|---|
+   134→| **CONSERVAR** — valor real, ejecutable en CRM tal cual (con evidencia corregida donde aplica) | S1, S5, S6, M1, M7, I3, E1, E2, E3, E4, F1, F2, F3, F4, F5, U1, U2, U3, U4, U5, O3, D1, D4 | **23** |
+   135→| **MODIFICAR** — válida, pero su alcance se acota al CRM (la parte externa queda como dependencia documentada) | S2, M8, I1, I2, E7, O1, O2, O4, D2 | **9** |
+   136→| **POSPONER** — valor demostrativo, no prioritaria para producción | U6 | **1** |
+   137→| **DESCARTAR** — ya resuelta en la base o duplicada con otra tarea | M5, D3 | **2** |
+   138→| **DEPENDENCIA EXTERNA** — requiere modificar WHATSPOWER o ULTRA; fuera de alcance | S3, S4, S7, M2, M3, M4, M6, I4, I5, I6, E5, E6, F6 | **13** |
+   139→
+   140→### 5.1 CONSERVAR (23)
+   141→
+   142→| ID | Tarea | Justificación con evidencia |
+   143→|---|---|---|
+   144→| S1 | Rotar PAT de GitHub y credenciales aparecidas en chats | Acción del propietario sin cambio de repos; protege los tres repos incluido el CRM. Evidencia: OWNER_TODO sección 1; baseline de secretos con entradas ROTACION-PENDIENTE |
+   145→| S5 | Pepper obligatorio en CI para `check:pii` | Verificado hoy: el paso de CI declara `PII_PEPPER` opcional con aviso; el escáner degrada a patrones genéricos si falta |
+   146→| S6 | Saneamiento de scripts `e2e-*` históricos | 26 scripts en la base con rutas de otra máquina y secretos literales; el flujo oficial es `scripts/e2e-3-servicios.mjs` |
+   147→| M1 | Worker de outbox de canales en el despliegue | Verificado hoy: solo el monitor pasivo de CI existe; sin worker, el envío omnicanal queda en `queued` para siempre |
+   148→| M7 | Criterio de unificación de la doble bandeja | Verificado hoy: `inbox.ts` prioriza daemon sobre timeline para el mismo teléfono |
+   149→| I3 | Documento único de contratos del ecosistema | Vive en el CRM (`docs/API_CONTRACT.md`, `docs/INTEGRATION_CONTRACT.md`); es documentación del repositorio autorizado |
+   150→| E1 | Diagnóstico del CI rojo del PR #5 | Evidencia de terceros: run 44428835497, paso 11 failure; sin diagnóstico no hay integración |
+   151→| E2 | Numeración de migraciones consistente | Migraciones `10_`/`11_` se aplican lexicográficamente entre `1_` y `2_`; patrón peligroso para instalaciones limpias |
+   152→| E3 | Limpieza de código y dependencias muertas | Verificado hoy: 8 dependencias sin uso y supervisor sin referencias |
+   153→| E4 | Readiness y CHANGELOG conciliados con el código | 107 rutas declaradas vs 125 reales; cifras de suites divergentes |
+   154→| F1 | Integrar el PR #6 (tareas + quick-actions) | CI de terceros en verde; módulo de tareas ausente de la base (verificado hoy) |
+   155→| F2 | UI de conexiones WhatsApp multi-número | Verificado hoy: API `wa-connections` + tests en base, cero componentes de UI |
+   156→| F3 | Filtros por canal/cuenta y búsqueda en la bandeja | Bandeja canónica sin filtros; `inbox.ts` ya expone el origen |
+   157→| F4 | Agenda con vistas semana/día | Solo vista mensual; Google Calendar en API sin UI |
+   158→| F5 | Pantalla de Salud y puesta en marcha guiada | `/api/doctor` aislado por org sin pantalla propia |
+   159→| U1 | Navegación única 5+1, una sola bandeja en el menú | Verificado hoy: `/whatsapp` y `/inbox` coexisten; 17 páginas |
+   160→| U2 | Dashboard "qué te toca ahora" con motivos accionables | El dashboard actual no prioriza por atención requerida |
+   161→| U3 | Catálogo de errores accionables | Errores orientados a desarrollador; patrón de la referencia (`lib/errores.ts` con invariante) |
+   162→| U4 | Ajustes agrupados por dominio | Verificado hoy: 2715 líneas en una sola pantalla, 14 tabs |
+   163→| U5 | Pulido visual: tipografía, dark mode, estados vacíos | Tipografía 9–11px y 36 usos de `dark:` incompletos (diagnóstico v1) |
+   164→| O3 | Instalador/actualizador idempotente del CRM | Patrón de la referencia (`instalar.sh` preserva datos); el CRM no lo tiene |
+   165→| D1 | Resolver las ramas de integración pendientes del CRM | PR #4 abierto hacia main y `fix/migration-safety-audit` (tests multiproceso del scheduler) sin destino decidido |
+   166→| D4 | Matriz de trazabilidad afirmación→evidencia + check en CI | Origen de la "falsa confianza" documental; aplica al CRM como repositorio documental central |
+   167→
+   168→### 5.2 MODIFICAR (9)
+   169→
+   170→| ID | Cambio de alcance y justificación |
+   171→|---|---|
+   172→| S2 | La purga del historial se limita a **CRM-ALBRA** (filter-repo + force-push coordinado con clones y PR abiertos del CRM). La purga en WP y ULTRA es una operación futura independiente. El resto de la solución no cambia: primero rotar (S1), después purgar |
+   173→| M8 | La reconciliación de UNCERTAIN se construye **sobre los endpoints del CRM** (`/api/internal/channel-outbox/reconcile`, ya existentes y protegidos): pantalla o CLI de operador. La parte de inciertos que solo vive en WP queda como nota externa |
+   174→| I1 | El E2E de 3 servicios se programa como **job del CI del CRM** (clona los otros dos repos en modo lectura) o como corrida nocturna del propietario; no se crea CI en los repos externos |
+   175→| I2 | La suite de contratos se reduce a **fixtures del lado CRM** (SSO espejado, HMAC v2, eco de organización); la matriz cross-repo completa requiere CI en los tres repos y queda como fase externa |
+   176→| E7 | El test automatizado de backup/restore y el drill con evidencia se ejecutan **sobre el backup del CRM** (`scripts/sqlite-backup.cjs`, API `/api/backup`); el backup de ULTRA queda externo |
+   177→| O1 | El compose del CRM ya tiene healthchecks (verificado hoy): la tarea pasa a ser **ejecutar `docker compose build/up` en la máquina del propietario** y registrar evidencia; los healthchecks de WP/ULTRA son externos |
+   178→| O2 | El runbook unificado se escribe **en el CRM** y cubre el arranque del CRM, su daemon y el worker de outbox; las secciones de operación de WP/ULTRA se marcan como dependencia externa |
+   179→| O4 | El monitor programado, healthchecks y unidades systemd se definen **para el CRM y su daemon**; las unidades de WP/ULTRA quedan externas |
+   180→| D2 | La consolidación/archivo de ramas se limita a las ramas del CRM (incluida la recién descubierta `impl/wave2-wa-connections`, contenida al 100 %); las ramas de WP/ULTRA quedan externas |
+   181→
+   182→### 5.3 POSPONER (1)
+   183→
+   184→| ID | Motivo |
+   185→|---|---|
+   186→| U6 | Semillas sectoriales para demos reproducibles: valor para ventas/demostraciones, cero impacto en estabilidad, seguridad o producción. Posponerla no bloquea nada; reactivarla cuesta ~1 d cuando haya demos reales programadas |
+   187→
+   188→### 5.4 DESCARTAR (2)
+   189→
+   190→| ID | Motivo con evidencia |
+   191→|---|---|
+   192→| M5 | **Ya resuelta en la base.** El plan v1 pedía deduplicación por organización en el daemon Baileys; `src/whatsapp-daemon/idempotency.mjs` implementa exactamente ese contrato (clave `(organization_id, idem_key)`, estados IN_FLIGHT/DONE/FAILED/UNCERTAIN, lease vencido → UNCERTAIN permanente sin reenvío) y `tests/unit/daemon-idempotency.test.ts` lo prueba. Verificado hoy sobre `a72cc95`. La tarea quedó obsoleta; solo queda su verificación en CI al integrar |
+   193→| D3 | **Duplicada en su parte CRM.** Alinear el CHANGELOG del CRM con cifras reales ya está cubierto por E4 (readiness + changelog conciliados). La parte de changelogs de WP/ULTRA no es ejecutable bajo el alcance y quedó absorbida por las dependencias externas |
+   194→
+   195→### 5.5 DEPENDENCIA EXTERNA (13)
+   196→
+   197→Estas tareas son válidas como diagnóstico, pero su solución exige modificar WHATSPOWER o ULTRA. Ninguna se ejecuta en esta fase; se documenta qué aporta, qué exige y qué pasa mientras no exista.
+   198→
+   199→| ID | Reside en | Qué aporta | Qué exige | Consecuencia mientras no se haga |
+   200→|---|---|---|---|---|
+   201→| S3 | WP | Elimina el secreto operador global que concentra acceso a todas las organizaciones | Credenciales de servicio por organización y coordinación con flows existentes | El riesgo de acceso cross-org vía `X-Org-Id` arbitrario persiste en WP |
+   202→| S4 | WP + ULTRA | jti y rate limit sobreviven reinicios | Persistir en SQLite (patrón DurableReplayCache) | Replay tras reinicio sigue siendo posible en los motores; el CRM no está afectado (SSO bloqueado en producción) |
+   203→| S7 | WP + ULTRA | Credenciales por organización cifradas en reposo | AES-256-GCM + clave externa (patrón v1 del CRM) | Tokens Meta en env plano persisten |
+   204→| M2 | ULTRA | Alta masiva de consentimiento (Ley 1581) | Columna `consent_origin`, endpoint de bulk, decisión legal del propietario | Las campañas reales de ULTRA saltan a `SKIPPED_NO_CONSENT` o incitan a fabricar consentimientos: **no operar campañas** |
+   205→| M3 | WP + ULTRA | Ventana 24 h, plantillas y clasificador Meta en el despacho real | Invocar los stores ya probados; plantillas aprobadas en Meta (acción del dueño) | Rechazos evitables 131047/131048 degradan la calidad del número |
+   206→| M4 | ULTRA | El `/step` manual respeta el pacing durable | Pasar `durablePacing` al server | Despachos manuales sin ritmo |
+   207→| M6 | ULTRA | `smoke-live` deja de borrar campañas ajenas | Revisar e integrar la rama `impl/fix-funcionales-20261112` de ULTRA | Riesgo destructivo si alguien corre smoke-live en producción |
+   208→| I4 | WP | Reconcilia la rama divergida `fix/fase-correctiva-final` (953 líneas) con la solución B2 ya fusionada | Decisión de diseño del propietario + revisión | Un merge ciego revertiría protección ya fusionada |
+   209→| I5 | ULTRA | Reconcilia `fix/fase2-seguridad-ultra` con el escáner HMAC+pepper vigente | Decisión de diseño del propietario | Un merge ciego revertiría el denylist |
+   210→| I6 | WP + ULTRA | Selector de transporte por política por organización | Cablear `transport-selector.ts` (ya probado aislado) | La elección de transporte sigue siendo la variable global `TRANSPORT` |
+   211→| E5 | WP | Decide el destino del ws-server y la SPA inerte del dashboard | Autorización de eliminación o cableado | Código muerto referenciado por docs |
+   212→| E6 | ULTRA | Docs operativas (`MIGRACIONES.md`, `.env.example`) alineadas con el código | PR de docs en ULTRA | Expectativas operativas erróneas |
+   213→| F6 | WP | Cobro real (WOMPI/MP/Stripe) | Credenciales de pasarela del propietario | El simulador sigue blindado; no hay cobro real desde el CRM ni WP |
+   214→
+   215→---
+   216→
+   217→## 6. Revisión de los PR #4, #5 y #6
+   218→
+   219→Ninguno se fusiona ni se cierra: la decisión de integrar corresponde al propietario. Esta revisión actualiza las fichas del plan v1 con los diffs verificados hoy contra su base real (`a72cc95`) y añade el PR #4 con detalle completo.
+   220→
+   221→### 6.1 PR #4 — prueba del ACK ambiguo de la outbox de workflows (hacia `main`)
+   222→
+   223→| Campo | Detalle |
+   224→|---|---|
+   225→| Valor que aporta | Convierte en test permanente el agujero más fino de la outbox de workflows: un envío que el proveedor aceptó pero cuya confirmación no se pudo persistir. Usa un trigger SQLite que aborta la persistencia del ACK y exige que el sistema no pierda ni reenvíe a ciegas |
+   226→| Riesgos | Casi nulos: **2 archivos, +153** (test +89, `docs/CONTEXTO-CRM.md` +64); no toca código productivo |
+   227→| Pruebas que faltan | Ninguna propia: el PR **es** una prueba; su CI corre al crear el PR (no se re-verificó el run hoy — sin API autenticada; declarado expresamente) |
+   228→| Migraciones | Ninguna |
+   229→| Duplicidades | Ninguna; su patrón se reutiliza en M8 |
+   230→| Problema estructural | Está abierto hacia `main`, que está 29 commits detrás de la base de integración; el diff contra `repair/produccion-real` es grande solo porque le faltan esos 29 commits |
+   231→| Decisión recomendada | **CONSERVAR ABIERTO.** Al decidir el propietario cómo fluye `repair/produccion-real` → `main` (A3), retarget o rebase del PR y luego integrar; su patrón alimenta M8 |
+   232→
+   233→### 6.2 PR #5 — estabilización y deuda (head `1e5c9ae`, base `a72cc95`)
+   234→
+   235→| Campo | Detalle |
+   236→|---|---|
+   237→| Valor que aporta | Elimina 8 dependencias muertas (next-auth, next-intl, @dnd-kit/\*, @tanstack/react-query, @tanstack/react-table, @mdxeditor/editor, @hapi/boom) y 2 componentes sin referencias (sidebar de 726 líneas, use-mobile); añade migración `10_quoteitem_org_backfill` (UPDATE aditivo de `organizationId` NULL tomando el org del Quote padre) y su test de 97 líneas. −3416 líneas netas de superficie mantenida |
+   238→| Riesgos | CI de terceros en **FAILURE** (paso 11 *Suite de tests*; pasos 1–10 en verde, build omitido): contradice el mensaje de commit que reclama 784/784. Causa raíz sin determinar hasta ejecutar la batería (E1). Numeración `10_` a corregir con E2 antes de fusionar |
+   239→| Pruebas que faltan | Diagnóstico del fallo ejecutando la batería sobre la rama; re-CI en verde |
+   240→| Migraciones | `10_` puramente aditiva (no borra filas); riesgo de orden lexicográfico |
+   241→| Duplicidades | Su limpieza es exactamente el contenido de E3: si se integra, E3 pasa a ser verificación en lugar de trabajo nuevo |
+   242→| Qué conservar / corregir / descartar | **CONSERVAR el contenido completo**; CORREGIR el CI (E1) y la numeración (E2); no descartar nada de su diff |
+   243→| Decisión recomendada | No fusionar hasta CI verde; luego integrar por decisión del propietario (A3) |
+   244→
+   245→### 6.3 PR #6 — tareas y recordatorios + quick-actions (head `dfd926a`, base `a72cc95`)
+   246→
+   247→| Campo | Detalle |
+   248→|---|---|
+   249→| Valor que aporta | Módulo de tareas org-scoped (migración `11_tareas`, API con aislamiento por organización, tarjeta en el dashboard) y quick-actions reales en la ficha 360 (inbox/cotización/agenda en 1 clic); +576/−6 en 11 archivos |
+   250→| Riesgos | Numeración `11_` (se aplica entre `1_` y `2_`): inocuo hoy porque `Task` es tabla nueva, pero hereda el patrón peligroso; resolver con E2 antes de fusionar |
+   251→| Pruebas | **Terceros:** CI success sobre `dfd926a` (suite, tsc, escáneres, build). **Propias en esta fase: ninguna** (congelación). Incluye `tests/integration/tasks.test.ts` (109 líneas) con aislamiento por organización |
+   252→| Migraciones | `11_tareas`: CREATE TABLE aditiva |
+   253→| Duplicidades | Ninguna; nada en la base implementa tareas (verificado hoy) |
+   254→| Qué conservar / corregir / descartar | **CONSERVAR todo**; CORREGIR la numeración con E2; añadir `cierre/**` a los triggers de CI para futuras ramas de cierre |
+   255→| Decisión recomendada | **Integrable** tras E2, por decisión del propietario (A3) |
+   256→
+   257→**Conclusión de los tres PR:** los tres aportan valor y ninguno contiene funcionalidad duplicada ni eliminaciones de funcionalidad de usuario. El orden seguro es E2 (numeración) → E1 (diagnóstico CI #5) → integración de #6 y #5, todo bajo autorización expresa (A3). Mientras tanto permanecen abiertos y congelados.
+   258→
+   259→
+   260→---
+   261→
+   262→## 7. Hoja de ruta en 7 fases
+   263→
+   264→Las fases siguen el orden obligatorio del encargo (seguridad primero, preparación para producción al final), ajustado por dependencias reales verificadas. Cada tarea lleva su decisión, su carácter (OBLIGATORIA = necesaria para el nivel "listo para producción"; OPCIONAL = mejora que no bloquea), y los doce campos exigidos. El libro Excel contiene la misma matriz completa en formato filtrable.
+   265→
+   266→**Regla transversal de cierre:** toda tarea de código cierra con batería del repositorio en verde localmente y en CI de GitHub más la prueba específica que añade; toda tarea de despliegue cierra con evidencia de ejecución en la máquina del propietario; toda tarea documental cierra con la matriz de trazabilidad actualizada. Ninguna tarea declara terminado algo que solo esté documentado.
+   267→
+   268→**Regla transversal de reversión:** ninguna tarea requiere reconstruir nada. Las de código se revierten con `git revert` del PR de trabajo; las de migración conservan copia de la base antes de operar; las de repositorio (purga de historial) exigen un bundle git previo conservado por el propietario; las de cuenta (rotación de PAT) se documentan antes de ejecutarse.
+   269→
+   270→### 7.1 Fase 1 — Seguridad y protección de datos (4 tareas, 2,25 d)
+   271→
+   272→Objetivo: cerrar las fugas de credenciales y la superficie de secretos del CRM antes de tocar cualquier otra cosa. Criterio de salida de la fase: `security:scan` y `security:scan:history` en verde, `check:pii` con pepper obligatorio, cero scripts con secretos literales, y acta de rotación firmada por el propietario.
+   273→
+   274→**F1-T01 · S1 · Rotar el PAT de GitHub y toda credencial aparecida en chats — OBLIGATORIA · CONSERVAR**
+   275→
+   276→- **Problema real.** El PAT usado en sesiones de trabajo y credenciales reales aparecidas en chats siguen vigentes; las baselines de secretos arrastran entradas ROTACION-PENDIENTE.
+   277→- **Evidencia en el código.** OWNER_TODO del CRM (sección 1); `scripts/security/secret-baseline.json` del CRM.
+   278→- **Beneficio para el usuario.** Ningún tercero con acceso a un chat antiguo puede operar el repositorio ni el CI; el propietario recupera el control completo de la superficie de acceso.
+   279→- **Solución recomendada.** Revocar el PAT y generar uno nuevo de alcance mínimo (repo CRM-ALBRA y los repos que haga falta leer); actualizar el remote local y los secretos de Actions que lo usen; inventariar y rotar toda credencial aparecida en conversaciones.
+   280→- **Archivos y módulos afectados.** Fuera del repositorio (GitHub → Settings → Developer settings; secretos de Actions). En el repo solo se actualiza la documentación de rotación y las baselines si procede.
+   281→- **Riesgos.** Interrupción temporal de integraciones que usaban el PAT viejo (mitigable documentando cada uso antes de rotar).
+   282→- **Dependencias.** Decisión A1 del propietario. Precede a F1-T02 (no se purga un historial con credenciales vivas).
+   283→- **Pruebas necesarias.** `security:scan` en verde tras rotar; acceso a los repos con el PAT nuevo; login de Actions correcto.
+   284→- **Criterios de aceptación.** PAT viejo revocado, nuevo en uso con alcance mínimo, y registro de rotación con fecha.
+   285→- **Estimación.** 0,5 d.
+   286→- **Reversión.** No aplica (acción de cuenta). Mitigación: documentar el PAT sustituido antes de revocar para poder restaurar cualquier uso.
+   287→
+   288→**F1-T02 · S2 (MODIFICADA: solo CRM-ALBRA) · Purgar el historial git del CRM — OBLIGATORIA · MODIFICAR**
+   289→
+   290→- **Problema real.** El historial del CRM contiene secretos históricos y artefactos de E2E con credenciales literales, recuperables por cualquiera que clone el repositorio.
+   291→- **Evidencia en el código.** `scripts/scan-secrets.mjs` con modo history; `scripts/security/secret-baseline.json` con entradas ROTACION-PENDIENTE.
+   292→- **Beneficio para el usuario.** Los secretos históricos dejan de ser extraíbles del repositorio; el riesgo de fuga se limita a lo ya rotado.
+   293→- **Solución recomendada.** Tras rotar (F1-T01): `git filter-repo` en una ventana acordada, force-push a `main` y `repair/produccion-real`, reclonar los entornos de trabajo, y recrear/rebasar los PR abiertos (#4, #5, #6) sobre el historial nuevo. La purga en WHATSPOWER y ULTRA queda como operación externa futura.
+   294→- **Archivos y módulos afectados.** Historial completo del repositorio; documentación operativa de la ventana.
+   295→- **Riesgos.** Destructivo e irreversible: cambian todos los SHA; los clones desincronizados dejan de empujar; los PR abiertos deben recrearse. Mitigación completa en el procedimiento de reversión.
+   296→- **Dependencias.** F1-T01 completada; decisión A2 (autorización destructiva expresa).
+   297→- **Pruebas necesarias.** `security:scan:history` en verde; CI verde en las tres ramas afectadas tras el rebasado.
+   298→- **Criterios de aceptación.** Baseline del CRM sin ROTACION-PENDIENTE; PRs rebasados y CI verde; acta de la ventana con SHAs antes/después.
+   299→- **Estimación.** 0,5 d (reducido del original de 1 d al limitarse a un repositorio).
+   300→- **Reversión.** Bundle git completo del repositorio creado y guardado por el propietario antes de la purga; si la ventana falla, se restaura desde el bundle y no se fuerza nada.
+   301→
+   302→**F1-T03 · S5 · Pepper obligatorio del escáner de PII en CI — OBLIGATORIA · CONSERVAR**
+   303→
+   304→- **Problema real.** Si `PII_PEPPER` falta en Actions, `check:pii` continúa con patrones genéricos y solo emite un aviso: la protección anti-falsa-negativo del denylist de PII queda degradada sin que nadie se entorne.
+   305→- **Evidencia en el código.** `.github/workflows/ci.yml` (comentario literal del paso "Escáner de PII y teléfonos reales"); `scripts/check-pii.mjs` ya soporta pepper y prueba negativa (verificada en sesión previa: exit 1 sin pepper).
+   306→- **Beneficio para el usuario.** Los datos personales de clientes reales quedan protegidos en cada PR; una mala configuración de CI rompe el pipeline en vez de pasar inadvertida.
+   307→- **Solución recomendada.** Configurar `PII_PEPPER` como secret de Actions (acción del propietario) y ajustar el paso para fallar si el pepper no está presente (fail-fast), sin cambiar la lógica del escáner.
+   308→- **Archivos y módulos afectados.** `.github/workflows/ci.yml`; flag fail-fast en `scripts/check-pii.mjs` si no existe aún.
+   309→- **Riesgos.** Bajo; el primer run fallará si el secret no se configuró antes (procedimiento: configurar primero, luego activar el fail-fast).
+   310→- **Dependencias.** El propietario configura el secret de Actions (parte de A1).
+   311→- **Pruebas necesarias.** Prueba negativa local (falla sin pepper); run de CI verde con pepper.
+   312→- **Criterios de aceptación.** `check:pii` corre con pepper en todos los runs; el CI es rojo si falta.
+   313→- **Estimación.** 0,25 d.
+   314→- **Reversión.** Revertir el commit del workflow; el script sigue funcionando en modo actual.
+   315→
+   316→**F1-T04 · S6 · Saneamiento de los 26 scripts e2e-* históricos — OBLIGATORIA · CONSERVAR**
+   317→
+   318→- **Problema real.** 26 scripts `e2e-*` en `scripts/` conservan rutas de otra máquina y secretos literales; conviven con el flujo oficial autocontenido `scripts/e2e-3-servicios.mjs`, generando confusión y superficie de fuga.
+   319→- **Evidencia en el código.** `git ls-tree origin/repair/produccion-real scripts/` (26 entradas e2e-*); `scripts/security/secret-baseline.json` que los admite por excepción.
+   320→- **Beneficio para el usuario.** Menos superficie de fuga de credenciales y un solo flujo oficial de pruebas; la operación deja de depender de scripts que solo corrían en una máquina desaparecida.
+   321→- **Solución recomendada.** Archivar en `docs/historia/scripts/` (o eliminar con etiqueta previa) los scripts no oficiales; conservar `e2e-3-servicios.mjs` y los referenciados por `package.json`, CI o documentación vigente; regenerar la baseline de secretos.
+   322→- **Archivos y módulos afectados.** `scripts/e2e-*` (26), `scripts/security/secret-baseline.json`, documentación operativa.
+   323→- **Riesgos.** Perder material histórico (mitigado con archivo o etiqueta); romper una referencia viva (mitigado verificando `package.json`/workflows antes de mover cada script).
+   324→- **Dependencias.** Decisión A4 (autorización de eliminaciones con archivo previo).
+   325→- **Pruebas necesarias.** `security:scan` en verde tras la limpieza; `npm run build` y batería intactos.
+   326→- **Criterios de aceptación.** Ningún script con secretos literales ni rutas ajenas; inventario final en la documentación operativa.
+   327→- **Estimación.** 1 d.
+   328→- **Reversión.** `git revert` del PR; el archivo o la etiqueta conserva el contenido original íntegro.
+   329→
+   330→### 7.2 Fase 2 — Estabilidad y confiabilidad del CRM (6 tareas, 3,5 d)
+   331→
+   332→Objetivo: dejar la base de integración estable y los PR resueltos, porque casi todo el resto del plan se construye sobre ella. Criterio de salida: CI verde en `repair/produccion-real` con los PR #5 y #6 integrados (o su destino decidido), migraciones deterministas en instalación limpia, cero código muerto referenciado, y documentación de readiness conciliada con el código.
+   333→
+   334→**F2-T01 · E2 · Numeración consistente de migraciones Prisma — OBLIGATORIA · CONSERVAR**
+   335→
+   336→- **Problema real.** Las migraciones `10_quoteitem_org_backfill` (PR #5) y `11_tareas` (PR #6) se aplicarían lexicográficamente entre `1_` y `2_`, estableciendo un patrón que en instalaciones limpias futuras aplica en un orden no intencional.
+   337→- **Evidencia en el código.** Orden lexicográfico de `prisma/migrations/` verificado hoy; convención vigente: `0_`–`9_`, luego `z_*` con nombre semántico.
+   338→- **Beneficio para el usuario.** Toda instalación nueva (incluida la del propio propietario en producción) aplica el esquema en un orden determinista y reproducible; elimina una clase entera de fallos de despliegue.
+   339→- **Solución recomendada.** Renombrar las migraciones nuevas al formato semántico vigente (`z_quoteitem_org_backfill`, `z_tareas`) en sus ramas, o consolidar la convención en `docs/MIGRACIONES.md` si el equipo prefiere prefijos numéricos estrictos; documentar la regla elegida.
+   340→- **Archivos y módulos afectados.** `prisma/migrations/*` de las ramas de los PR #5 y #6; `docs/MIGRACIONES.md`.
+   341→- **Riesgos.** Si alguna migración ya se aplicó en una base real, el renombrado requiere `prisma migrate resolve` sobre copia; hoy no hay evidencia de bases con `10_`/`11_` aplicadas (los PR no están fusionados), por lo que el renombrado es seguro ahora mismo.
+   342→- **Dependencias.** Decisión A5 (autorización de renumeración). Precede a la integración de los PR #5 y #6.
+   343→- **Pruebas necesarias.** Instalación limpia (migraciones sobre SQLite temporal) aplica en orden determinista; batería en verde.
+   344→- **Criterios de aceptación.** Instalación limpia determinista; CI verde en las ramas afectadas; regla documentada.
+   345→- **Estimación.** 0,5 d.
+   346→- **Reversión.** `git revert` del renombrado; las migraciones son aditivas y no tocan datos.
+   347→
+   348→**F2-T02 · E1 · Diagnosticar el CI rojo del PR #5 — OBLIGATORIA · CONSERVAR**
+   349→
+   350→- **Problema real.** El CI del PR #5 falla en el paso 11 (Suite de tests) según GitHub Actions, mientras el mensaje de su commit reclama una batería 784/784 en verde: una de las dos afirmaciones es falsa y no se puede fusionar sin saber cuál.
+   351→- **Evidencia en el código.** Run 44428835497, job 135240625938 (terceros): pasos 1–10 verdes, paso 11 FAILURE, build omitido.
+   352→- **Beneficio para el usuario.** Permite integrar la limpieza de deuda sin arrastrar un fallo real a la base; si el fallo es del backfill de QuoteItem, lo detecta antes de producción.
+   353→- **Solución recomendada.** Reproducir la batería localmente sobre un worktree de la rama `1e5c9ae`, identificar el test que falla, corregir la causa (test o código), y re-CI en verde.
+   354→- **Archivos y módulos afectados.** Rama `cierre/a-estabilizacion-y-deuda`; el test específico que falle; `tests/integration/quote-item-org-backfill.test.ts` como candidato principal.
+   355→- **Riesgos.** El fallo puede revelar un problema real del backfill (es la función de la prueba, no un riesgo del procedimiento).
+   356→- **Dependencias.** Decisión A3 (autorizar trabajo sobre la rama del PR); posterior a F2-T01 si se renumeran las migraciones en la misma pasada.
+   357→- **Pruebas necesarias.** Batería local de la rama en verde; re-run de CI en verde.
+   358→- **Criterios de aceptación.** CI success en la cabeza del PR; causa documentada en el propio PR.
+   359→- **Estimación.** 0,5 d.
+   360→- **Reversión.** Los cambios de diagnóstico viven en la rama del PR y se descartan con ella si no convencen; la base no se toca.
+   361→
+   362→**F2-T03 · F1 · Integrar el PR #6 (tareas y quick-actions) — OBLIGATORIA · CONSERVAR**
+   363→
+   364→- **Problema real.** El módulo de tareas y recordatorios y las quick-actions de la ficha 360 existen completos en el PR #6 con CI de terceros en verde, pero la base no los tiene: los usuarios no disponen de la funcionalidad y el dashboard de atención (U2) la necesita.
+   365→- **Evidencia en el código.** Head `dfd926a`: 11 archivos, +576/−6, migración `11_tareas` aditiva, API org-scoped, `tests/integration/tasks.test.ts` (109 líneas); CI success 2026-11-19. La base no tiene `src/app/api/tasks/` (verificado hoy).
+   366→- **Beneficio para el usuario.** Tareas y recordatorios disponibles desde el dashboard y la ficha; acciones de inbox/cotización/agenda en un clic desde el cliente.
+   367→- **Solución recomendada.** Tras F2-T01: renumerar su migración si aplica, re-CI y fusionar a `repair/produccion-real` por decisión del propietario; añadir `cierre/**` a los triggers de CI.
+   368→- **Archivos y módulos afectados.** Los 11 archivos del PR; `.github/workflows/ci.yml` (triggers).
+   369→- **Riesgos.** Numeración (resuelta por F2-T01); ninguna otra — el PR es aditivo y no toca contratos.
+   370→- **Dependencias.** F2-T01; decisión A3.
+   371→- **Pruebas necesarias.** Suite + tests de tareas incluidos en CI; verificación de la migración en instalación limpia.
+   372→- **Criterios de aceptación.** Módulo de tareas en la base con CI verde; tarjeta visible en el dashboard.
+   373→- **Estimación.** 0,5 d.
+   374→- **Reversión.** Merge revertible con `git revert -m 1`; migración aditiva cuya tabla puede dejarse sin uso o eliminarse con una migración inversa si el propietario lo pide.
+   375→
+   376→**F2-T04 · D1 · Resolver las ramas de integración pendientes del CRM — OBLIGATORIA · CONSERVAR**
+   377→
+   378→- **Problema real.** El PR #4 (test de ACK ambiguo) está abierto hacia `main` en lugar de hacia la base de integración, y `fix/migration-safety-audit` (pruebas multiproceso del scheduler con lease) no tiene destino decidido.
+   379→- **Evidencia en el código.** PR #4 head `611e418` con 2 archivos +153; rama `fix/migration-safety-audit` con tests de lease entre procesos verificados por la auditoría v1.
+   380→- **Beneficio para el usuario.** Las garantías de no-pérdida y no-duplicación del scheduler quedan protegidas por tests permanentes en la base; la topología de ramas queda limpia y explicable.
+   381→- **Solución recomendada.** Con la decisión A3 del propietario sobre el flujo `repair/produccion-real` → `main`: retarget del PR #4 a la base de integración (o rebase) e integración; portar los tests multiproceso del scheduler a la base en un PR pequeño.
+   382→- **Archivos y módulos afectados.** `tests/unit|integration/` del scheduler; PR #4; `src/lib/workflow-outbox.ts` (solo como sujeto de los tests).
+   383→- **Riesgos.** Bajo; son tests, no código productivo.
+   384→- **Dependencias.** Decisión A3; coherente con F2-T02/F2-T03 en la misma ventana de PRs.
+   385→- **Pruebas necesarias.** Suite ampliada con los tests portados; CI verde.
+   386→- **Criterios de aceptación.** Pruebas multiproceso del scheduler en la base; PR #4 con destino correcto, integrado o cerrado con decisión escrita.
+   387→- **Estimación.** 1 d.
+   388→- **Reversión.** `git revert` de los PR de tests; no afecta datos ni contratos.
+   389→
+   390→**F2-T05 · E3 · Completar la limpieza de código y dependencias muertas — OBLIGATORIA · CONSERVAR**
+   391→
+   392→- **Problema real.** Ocho dependencias sin uso en `package.json` y `whatsapp-daemon-supervisor.ts` (172 líneas) sin ninguna referencia en archivos trackeados; el PR #5 ya trae la mayor parte, pero su integración debe verificarse y completar lo que falte.
+   393→- **Evidencia en el código.** `git grep` sin resultados para el supervisor (verificado hoy); `package.json` de la base con `next-auth`, `next-intl`, `@hapi/boom`, `@mdxeditor/editor`, `@dnd-kit/*`, `@tanstack/react-query`, `@tanstack/react-table`.
+   394→- **Beneficio para el usuario.** Instalaciones más ligeras y rápidas (menos dependencias que instalar y actualizar); superficie de vulnerabilidades de dependencias reducida.
+   395→- **Solución recomendada.** Tras integrar el PR #5: verificar con `tsc`, build y suite que la limpieza quedó completa; eliminar cualquier resto (js-yaml si queda solo de scripts, imports ocultos) con el ratchet de lint.
+   396→- **Archivos y módulos afectados.** `package.json`, `package-lock.json`, `src/whatsapp-daemon-supervisor.ts` si sigue en la base, `scripts/lint-baseline.mjs`.
+   397→- **Riesgos.** Import oculto no detectado (mitigado con `tsc` + build + suite; el ratchet de lint bloquea errores nuevos).
+   398→- **Dependencias.** Integración del PR #5 (que a su vez depende de F2-T01/F2-T02); decisión A4 para cualquier eliminación extra.
+   399→- **Pruebas necesarias.** `tsc`, build de producción y batería en verde.
+   400→- **Criterios de aceptación.** Cero referencias a módulos muertos; cero dependencias sin uso; CI verde.
+   401→- **Estimación.** 0,5 d (verificación + restos; el grueso lo hace el PR #5).
+   402→- **Reversión.** `git revert` del PR de limpieza; dependencias re-instalables sin efecto en datos.
+   403→
+   404→**F2-T06 · E4 · Conciliar PRODUCTION_READINESS y CHANGELOG con el código — OBLIGATORIA · CONSERVAR**
+   405→
+   406→- **Problema real.** La documentación de readiness declara 107 rutas frente a 125 reales y cifras de suites que cambiaron sin actualizarse; la "falsa confianza" documental es el origen de decisiones basadas en documentos y no en código.
+   407→- **Evidencia en el código.** `PRODUCTION_READINESS.md` y `CHANGELOG.md` de la base vs conteo real de rutas y archivos de prueba de esta auditoría.
+   408→- **Beneficio para el usuario.** El propietario y cualquier operador leen cifras verdaderas; las decisiones de cierre se toman sobre hechos.
+   409→- **Solución recomendada.** Regenerar cifras con conteo real (rutas, modelos, migraciones, tests) mediante un script verificador reutilizable, y reescribir las secciones afectadas; dejar el script en `scripts/` para re-ejecutarlo en cada release.
+   410→- **Archivos y módulos afectados.** `PRODUCTION_READINESS.md`, `CHANGELOG.md`, nuevo `scripts/verify-doc-figures.mjs`.
+   411→- **Riesgos.** Bajo.
+   412→- **Dependencias.** Preferible tras integrar los PR de la fase para no congelar cifras que van a cambiar.
+   413→- **Pruebas necesarias.** Revisión cruzada de cada cifra contra código; el script verificador pasa.
+   414→- **Criterios de aceptación.** Cero cifras contradictorias entre documentos y código.
+   415→- **Estimación.** 0,5 d.
+   416→- **Reversión.** `git revert` del PR de docs.
+   417→
+   418→### 7.3 Fase 3 — Mensajería y conversaciones (5 tareas, 7,5 d)
+   419→
+   420→Objetivo: que la mensajería del CRM funcione de punta a punta sin intervención manual y que la bandeja sea una sola experiencia confiable. Criterio de salida: un mensaje canónico pasa de `queued` a `sent`/`unknown` con worker en el despliegue, un contacto aparece una sola vez, la bandeja filtra por canal y cuenta, y un operador resuelve un envío UNCERTAIN sin SQL manual. Las salvaguardas de campaña (ventana 24 h, plantillas, consentimiento) permanecen como dependencia externa (M2/M3/I6) y se documentan como límite del alcance.
+   421→
+   422→**F3-T01 · M1 · Worker de la outbox de canales en el despliegue — OBLIGATORIA · CONSERVAR**
+   423→
+   424→- **Problema real.** La outbox de canales solo avanza si un proceso externo llama a `POST /api/internal/channel-outbox` con secreto de 32+ caracteres y bandera habilitada; ni el compose, ni el entrypoint, ni los scripts del repositorio levantan ese proceso, así que el envío omnicanal queda encolado indefinidamente.
+   425→- **Evidencia en el código.** `src/lib/channel-outbox.ts` (intent→claim→dispatch→sent/failed/unknown); única referencia de despliegue: monitor pasivo `.github/workflows/outbox-monitor.yml`; documentación interna: "No se registró cron, scheduler ni ejecución automática".
+   426→- **Beneficio para el usuario.** Los mensajes salen solos: el usuario escribe en la bandeja y el mensaje llega; sin esto, la promesa central del producto (omnicanal) no se cumple.
+   427→- **Solución recomendada.** Añadir el worker como servicio del compose (o unidad systemd separada) que hace push periódico a la API interna con su propio secreto y bandera; mantener la bandera `CHANNEL_OUTBOUND_DISPATCH_ENABLED` desactivada por defecto y activarla solo en entornos con envío autorizado.
+   428→- **Archivos y módulos afectados.** `docker-compose.yml`, `scripts/docker-entrypoint.sh`, posible `scripts/channel-outbox-worker.mjs`, `.env.example`, `docs/CONTEXTO CRM/RUNBOOK_CANALES.md`.
+   429→- **Riesgos.** Envíos reales si la bandera se activa sin control (mitigado: bandera + secreto + kill-switch ya existentes); doble procesamiento si se levantan dos workers (mitigado: el claim de la outbox ya es atómico).
+   430→- **Dependencias.** Decisión A7 (despliegue del worker); prueba de punta en fase 7 con el E2E.
+   431→- **Pruebas necesarias.** E2E local con mensaje ficticio `queued→sent` (o `unknown`) con ALLOW_REAL_DISPATCH=false; monitor en verde.
+   432→- **Criterios de aceptación.** `docker compose up` levanta el worker y un mensaje de prueba sale de la cola con evidencia de log; runbook actualizado.
+   433→- **Estimación.** 1 d.
+   434→- **Reversión.** Quitar el servicio del compose y desactivar la bandera; la cola queda intacta y el sistema vuelve al estado actual sin pérdida.
+   435→
+   436→**F3-T02 · F2 · UI de conexiones WhatsApp multi-número — OBLIGATORIA · CONSERVAR**
+   437→
+   438→- **Problema real.** La API de conexiones multi-número (Baileys por organización y Cloud API) está completa y probada en la base, pero no existe ninguna pantalla: conectar, desconectar o ver el estado de un número exige llamadas manuales a la API.
+   439→- **Evidencia en el código.** `src/lib/wa-connections.ts`, modelo de conexiones y `tests/integration/wa-connections.test.ts` en la base; cero componentes en `src/components` que referencien conexiones (verificado hoy); rama `impl/wave2-wa-connections` contenida al 100 % (el trabajo API ya está fusionado).
+   440→- **Beneficio para el usuario.** El propietario de cada organización conecta sus números desde Ajustes → Canales: estado, QR o Cloud, desconexión y reconexión, sin tocar la API.
+   441→- **Solución recomendada.** Pantalla de conexiones por organización: lista de números con estado (veredicto de sesión existente), acción conectar (QR vía daemon o Cloud API), desconectar con confirmación, y registro de eventos de conexión; permisos de administración aplicados.
+   442→- **Archivos y módulos afectados.** Nuevo `src/components/settings/connections-tab.tsx` (o equivalente), `src/lib/wa-connections.ts` (solo lectura), `src/app/api/` (consumo).
+   443→- **Riesgos.** Operaciones delicadas expuestas en UI (mitigado: permisos RBAC existentes + confirmaciones dobles para desconectar).
+   444→- **Dependencias.** Ninguna técnica bloqueante; orden recomendado F2 → F3(bandeja) → F5(Salud).
+   445→- **Pruebas necesarias.** Test de componentes del flujo conectar/desconectar; prueba con stub del daemon; capturas.
+   446→- **Criterios de aceptación.** Conectar, desconectar y ver estado desde la UI sin API manual; el estado refleja el veredicto real de sesión.
+   447→- **Estimación.** 2 d.
+   448→- **Reversión.** El componente es aditivo; revertir el PR no toca la API ni datos.
+   449→
+   450→**F3-T03 · M7 · Criterio de unificación de la doble bandeja — OBLIGATORIA · CONSERVAR**
+   451→
+   452→- **Problema real.** Conviven dos generaciones de modelo (tablas WhatsApp* del daemon legacy y el modelo canónico Channel*), y `inbox.ts` prioriza el daemon para el mismo teléfono: un contacto puede aparecer dos veces en la bandeja y el historial puede verse dividido.
+   453→- **Evidencia en el código.** Cabecera de `src/lib/inbox.ts` (documenta la prioridad daemon sobre timeline); migraciones 6–8 del modelo canónico.
+   454→- **Beneficio para el usuario.** Un contacto, una conversación, un historial completo: el operador deja de perder respuestas que quedaron en la "otra" bandeja.
+   455→- **Solución recomendada.** Definir y documentar el criterio de fuente ganadora por contacto (canónico primero con respaldo del daemon, o el criterio que apruebe el propietario), aplicar el dedup en `inbox.ts` y conservar el historial completo en la ficha 360; **sin borrar modelos ni datos históricos**.
+   456→- **Archivos y módulos afectados.** `src/lib/inbox.ts`, `src/components/inbox/inbox-page.tsx`, documentación del criterio.
+   457→- **Riesgos.** Cambios de orden percibidos por usuarios habituados (mitigable comunicando el cambio); ningún borrado de datos.
+   458→- **Dependencias.** Decisión de producto A10 (criterio de unificación); F3-T04 depende de este criterio.
+   459→- **Pruebas necesarias.** Test de dedup con un contacto presente en ambas fuentes; revisión manual en móvil.
+   460→- **Criterios de aceptación.** Un contacto aparece una sola vez con canal y cuenta claros; el historial completo sigue visible en la ficha.
+   461→- **Estimación.** 2 d.
+   462→- **Reversión.** `git revert` del PR; sin migraciones ni borrados, la vuelta atrás es limpia.
+   463→
+   464→**F3-T04 · F3 · Filtros por canal y cuenta + búsqueda en la bandeja — OBLIGATORIA · CONSERVAR**
+   465→
+   466→- **Problema real.** La bandeja canónica no filtra por canal ni por cuenta y no tiene búsqueda: con varios números y canales por organización, encontrar la conversación correcta es lento y propenso a errores.
+   467→- **Evidencia en el código.** Diagnóstico 5.4–5.6 del plan v1; `inbox.ts` ya expone el origen de cada conversación (la información existe, falta la capa de consulta/UI).
+   468→- **Beneficio para el usuario.** El operador filtra por WhatsApp/Instagram/Telegram/Facebook/TikTok, por cuenta conectada y busca por nombre o teléfono: respuesta al cliente en segundos.
+   469→- **Solución recomendada.** Extender la API de inbox con parámetros de canal, conexión y búsqueda, y añadir los controles en la bandeja; paginar para mantener el rendimiento.
+   470→- **Archivos y módulos afectados.** `src/app/api/inbox/route.ts`, `src/lib/inbox.ts`, `src/components/inbox/inbox-page.tsx`.
+   471→- **Riesgos.** Rendimiento con filtros sobre SQLite (mitigado con paginación e índices existentes).
+   472→- **Dependencias.** F3-T03 (criterio de unificación) para no filtrar sobre duplicados.
+   473→- **Pruebas necesarias.** Test de API con filtros combinados; revisión manual móvil.
+   474→- **Criterios de aceptación.** El filtro por conexión devuelve solo esa cuenta; la búsqueda encuentra por nombre y teléfono.
+   475→- **Estimación.** 1 d.
+   476→- **Reversión.** `git revert`; los parámetros nuevos son aditivos a la API.
+   477→
+   478→**F3-T05 · M8 (MODIFICADA: sobre endpoints del CRM) · Reconciliación operable de envíos UNCERTAIN — OBLIGATORIA · MODIFICAR**
+   479→
+   480→- **Problema real.** Resolver un envío en estado `unknown`/UNCERTAIN exige SQL manual y disciplina: listar inciertos, aportar evidencia del proveedor y confirmar el reenvío es un flujo de desarrollador, no de operador.
+   481→- **Evidencia en el código.** Endpoints `POST /api/internal/channel-outbox` y `/api/internal/channel-outbox/reconcile` protegidos por secreto (documentación interna 2026-11-14); política "unknown jamás reintentado; conciliación exige providerChecked" en `channel-outbox.ts`.
+   482→- **Beneficio para el usuario.** El operador resuelve un incierto en minutos con evidencia, sin tocar la base: cero duplicados y cero mensajes perdidos en la práctica.
+   483→- **Solución recomendada.** Pantalla (o CLI de operador) sobre los endpoints existentes: lista de inciertos por organización, campo de evidencia, botón de confirmar reenvío que exige la evidencia mínima ya implementada. La parte de inciertos que solo existe dentro de WP queda como nota de dependencia externa.
+   484→- **Archivos y módulos afectados.** Nueva vista admin reutilizando `src/lib/channel-outbox.ts`; endpoints existentes sin cambios de contrato.
+   485→- **Riesgos.** Reintento indebido (mitigado: la API ya exige evidencia; la UI no ofrece reenvío sin ella).
+   486→- **Dependencias.** F3-T01 (worker) para que el flujo tenga sentido operativo; patrón del PR #4 reutilizable para tests.
+   487→- **Pruebas necesarias.** Flujo completo con proveedor mock: uncertain → evidencia → resend autorizado; denegación sin evidencia.
+   488→- **Criterios de aceptación.** El operador resuelve un incierto sin SQL manual, con auditoría del caso.
+   489→- **Estimación.** 1,5 d (reducido del original de 2 d al construir solo sobre endpoints ya existentes).
+   490→- **Reversión.** La vista es aditiva; los endpoints y la política no cambian.
+   491→
+   492→### 7.4 Fase 4 — Experiencia de usuario (5 tareas, 8,5 d)
+   493→
+   494→Objetivo: un CRM que se sienta sencillo, moderno y profesional sin sacrificar la capacidad multiempresa ni las funciones comerciales. Se estudia la referencia solo como material de presentación (navegación plana, paradigma "te toca", catálogo de errores, onboarding). Criterio de salida: menú 5+1 con una sola bandeja, dashboard con motivos accionables, ajustes agrupados, cero textos menores a 13px, y los 20 errores más frecuentes con solución clara. Esta fase es la que más nota el usuario final y la más recomendable para cerrar antes de cualquier demo comercial.
+   495→
+   496→**F4-T01 · U1 · Navegación única 5+1 y una sola bandeja — OBLIGATORIA · CONSERVAR**
+   497→
+   498→- **Problema real.** 17 páginas con dos bandejas visibles (`/whatsapp` y `/inbox`) y navegación saturada: el usuario nuevo no sabe dónde atender mensajes.
+   499→- **Evidencia en el código.** Ambas páginas existen en la base (verificado hoy); diagnóstico de navegación del plan v1 (sección 6).
+   500→- **Beneficio para el usuario.** Menú claro (Hoy / Clientes / Bandeja / Comercial / Ajustes + Admin): menos formación, menos errores, sensación de producto profesional.
+   501→- **Solución recomendada.** Reorganizar el menú a 5+1 secciones; `/whatsapp` (QR clásica) queda accesible desde Ajustes → Canales, no en el menú principal; redirecciones compatibles para rutas guardadas y PWA.
+   502→- **Archivos y módulos afectados.** `src/components/layout/sidebar.tsx`, `src/app/whatsapp/page.tsx`, `src/app/inbox/page.tsx`, `src/lib/views.ts`.
+   503→- **Riesgos.** Hábitos de usuarios actuales y rutas de la PWA (mitigado: mantener rutas con redirección).
+   504→- **Dependencias.** F3-T04 (bandeja con filtros, para que la bandeja única sea suficiente).
+   505→- **Pruebas necesarias.** Revisión manual completa del menú; test de rutas/redirecciones.
+   506→- **Criterios de aceptación.** Una sola bandeja en el menú; ninguna funcionalidad queda inaccesible.
+   507→- **Estimación.** 1,5 d.
+   508→- **Reversión.** `git revert`; el cambio es de layout y rutas.
+   509→
+   510→**F4-T02 · U2 · Dashboard de "requiere atención" con motivos accionables — OBLIGATORIA · CONSERVAR**
+   511→
+   512→- **Problema real.** El dashboard muestra métricas pero no responde la pregunta operativa: ¿qué me toca hacer ahora?
+   513→- **Evidencia en el código.** `src/components/dashboard/dashboard-page.tsx` actual; paradigma de la referencia ("te toca" por motivos) documentado en la comparación v1.
+   514→- **Beneficio para el usuario.** Al abrir el CRM por la mañana, la pantalla dice: mensajes sin contestar, citas por confirmar, tareas vencidas (del PR #6), cotizaciones por enviar — cada motivo lleva a la acción en un clic.
+   515→- **Solución recomendada.** Bloque "Requiere atención" calculado sobre datos existentes (timeline, inbox, tareas del PR #6, cotizaciones, agenda), con motivos configurables para evitar ruido.
+   516→- **Archivos y módulos afectados.** `dashboard-page.tsx`, `src/app/api/dashboard/route.ts`, `tasks-card.tsx` (PR #6).
+   517→- **Riesgos.** Motivos mal calibrados generan ruido (mitigado: configurable y con umbrales).
+   518→- **Dependencias.** F2-T03 (tareas); F3-T03/F3-T04 (bandeja confiable).
+   519→- **Pruebas necesarias.** Test del cálculo de motivos; capturas.
+   520→- **Criterios de aceptación.** Cada motivo lleva a la acción en 1 clic; sin motivos vacíos ni falsos positivos evidentes.
+   521→- **Estimación.** 2 d.
+   522→- **Reversión.** El bloque es aditivo al dashboard; revertir el PR lo retira sin tocar métricas existentes.
+   523→
+   524→**F4-T03 · U3 · Catálogo de errores accionables — OBLIGATORIA · CONSERVAR**
+   525→
+   526→- **Problema real.** Los errores de la UI hablan en términos técnicos (archivos, comandos) y no dicen al usuario qué hacer.
+   527→- **Evidencia en el código.** Diagnóstico P4 del plan v1; patrón de la referencia: `lib/errores.ts` con catálogo codigo/titulo/solucion/paso e invariante que prohíbe nombrar archivos en la UI (`lib/errores.test.ts`).
+   528→- **Beneficio para el usuario.** Ante un fallo, el usuario ve qué pasó y qué hacer (y cuándo pedir soporte); baja la carga de soporte y la percepción de producto roto.
+   529→- **Solución recomendada.** Catálogo central `src/lib/errores.ts` con los 20 errores más frecuentes (incluidos códigos Meta del clasificador para el canal), componente de alerta unificado y test de invariantes de textos.
+   530→- **Archivos y módulos afectados.** Nuevo `src/lib/errores.ts` + test; componentes de alerta/toast; reemplazo progresivo en los 20 puntos más frecuentes.
+   531→- **Riesgos.** Cobertura parcial (aceptado: empezar por los 20 más frecuentes).
+   532→- **Dependencias.** Ninguna bloqueante.
+   533→- **Pruebas necesarias.** Test de invariantes (ningún texto de error nombra archivos ni comandos).
+   534→- **Criterios de aceptación.** Los 20 errores más frecuentes con título, solución y paso a paso; test en verde.
+   535→- **Estimación.** 1,5 d.
+   536→- **Reversión.** `git revert`; el catálogo es aditivo.
+   537→
+   538→**F4-T04 · U4 · Ajustes agrupados por dominio — OBLIGATORIA · CONSERVAR**
+   539→
+   540→- **Problema real.** La pantalla de Ajustes tiene 14 tabs en 2715 líneas: encontrar un ajuste es lento y cada cambio es arriesgado.
+   541→- **Evidencia en el código.** `src/components/settings/settings-page.tsx` con 2715 líneas exactas (verificado hoy).
+   542→- **Beneficio para el usuario.** Ajustes navegables en Negocio / Canales / Inteligencia / Seguridad y equipo; máxima profundidad de 2 niveles; menor riesgo de regresión en cada cambio.
+   543→- **Solución recomendada.** Agrupar en 4 dominios con subpáginas o tabs jerárquicos, migrando un tab por PR revisable; cero tabs huérfanos.
+   544→- **Archivos y módulos afectados.** `settings-page.tsx` (división), tabs existentes en `src/components/settings/`.
+   545→- **Riesgos.** Regresiones de UI por migración (mitigado: un PR por dominio con revisión manual de cada tab).
+   546→- **Dependencias.** Coordinar con F3-T02 (la tab de conexiones nueva nace ya en su dominio).
+   547→- **Pruebas necesarias.** Revisión manual de cada tab migrado; build y batería.
+   548→- **Criterios de aceptación.** Cero tabs huérfanos; navegación máxima 2 niveles; capturas por dominio.
+   549→- **Estimación.** 1,5 d.
+   550→- **Reversión.** Un PR por dominio permite revertir por partes sin deshacer el resto.
+   551→
+   552→**F4-T05 · U5 · Pulido visual: tipografía, dark mode y estados vacíos — MEJORA OPCIONAL · CONSERVAR**
+   553→
+   554→- **Problema real.** Textos de 9–11px, dark mode incompleto (36 usos de `dark:` dispersos) y pantallas vacías sin mensaje ni acción.
+   555→- **Evidencia en el código.** Diagnóstico P4 del plan v1; design system shadcn existente como base.
+   556→- **Beneficio para el usuario.** Legibilidad en móvil, apariencia profesional coherente, y estados vacíos que guían ("no hay conversaciones: conecta tu primer número").
+   557→- **Solución recomendada.** Escala tipográfica mínima 13px, decisión binaria sobre dark mode (completarlo o retirarlo), componente de estado vacío reutilizable; por bloques para acotar regresiones.
+   558→- **Archivos y módulos afectados.** Tokens de tema, componentes compartidos, pantallas principales.
+   559→- **Riesgos.** Alcance grande (mitigado: por bloques con checklist por pantalla).
+   560→- **Dependencias.** F4-T01 (hacerlo sobre la navegación final).
+   561→- **Pruebas necesarias.** Revisión móvil real; checklist visual por pantalla.
+   562→- **Criterios de aceptación.** Ninguna pantalla con texto menor a 13px ni vacío sin mensaje; dark mode consistente o retirado.
+   563→- **Estimación.** 2 d.
+   564→- **Reversión.** Por bloques (cada bloque revertible independientemente).
+   565→
+   566→### 7.5 Fase 5 — Funcionalidades comerciales (1 tarea, 2 d)
+   567→
+   568→Objetivo: completar la única brecha comercial real del CRM. La conclusión honesta de esta fase es que el núcleo comercial ya funciona y está probado (embudo con numeración de cotizaciones `UNIQUE(org, number)`, cotizaciones con PDF, agenda, ficha 360 con timeline idempotente, reportes PDF/Excel, transacciones): **no se añade funcionalidad comercial nueva**, se completa la experiencia de agenda y se deja documentada la pasarela real como decisión externa.
+   569→
+   570→**F5-T01 · F4 · Agenda con vistas semana y día — MEJORA OPCIONAL · CONSERVAR**
+   571→
+   572→- **Problema real.** La agenda solo tiene vista mensual y no muestra duración de las citas: para un negocio que vive de reservas, ver "la semana" y "el día de hoy" es la operación real.
+   573→- **Evidencia en el código.** Diagnóstico 5.2 del plan v1; API de reservas (`/api/reservations`) y Google Calendar en API sin UI (`src/app/api/google/calendar/events/route.ts`).
+   574→- **Beneficio para el usuario.** El usuario ve su semana y su día, crea una cita en 2 clics desde la ficha del cliente (quick-action del PR #6) y percibe duración y huecos.
+   575→- **Solución recomendada.** Vistas semana/día sobre la API existente (visualización + crear/editar), duración visible y huecos libres; integración Google Calendar opcional en modo lectura para no ampliar alcance.
+   576→- **Archivos y módulos afectados.** `src/components/calendar/calendar-page.tsx`, `reservation-form-dialog.tsx`, `src/app/api/_lib/reservations.ts` (solo lectura).
+   577→- **Riesgos.** Alcance (mitigado: limitar a visualización y crear; sin arrastrar/redimensionar en esta fase).
+   578→- **Dependencias.** Ninguna bloqueante; convive con F4-T05 (mismo sistema visual).
+   579→- **Pruebas necesarias.** Test de API de huecos; revisión manual de semana/día.
+   580→- **Criterios de aceptación.** El usuario ve su semana y crea una cita en 2 clics desde la ficha; capturas.
+   581→- **Estimación.** 2 d.
+   582→- **Reversión.** `git revert`; la API no cambia.
+   583→
+   584→**Nota de dependencia externa (F6/cobro real).** La pasarela de pagos real vive en WHATSPOWER y requiere credenciales del propietario (WOMPI/MP/Stripe): es DEPENDENCIA EXTERNA (Tabla 5.5). El CRM no toca pagos en esta fase; sus transacciones y cotizaciones siguen siendo registro contable, no cobro.
+   585→
+   586→### 7.6 Fase 6 — Instalación y operación (6 tareas, 8 d)
+   587→
+   588→Objetivo: que un operador no desarrollador pueda instalar, actualizar, diagnosticar y restaurar el CRM sin asistencia. Criterio de salida: compose ejecutado con healthchecks en verde (evidencia del propietario), instalador idempotente que preserva datos, pantalla de Salud operable, test de backup/restore automatizado más drill con acta, runbook único y monitor programado.
+   589→
+   590→**F6-T01 · O1 (MODIFICADA: solo stack del CRM) · Ejecutar Docker compose y verificar healthchecks — OBLIGATORIA · MODIFICAR**
+   591→
+   592→- **Problema real.** El compose del CRM nunca se ejecutó: los builds reales son un desconocido pese a que Dockerfile y compose son correctos en papel (y ya traen healthchecks de app y daemon, verificado hoy).
+   593→- **Evidencia en el código.** `docker-compose.yml` de la base con `healthcheck` de `/api/health` (30 s) y del daemon (`/status`); OWNER_TODO sección 4; Docker no instalado en el entorno de trabajo (limitación declarada).
+   594→- **Beneficio para el usuario.** Una instalación reproducible en un comando; los healthchecks permiten detectar caídas sin esperar al usuario.
+   595→- **Solución recomendada.** El propietario ejecuta `docker compose build && docker compose up` en su máquina tras fusionar las fases 1–2; se corrige lo que el build real revele; se registra evidencia (logs + healthchecks ok).
+   596→- **Archivos y módulos afectados.** `docker-compose.yml`, `Dockerfile`, `scripts/docker-entrypoint.sh` (ajustes que el build real exija).
+   597→- **Riesgos.** Fallos de build reales hoy desconocidos (esa es precisamente la razón de ejecutarlo).
+   598→- **Dependencias.** Fusión de las fases 1–2 (no validar un despliegue que va a cambiar); decisión A8.
+   599→- **Pruebas necesarias.** Logs de compose; healthchecks de app y daemon en verde; E2E básico contra el stack levantado.
+   600→- **Criterios de aceptación.** Los contenedores levantan y pasan healthcheck; acta con logs firmada por el propietario.
+   601→- **Estimación.** 0,5 d (más el tiempo del propietario).
+   602→- **Reversión.** El compose actual sigue funcionando por el método actual (scripts); revertir ajustes es `git revert`.
+   603→
+   604→**F6-T02 · F5 · Pantalla de Salud y puesta en marcha guiada — OBLIGATORIA · CONSERVAR**
+   605→
+   606→- **Problema real.** `/api/doctor` diagnostica por organización pero no tiene pantalla; no existe puesta en marcha guiada: el usuario nuevo descubre los pasos por ensayo y error.
+   607→- **Evidencia en el código.** Diagnóstico 5.8–5.9 del plan v1; API doctor aislada por org; patrones de la referencia: `comprobar.sh` con OK/AVISO/ERROR y botón "Arreglar", onboarding de 4 pasos con validación real de claves.
+   608→- **Beneficio para el usuario.** La Salud responde "¿qué está mal y cómo lo arreglo?"; una instalación sana nunca ve el wizard; los errores tienen acción (conecta el número, configura el LLM, ejecuta backup).
+   609→- **Solución recomendada.** Vista Salud por organización que consume el doctor con estados OK/AVISO/ERROR y acción sugerida por ítem; wizard de puesta en marcha de 4 pasos que se marca solo al validar de verdad (organización creada, número conectado — reutiliza F3-T02 —, LLM configurado, primer envío de prueba); textos del catálogo de errores (F4-T03).
+   610→- **Archivos y módulos afectados.** Nueva `src/app/health/page.tsx` (o dominio en Ajustes), `src/app/api/` (consumo doctor), wizard en el flujo de primer uso.
+   611→- **Riesgos.** Exponer diagnósticos sensibles (mitigado: la API ya está aislada por org y con permisos).
+   612→- **Dependencias.** F3-T02 (conexiones) para el paso 2 del wizard.
+   613→- **Pruebas necesarias.** Test de estados del doctor; revisión manual del wizard en instalación limpia.
+   614→- **Criterios de aceptación.** Una instalación sana nunca ve el wizard; cada AVISO tiene acción; capturas.
+   615→- **Estimación.** 3 d.
+   616→- **Reversión.** `git revert`; la API doctor no cambia.
+   617→
+   618→**F6-T03 · O3 · Instalador/actualizador idempotente del CRM — OBLIGATORIA · CONSERVAR**
+   619→
+   620→- **Problema real.** Actualizar el CRM hoy implica pasos manuales sin protección: no existe un instalador que preserve `.env`, datos y sesiones entre versiones.
+   621→- **Evidencia en el código.** Ausencia de instalador en la base; patrón de la referencia: `instalar.sh` + `scripts/instalar.mjs` idempotente que preserva datos y valida claves (estudiado, no copiado).
+   622→- **Beneficio para el usuario.** Actualizar a una nueva versión es un comando seguro: respalda, actualiza, verifica y permite volver atrás.
+   623→- **Solución recomendada.** Script `instalar-crm.sh` idempotente: comprueba prerequisitos (Node, SQLite), respalda `.env` y `db/` antes de tocar nada, ejecuta build + migraciones, valida con `/api/health` y deja log; modo `--actualizar` que no sobrescribe configuración.
+   624→- **Archivos y módulos afectados.** Nuevo `scripts/instalar-crm.sh`; `docs/DEPLOY.md` actualizado.
+   625→- **Riesgos.** Sobrescribir datos (mitigado: backup obligatorio previo dentro del propio script).
+   626→- **Dependencias.** F6-T01 (el instalador puede usar compose o scripts, según lo que el propietario adopte).
+   627→- **Pruebas necesarias.** Instalar dos veces sin pérdida (doble ejecución idempotente); actualización sobre copia real.
+   628→- **Criterios de aceptación.** Doble instalación sin tocar datos verificada; log de la operación.
+   629→- **Estimación.** 2 d.
+   630→- **Reversión.** El script respalda antes de operar: restaurar el backup devuelve el estado previo.
+   631→
+   632→**F6-T04 · E7 (MODIFICADA: solo CRM) · Test automatizado de backup/restore + drill con acta — OBLIGATORIA · MODIFICAR**
+   633→
+   634→- **Problema real.** El backup del CRM tiene implementación sólida (Online Backup API + integrity_check + drill script) pero el drill no tiene evidencia de ejecución y no existe test automatizado que garantice que restaurar funciona.
+   635→- **Evidencia en el código.** `scripts/sqlite-backup.cjs`, `scripts/backup-restore-drill.sh`, API `/api/backup` con hardening probado (`tests/integration/backup-hardening.test.ts`); sin test de restore.
+   636→- **Beneficio para el usuario.** Garantía real de que una caída o un error humano no pierde datos: la copia se prueba automáticamente y el drill queda registrado.
+   637→- **Solución recomendada.** Test que crea BD ficticia, respalda, elimina y restaura verificando integridad y conteos; el propietario ejecuta el drill real y firma el acta. La parte de ULTRA queda como dependencia externa.
+   638→- **Archivos y módulos afectados.** Nuevo `tests/integration/backup-restore-roundtrip.test.ts`; `scripts/backup-restore-drill.sh` (registro de evidencia).
+   639→- **Riesgos.** Bajo.
+   640→- **Dependencias.** Decisión A8 (drill en máquina del propietario).
+   641→- **Pruebas necesarias.** Test en CI; drill registrado con acta.
+   642→- **Criterios de aceptación.** Restauración verificada por test y por drill con acta.
+   643→- **Estimación.** 0,5 d (test) + tiempo del propietario (drill).
+   644→- **Reversión.** `git revert` del test; el drill no modifica producción (se ejecuta sobre copias).
+   645→
+   646→**F6-T05 · O2 (MODIFICADA: runbook del CRM) · Runbook único con drill — OBLIGATORIA · MODIFICAR**
+   647→
+   648→- **Problema real.** La operación del CRM está dispersa entre RUNBOOK_CANALES, DEPLOY.md, OWNER_TODO y docs de contexto; el operador no tiene un documento único de arranque, workers, monitor, backup y emergencias.
+   649→- **Evidencia en el código.** `docs/CONTEXTO CRM/RUNBOOK_CANALES.md`, `DEPLOY.md`, `worklog.md` en la base.
+   650→- **Beneficio para el usuario.** Un operador no desarrollador puede arrancar, supervisar y restaurar el CRM siguiendo un solo documento versionado.
+   651→- **Solución recomendada.** Runbook único en `docs/`: arranque (app, daemon, worker de outbox de F3-T01), monitor, backups con drill, actualización con el instalador de F6-T03, diagnóstico con la Salud de F6-T02, y contacto de emergencia. Las secciones de operación de WP/ULTRA se marcan explícitamente como dependencia externa.
+   652→- **Archivos y módulos afectados.** Nuevo `docs/RUNBOOK-CRM.md`; enlaces desde README.
+   653→- **Riesgos.** Obsolescencia (mitigado: el runbook se actualiza en cada PR de operación; D4 lo vigila).
+   654→- **Dependencias.** F6-T01, F6-T03, F6-T04, F3-T01 (documenta lo que ellas construyen).
+   655→- **Pruebas necesarias.** Drill de restauración completo desde cero siguiendo solo el documento.
+   656→- **Criterios de aceptación.** Un operador no desarrollador restaura siguiendo la doc; acta firmada.
+   657→- **Estimación.** 1 d.
+   658→- **Reversión.** PR de docs; reversible sin efecto en código.
+   659→
+   660→**F6-T06 · O4 (MODIFICADA: CRM + daemon) · Observabilidad mínima y unidades systemd — MEJORA OPCIONAL · MODIFICAR**
+   661→
+   662→- **Problema real.** El monitor de outbox es manual, no hay unidades systemd ni alerta automática: una caída del daemon o del worker se descubre cuando el usuario se queja.
+   663→- **Evidencia en el código.** `.github/workflows/outbox-monitor.yml` (solo en CI); sin unidades systemd en la base; RUNBOOK de ULTRA 3.1 como patrón (externo).
+   664→- **Beneficio para el usuario.** La caída se detecta y se recupera sola (restart), y notifica: el propietario responde antes de que el cliente se queje.
+   665→- **Solución recomendada.** Unidades systemd para app, daemon y worker de outbox con `Restart=on-failure`; timer de monitor de outbox; umbral de alerta ajustable (evitar ruido).
+   666→- **Archivos y módulos afectados.** Nuevos `deploy/systemd/*.service`, `deploy/systemd/*.timer`, runbook (F6-T05).
+   667→- **Riesgos.** Alertas ruidosas (mitigado: umbral configurable y hysteresis simple).
+   668→- **Dependencias.** F3-T01 (worker) y F6-T01 (stack adoptado).
+   669→- **Pruebas necesarias.** Kill manual de cada proceso y recuperación automática observada.
+   670→- **Criterios de aceptación.** La caída se recupera sola y notifica; evidencia del kill test.
+   671→- **Estimación.** 1 d.
+   672→- **Reversión.** Deshabilitar unidades systemd; el sistema vuelve a arranque manual sin pérdida de datos.
+   673→
+   674→### 7.7 Fase 7 — Pruebas, validación y preparación para producción (5 tareas, 4,5 d)
+   675→
+   676→Objetivo: que la afirmación "CRM-ALBRA listo para piloto" tenga evidencia estructural detrás y no dependa de disciplina voluntaria. Criterio de salida: E2E de 3 servicios con corrida programada y visible, pruebas de contrato del lado CRM en CI, cero afirmaciones documentales sin evidencia, y ramas consolidadas.
+   677→
+   678→**F7-T01 · I1 (MODIFICADA: CI del CRM) · E2E de 3 servicios con corrida programada — OBLIGATORIA · MODIFICAR**
+   679→
+   680→- **Problema real.** El E2E autocontenido de los 3 servicios (20 verificaciones E0a–E7f, SENT=0) existe pero corre fuera del CI de forma voluntaria: las regresiones de contrato entre CRM, WP y ULTRA solo se detectarían en producción.
+   681→- **Evidencia en el código.** `scripts/e2e-3-servicios.mjs` en la base (autocontenido, multiplataforma, `ALLOW_REAL_DISPATCH=false`, 20/20 en sesión previa).
+   682→- **Beneficio para el usuario.** Las garantías de integridad de mensajería multi-servicio se verifican periódicamente: cero sorpresas de contrato al actualizar cualquier pieza.
+   683→- **Solución recomendada.** Job del CI del CRM programado (cron) o manual que clona los otros dos repos en modo lectura (sin modificarlos), levanta los tres servicios y ejecuta el E2E; si el runner no puede clonarlos, corrida nocturna programada del propietario con resultado visible.
+   684→- **Archivos y módulos afectados.** Nuevo `.github/workflows/e2e-3-servicios.yml`; posible ajuste menor del script para CI.
+   685→- **Riesgos.** El runner necesita acceso de lectura a los repos privados (token con permiso de lectura); flakiness de puertos (mitigado: el script ya descubre puertos libres).
+   686→- **Dependencias.** F3-T01 (para incluir el escenario de envío canónico con worker); decisión A7.
+   687→- **Pruebas necesarias.** 3 corridas consecutivas exitosas registradas.
+   688→- **Criterios de aceptación.** Corrida periódica con resultado visible (verde/rojo) y notificación en caso de fallo.
+   689→- **Estimación.** 1 d.
+   690→- **Reversión.** Deshabilitar el workflow; el script manual sigue disponible.
+   691→
+   692→**F7-T02 · I2 (MODIFICADA: fixtures del lado CRM) · Pruebas de compatibilidad de contratos — OBLIGATORIA · MODIFICAR**
+   693→
+   694→- **Problema real.** Los contratos compartidos (SSO espejado en 3 repos, HMAC v2, credenciales por organización, eco de `organizationId`) pueden derivar silenciosamente: hoy la compatibilidad se comprueba a mano.
+   695→- **Evidencia en el código.** `src/lib/ecosystem-sso.ts` espejado con comentario de espejo; `src/lib/whatspower-bridge.ts` (HMAC v2); `contract-v11.test.ts` en ULTRA como patrón (externo).
+   696→- **Beneficio para el usuario.** Un cambio de contrato que rompa la compatibilidad se detecta en CI del CRM antes de desplegar, no en producción.
+   697→- **Solución recomendada.** Suite de contratos del lado CRM con fixtures versionadas: vector HMAC v2 compartido, SSO con TTL 90 s y jti de un solo uso, eco de organización obligatorio en las respuestas simuladas; documento canónico (F7-T03) como fuente de los fixtures.
+   698→- **Archivos y módulos afectados.** Nuevo `tests/contract/*.test.ts` en el CRM; fixtures en `tests/contract/fixtures/`.
+   699→- **Riesgos.** Fixtures desalineadas con los repos reales (mitigado: la matriz cross-repo completa queda como fase externa; los fixtures cubren el lado CRM).
+   700→- **Dependencias.** F7-T03 (documento de contratos).
+   701→- **Pruebas necesarias.** Suite en CI del CRM; un cambio de fixture desactualizado debe fallar.
+   702→- **Criterios de aceptación.** Un cambio de contrato sin fixture actualizada falla en CI.
+   703→- **Estimación.** 1 d (reducido del original de 1,5 d al acotar al lado CRM).
+   704→- **Reversión.** `git revert`; tests aditivos.
+   705→
+   706→**F7-T03 · I3 · Documento único de contratos del ecosistema — OBLIGATORIA · CONSERVAR**
+   707→
+   708→- **Problema real.** Los contratos están dispersos (`docs/API_CONTRACT.md`, `docs/INTEGRATION_CONTRACT.md`, RUNBOOK de canales) y con divergencias: cada desarrollador opera con una versión distinta en la cabeza.
+   709→- **Evidencia en el código.** Los dos documentos citados en la base; Tabla 3 del plan v1 como semilla verificada.
+   710→- **Beneficio para el usuario.** Una sola fuente de verdad de endpoints, autenticación y semántica del ecosistema: menos errores de integración y onboarding más rápido.
+   711→- **Solución recomendada.** Documento canónico en el CRM con cada endpoint de la Tabla 4.1: método, autenticación, org-scoping, y archivo que lo implementa; enlazado desde los README; revisión cruzada contra código.
+   712→- **Archivos y módulos afectados.** Nuevo `docs/CONTRATOS-ECOSISTEMA.md` (o consolidación de los existentes); README.
+   713→- **Riesgos.** Quedar obsoleto (mitigado: check de D4 y fixtures de F7-T02 lo mantienen honesto).
+   714→- **Dependencias.** Ninguna bloqueante.
+   715→- **Pruebas necesarias.** Revisión cruzada contra código (D4 la automatiza parcialmente).
+   716→- **Criterios de aceptación.** Cada endpoint documentado con su archivo; PR de docs fusionado.
+   717→- **Estimación.** 1 d.
+   718→- **Reversión.** PR de docs; reversible.
+   719→
+   720→**F7-T04 · D4 · Matriz de trazabilidad afirmación→evidencia con check en CI — OBLIGATORIA · CONSERVAR**
+   721→
+   722→- **Problema real.** Las afirmaciones documentales sin evidencia (matrices que declaran LISTO lo no cableado, readiness con cifras falsas) originaron la cadena de parches: se decide sobre documentos y no sobre código.
+   723→- **Evidencia en el código.** `PRODUCTION_READINESS.md` y `CHANGELOG.md` desalineados (E4); matriz de ULTRA que exagera (externa); patrón de la referencia: invariantes que escanean el código fuente.
+   724→- **Beneficio para el usuario.** Ningún documento del CRM afirma "listo" sin test, run de CI o archivo que lo respalde: la confianza de cierre se vuelve verificable.
+   725→- **Solución recomendada.** Matriz de trazabilidad en `docs/` que enlaza cada afirmación con su evidencia, más un check en CI que valida las afirmaciones estructurales automatizables (rutas, modelos, tests, workflows presentes).
+   726→- **Archivos y módulos afectados.** Nuevo `docs/MATRIZ-TRAZABILIDAD.md`; check `scripts/verify-doc-figures.mjs` (de E4) ampliado en CI.
+   727→- **Riesgos.** Mantenimiento de la matriz (mitigado: solo afirmaciones estructurales automatizadas; el resto se ancla a PRs).
+   728→- **Dependencias.** E4 (cifras conciliadas) para no heredar errores.
+   729→- **Pruebas necesarias.** Check en CI en verde; un caso de prueba con afirmación falsa que debe fallar.
+   730→- **Criterios de aceptación.** Cero afirmaciones sin evidencia; check verde.
+   731→- **Estimación.** 1 d.
+   732→- **Reversión.** `git revert`; docs y check son aditivos.
+   733→
+   734→**F7-T05 · D2 (MODIFICADA: ramas del CRM) · Consolidación de ramas remotas del CRM — MEJORA OPCIONAL · MODIFICAR**
+   735→
+   736→- **Problema real.** El CRM acumula ramas remotas históricas ya contenidas en la base (incluida `impl/wave2-wa-connections`, verificada hoy con 0 commits únicos): la topología confunde y las ramas divergidas invitan a merges ciegos.
+   737→- **Evidencia en el código.** Listado de ramas remotas del CRM con verificación ahead=0 de esta sesión.
+   738→- **Beneficio para el usuario.** Repositorio legible: las ramas vivas son pocas y cada una tiene propósito y dueño.
+   739→- **Solución recomendada.** Etiquetar (`archive/<fecha>-<rama>`) y archivar las ramas contenidas; conservar vivas solo la base de integración, main y los PR abiertos.
+   740→- **Archivos y módulos afectados.** Ramas remotas del CRM; etiquetas.
+   741→- **Riesgos.** Borrado irreversible (mitigado: etiquetas antes de borrar; GitHub conserva restores 90 días).
+   742→- **Dependencias.** Decisión A9 (autorización de borrado con etiquetas).
+   743→- **Pruebas necesarias.** Verificación post-limpieza (cada rama archivada recuperable por etiqueta).
+   744→- **Criterios de aceptación.** Máximo ~6 ramas activas con listado final documentado.
+   745→- **Estimación.** 0,5 d.
+   746→- **Reversión.** Recrear la rama desde la etiqueta (`git branch <rama> <etiqueta>`).
+   747→
+   748→---
+   749→
+   750→## 8. Análisis económico y de beneficio
+   751→
+   752→Los costos están en días-persona de un desarrollador con contexto del sistema (la unidad que ya usa el plan v1); su traducción a dinero depende de la tarifa del propietario y no se inventa aquí. Ninguna estimación promete resultados no respaldados por evidencia: cada fila cita la evidencia que motiva la tarea.
+   753→
+   754→**Tabla 8.1: Análisis por fase**
+   755→
+   756→| Fase | Problema que resuelve | Beneficio concreto para el negocio | Riesgo que evita | Si no se implementa | Costo | Prioridad |
+   757→|---|---|---|---|---|---|---|
+   758→| 1. Seguridad (2,25 d) | Credenciales vivas en chats, historial con secretos, PII sin protección garantizada, scripts con secretos literales | Control total de la superficie de acceso; cumplimiento básico de protección de datos ante clientes | Fuga de credenciales y datos personales; acceso no autorizado al repositorio y al CI | El riesgo permanece activo y crece con cada clone nuevo del repo | 2,25 d | **1ª — obligatoria** |
+   759→| 2. Estabilidad (3,5 d) | PR con CI rojo, migraciones no deterministas, deuda muerta, docs con cifras falsas | La base de integración es confiable; tareas y quick-actions disponibles para el resto del plan | Fusionar un fallo real a la base; instalaciones futuras rotas por orden de migraciones | Cada fase posterior se construye sobre arena: re-trabajo y pérdidas | 3,5 d | **2ª — obligatoria** |
+   760→| 3. Mensajería (7,5 d) | Mensajes encolados para siempre, contactos duplicados, bandeja sin filtros, reconciliación manual | El producto hace lo que promete: los mensajes salen solos y el operador atiende sin perder conversaciones | Pérdida de ventas por respuestas no enviadas o perdidas; duplicados ante clientes | La promesa central (omnicanal) sigue sin cumplirse en producción | 7,5 d | **3ª — obligatoria** |
+   761→| 4. UX (8,5 d) | Navegación confusa, dashboard inoperativo, errores incomprensibles, ajustes saturados, visual descuidado | Producto que se siente profesional: menor formación, menos soporte, mejor imagen comercial | Fuga de usuarios por frustración; errores operativos por malentendidos | El CRM "funciona pero no se usa bien": adopción baja pese a la capacidad | 8,5 d | **4ª — obligatoria (U5 opcional)** |
+   762→| 5. Comercial (2 d) | Agenda sin vista semanal/diaria | El negocio de reservas opera su semana real desde el CRM | Pérdida de citas por mala visibilidad | La agenda sigue siendo un calendario, no una herramienta de operación | 2 d | 5ª — opcional |
+   763→| 6. Instalación y operación (8 d) | Compose nunca ejecutado, sin instalador, sin Salud, backup sin prueba, runbook disperso, sin observabilidad | Instalar/actualizar/restaurar es seguro y reproducible; las caídas se recuperan solas | Pérdida de datos por restore no probado; dependencia permanente del desarrollador | Cada incidente es una emergencia artesanal | 8 d | **6ª — obligatoria (O4 opcional)** |
+   764→| 7. Pruebas y validación (3,5 d) | E2E voluntario, contratos sin pruebas, docs sin evidencia, ramas confusas | La afirmación "listo para piloto" tiene evidencia estructural automática | Regresiones de contrato detectadas en producción | Cierre basado en confianza verbal, no en evidencia | 3,5 d | **7ª — obligatoria (D2 opcional)** |
+   765→
+   766→**Total ejecutable: 36,25 días-persona** (Fase 1: 2,25 + Fase 2: 3,5 + Fase 3: 7,5 + Fase 4: 8,5 + Fase 5: 2 + Fase 6: 8 + Fase 7: 4,5). Con las dos mejoras opcionales incluidas el total no cambia (U5 y D2 ya están contadas; U6 pospuesta añadiría 1 d si se reactiva). Planificación realista: **7–8 semanas con un desarrollador**, o **4 semanas con dos**, asumiendo que las decisiones del propietario (sección 10) no se serialicen. Las 13 dependencias externas no suman días a este proyecto; suman riesgo funcional que el propietario decide cuándo cerrar en fases externas separadas.
+   767→
+   768→**Tabla 8.2: Mayor beneficio con menor esfuerzo (quick wins, ≤1 d)**
+   769→
+   770→| Tarea | Esfuerzo | Por qué es la mejor relación beneficio/esfuerzo |
+   771→|---|---|---|
+   772→| S5 pepper en CI | 0,25 d | Una línea de workflow garantiza la protección PII real en cada PR |
+   773→| E2 numeración de migraciones | 0,5 d | Elimina una clase entera de fallos de instalación futuros, antes de que existan |
+   774→| E1 diagnóstico CI del PR #5 | 0,5 d | Desbloquea −3416 líneas de deuda ya preparadas |
+   775→| F1 integrar PR #6 | 0,5 d | Funcionalidad completa (tareas + quick-actions) ya probada, lista para fusionar |
+   776→| O1 compose ejecutado | 0,5 d | Convierte un despliegue teórico en comprobado |
+   777→| S1 rotación de credenciales | 0,5 d | Cierra el riesgo de seguridad más barato de cerrar |
+   778→| M1 worker de outbox | 1 d | El cambio más transformador del plan entero por un solo día |
+   779→| F3 filtros y búsqueda de bandeja | 1 d | Mejora percibida de la operación diaria de forma inmediata |
+   780→
+   781→**Los cinco cambios más importantes** (mayor impacto acumulado): 1) M1 — worker de outbox en despliegue (la promesa del producto); 2) E2+E1+F1 — resolver PRs y migraciones (libera deuda y funcionalidad ya construida); 3) S1+S2 — rotación y purga de secretos (cierra el riesgo reputacional y de seguridad); 4) F2+F3 — conexiones con UI y bandeja única con filtros (la operación WhatsApp real); 5) F5+O1 — Salud, wizard y compose verificado (el sistema se opera sin desarrollador).
+   782→
+   783→**Qué NO implementar en esta fase** (descartado explícitamente, con el motivo): no reconstruir el inbox ni la outbox (maduros y probados); no migrar a PostgreSQL (SQLite/WAL es suficiente para piloto; decisión diferida con criterio); no integrar las ramas divergidas de WP/ULTRA (fuera de alcance y peligrosas sin decisión de diseño); no añadir funcionalidad comercial nueva (el núcleo comercial ya cubre embudo, cotizaciones, agenda y reportes); no tocar contratos de la Tabla 4.1 ni el daemon Baileys (riesgo alto sin necesidad); no reactivar U6 (semillas) ni implementar pagos reales (F6) ni realtime de WP (E5) bajo este alcance.
+   784→
+   785→---
+   786→
+   787→## 9. Eliminación de complejidad innecesaria
+   788→
+   789→El plan v1 ya prohibía reconstruir y duplicar; esta sección convierte esa regla en decisiones concretas de simplificación del CRM, cada una con el porqué frente a conservar la implementación actual.
+   790→
+   791→**Tabla 9.1: Decisiones de simplificación**
+   792→
+   793→| Oportunidad | Decisión | Por qué es mejor que conservar el estado actual o que crear algo nuevo |
+   794→|---|---|---|
+   795→| Dos generaciones de bandeja (WhatsApp* legacy + Channel* canónico) | No migrar tablas ni borrar modelos: **unificar el criterio de presentación en `inbox.ts`** (M7/F3) y dejar el modelo dual en reposo | Los datos históricos se conservan sin migración riesgosa; el usuario ve una sola bandeja; el costo es de consulta, no de datos |
+   796→| Dos outboxes (canales y workflows) | **Conservar los dos dominios** y reutilizar el patrón común (claim atómico, unknown jamás reintentado) en vez de extraer una utilidad genérica ahora | La consolidación forzada acoplaría dos dominios con requisitos distintos por un ahorro de código que hoy no duele; se reevalúa si un tercer outbox apareciera |
+   797→| Dependencias muertas (8 paquetes + supervisor) | **Completar la limpieza del PR #5** (E3) en vez de mantenerlas "por si acaso" | Menos superficie de instalación, actualización y vulnerabilidades; el PR ya está preparado y probado |
+   798→| 26 scripts e2e-* históricos | **Archivo o eliminación con etiqueta** (S6), un solo flujo oficial | Un flujo oficial elimina la pregunta "¿cuál corro?"; el archivo conserva la historia sin costo |
+   799→| Pantalla de Salud | **Consumir `/api/doctor` existente**, no crear un sistema de diagnóstico nuevo | El diagnóstico por organización ya existe y está aislado; solo falta presentarlo (F5) |
+   800→| Catálogo de errores | **Un catálogo central con invariantes**, no textos sueltos por pantalla | Un solo lugar para corregir mensajes; el test de invariantes evita la regresión a errores de desarrollador |
+   801→| Wizard de puesta en marcha | **Reutilizar quick-actions del PR #6 y conexiones de F3-T02**, no construir flujo paralelo | El wizard es orquestación de piezas existentes; cero lógica duplicada |
+   802→| Instalador | **Un script idempotente** (O3), no un sistema de despliegue nuevo | Cubre el caso real (un servidor del propietario) sin adoptar herramientas ni dependencias nuevas |
+   803→| Migraciones a PostgreSQL | **No en esta fase**: SQLite/WAL es suficiente para piloto y la decisión pertenece al propietario | Cambiar de base de datos ahora añadiría riesgo y tiempo sin un requisito operativo que lo exija |
+   804→| Dependencias nuevas | **Cero dependencias adicionales sin justificación escrita** en el PR | Cada dependencia es deuda permanente; las soluciones planificadas se apoyan en lo existente |
+   805→
+   806→**Regla de reutilización aplicada en todo el plan:** toda solución nueva nombrada aquí consume un servicio, modelo o patrón ya probado (worker → API de outbox existente; Salud → doctor existente; wizard → quick-actions y conexiones existentes; reconciliación → endpoints existentes; E2E → script existente; catálogo de errores → clasificador de códigos Meta ya documentado). No se propone ningún modelo de datos nuevo salvo lo ya contenido en los PR evaluados (`11_tareas` del PR #6).
+   807→
+   808→---
+   809→
+   810→## 10. Decisiones que requieren autorización del propietario
+   811→
+   812→**Ninguna de estas decisiones se ejecuta en esta fase.** La lista distingue internas (acciones sobre el repositorio CRM-ALBRA) de externas (cuentas, legales, despliegues). Cada una indica qué habilita en el plan.
+   813→
+   814→| ID | Decisión | Tipo | Habilita |
+   815→|---|---|---|---|
+   816→| A1 | Rotar el PAT de GitHub usado en sesiones anteriores y toda credencial real aparecida en chats; configurar `PII_PEPPER` como secret obligatorio de Actions | Externa (cuentas) | F1-T01 (S1), F1-T03 (S5) |
+   817→| A2 | Autorizar la purga del historial git de CRM-ALBRA con `git filter-repo` y force-push coordinado (destructivo e irreversible; exige bundle previo y ventana acordada) | Interna, destructiva | F1-T02 (S2) |
+   818→| A3 | Autorizar el trabajo sobre las ramas de los PR #5 y #6 (diagnóstico de CI y renumeración), decidir el destino del PR #4 y aprobar la integración de cada PR a la base de integración | Interna (PRs) | F2-T01..T04 (E2, E1, F1, D1) |
+   819→| A4 | Autorizar eliminaciones con archivo previo: scripts e2e-* históricos y restos de código muerto | Interna, con archivo | F1-T04 (S6), F2-T05 (E3) |
+   820→| A5 | Autorizar la renumeración/consolidación de migraciones Prisma y cualquier migración sobre base de datos real, con respaldo previo | Interna (migraciones) | F2-T01 (E2) |
+   821→| A6 | Definir la estrategia de canal de WhatsApp: mantener Baileys como principal, activar Cloud API por organización, y tramitar Meta Business/plantillas si aplica | Externa (Meta) | Condiciona el valor de F3-T02 y las externas M3/I6 |
+   822→| A7 | Autorizar el despliegue del worker de la outbox de canales y la corrida programada del E2E (con el token de lectura para el runner) | Interna/Externa (despliegue + CI) | F3-T01 (M1), F7-T01 (I1) |
+   823→| A8 | Ejecutar en su máquina: `docker compose build/up`, drill de backup/restore y firma de actas | Externa (máquina del propietario) | F6-T01 (O1), F6-T04 (E7), F6-T05 (O2) |
+   824→| A9 | Autorizar el archivo (con etiquetas) de las ramas remotas contenidas del CRM | Interna (ramas) | F7-T05 (D2) |
+   825→| A10 | Aprobar el criterio de unificación de la bandeja y la reorganización de navegación 5+1 (decisiones de producto visibles para usuarios) | Interna (producto) | F3-T03 (M7), F4-T01 (U1) |
+   826→| A11 | (Externa, fuera de alcance) Proveer credenciales de pasarela de pagos y definir su integración en WHATSPOWER | Externa | F6/S-tabla 5.5 (pagos reales) |
+   827→| A12 | (Externa, fuera de alcance) Aprobar la política de consentimiento masivo conforme a la Ley 1581 y autorizar la fase externa en ULTRA (M2) y el cableado Meta (M3/I6) | Externa (legal + ULTRA) | Campañas reales fuera del CRM |
+   828→
+   829→---
+   830→
+   831→## 11. Criterios globales y niveles de madurez
+   832→
+   833→Los cuatro niveles adaptan los del plan v1 al alcance CRM. La regla transversal sigue siendo: **CI verde no equivale a listo para producción** — el CI está en verde y aun así el sistema no puede operar mensajería canónica sin M1.
+   834→
+   835→**Tabla 11.1: Niveles de madurez CRM-ALBRA y sus puertas de entrada**
+   836→
+   837→| Nivel | Puerta de entrada (evidencia exigible) |
+   838→|---|---|
+   839→| **Listo para pruebas** | Batería verde en CI en la base de integración; PR #4, #5 y #6 resueltos (integrados o descartados con decisión del propietario); migraciones deterministas en instalación limpia; worker de outbox definido y desplegable; compose ejecutado al menos una vez en la máquina del propietario; sin código muerto referenciado por la documentación |
+   840→| **Listo para piloto** | Fases 1–6 completadas con sus criterios; bandeja única con filtros operando; conexiones con UI; Salud y wizard funcionando; backup y restauración probados con test y drill firmado; runbook único; envío real mínimo autorizado por escrito (destinatario y ventana definidos) |
+   841→| **Listo para producción** | Seguridad cerrada (S1, S2, S5, S6) con evidencia; observabilidad mínima activa (monitor programado, systemd con recuperación); E2E 3 servicios con corrida programada y visible; matriz de trazabilidad sin afirmaciones sin evidencia; la bandeja unificada sin duplicados en uso real |
+   842→| **Operación productiva validada** | 30 días de operación con datos reales sin incidentes críticos; reconciliación de UNCERTAIN ejecutada al menos una vez en producción con la pantalla de operador; actualización y restauración ejecutadas al menos una vez sobre producción; el usuario final opera sin asistencia técnica constante; cero duplicados imputables al sistema |
+   843→
+   844→---
+   845→
+   846→## 12. Informe final al propietario
+   847→
+   848→**Qué tareas originales conservaría (23):** S1, S5, S6, M1, M7, I3, E1, E2, E3, E4, F1, F2, F3, F4, F5, U1, U2, U3, U4, U5, O3, D1, D4 — todas las de seguridad del CRM, los errores estructurales, la mensajería con worker, la experiencia de usuario y el instalador, porque cada una aporta valor real y es ejecutable en el repositorio autorizado.
+   849→
+   850→**Qué modificaría (9):** S2 (purga limitada al CRM), M8 (reconciliación sobre endpoints del CRM), I1 (E2E como job del CI del CRM), I2 (fixtures del lado CRM), E7 (backup/restore del CRM), O1 (compose del CRM, ya con healthchecks), O2 (runbook del CRM), O4 (systemd del CRM y su daemon), D2 (ramas del CRM). El cambio de todas ellas es el mismo: acotar al repositorio autorizado y documentar la parte externa.
+   851→
+   852→**Qué descartaría (2):** M5 — la deduplicación del daemon ya está implementada y probada en la base (`idempotency.mjs`, verificado hoy; el plan v1 quedó obsoleto en ese punto); D3 — duplicada con E4 en su parte CRM.
+   853→
+   854→**Qué pospondría (1):** U6 (semillas sectoriales) — valor de demostración, sin impacto en producción; reactivable en 1 día cuando haya demos programadas.
+   855→
+   856→**Cuáles dependen de WHATSPOWER o ULTRA (13):** S3, S4, S7, M2, M3, M4, M6, I4, I5, I6, E5, E6, F6 — documentadas en la Tabla 5.5 con su consecuencia concreta mientras no se autoricen fases externas. Las más relevantes para operar campañas reales: M2 (consentimiento), M3 (ventana/plantillas Meta) e I6 (transporte por política).
+   857→
+   858→**Los cinco cambios más importantes:** 1) el worker de la outbox (M1) — sin él la mensajería canónica no sale; 2) resolver PR #5/#6 con E2+E1 (deuda −3416 líneas, tareas, quick-actions, backfill); 3) rotación y purga de secretos (S1+S2); 4) conexiones con UI y bandeja única con filtros (F2+F3+M7); 5) Salud, wizard y compose verificado (F5+O1).
+   859→
+   860→**Cuánto tiempo tomaría:** 36,25 días-persona puntuales — **7–8 semanas con un desarrollador** con contexto del sistema, o **4 semanas con dos**, siempre que las decisiones A1–A10 no se serialicen. Las decisiones externas (Meta, pasarela, consentimiento) se tramitan en paralelo y no suman días a este alcance.
+   861→
+   862→**Qué riesgos deben resolverse antes de producción:** credenciales vivas sin rotar (S1) y secretos en el historial (S2); mensajes que no salen sin worker (M1); el CI rojo del PR #5 sin diagnosticar (E1) y la numeración de migraciones (E2); restauración de backup sin probar (E7); y, si se operará campañas reales fuera del CRM, las dependencias externas M2/M3/M6 (no son de este alcance pero condicionan el negocio).
+   863→
+   864→**Qué decisiones requieren autorización:** las doce de la sección 10 (A1–A12); ninguna de ellas se ejecuta sin aprobación expresa.
+   865→
+   866→**Pregunta de cierre — producción con la menor inversión y el mayor beneficio, ¿qué implementaría primero y qué NO?**
+   867→
+   868→Primero, en este orden y solo esto: **M1 (worker de outbox, 1 d) + E2/E1/F1 (PRs resueltos, 1,5 d) + S1/S5 (credenciales y pepper, 0,75 d) + F2 (conexiones con UI, 2 d) + F3/M7 (bandeja única con filtros, 3 d) + O1/E7 (compose verificado y backup probado, 1 d) + F5 (Salud y wizard, 3 d)**. Eso son ~12,25 días de desarrollo que convierten el sistema actual en un CRM operable: los mensajes salen solos, el propietario conecta sus números, atiende una sola bandeja, y una caída se diagnostica y se restaura sin desarrollador. Con eso, más la rotación de credenciales, el sistema está en la puerta del nivel "listo para piloto".
+   869→
+   870→No implementaría: la purga del historial hasta tener autorización explícita y ventana (es destructiva, A2); migración a PostgreSQL; cualquier trabajo en WHATSPOWER o ULTRA (todo el bloque externo); pagos reales (F6); realtime ni ws de WP (E5); semillas de demo (U6); y ninguna funcionalidad comercial nueva que no sea la agenda semanal (F4) si el presupuesto es mínimo. La razón es simple: cada uno de esos elementos consume días sin acercar la puerta del piloto, mientras que los siete elegidos cierran exactamente las brechas que hoy impiden operar.
+   871→
+   872→---
+   873→
+   874→## 13. Anexos: método, evidencia y correspondencia con el plan v1
+   875→
+   876→### Anexo A: evidencia de verificación de esta sesión (2026-11-19)
+   877→
+   878→Todas las operaciones fueron de lectura y de actualización de referencias remotas (`git fetch`, no altera árboles de trabajo). Ningún repositorio fue modificado.
+   879→
+   880→| Verificación | Comando (resumen) | Resultado |
+   881→|---|---|---|
+   882→| Referencias remotas | `git fetch origin --prune` y `git fetch origin 'refs/pull/*/head'` | `main`→`90d62de`; `repair/produccion-real`→`a72cc95`; PR #4→`611e418`, #5→`1e5c9ae`, #6→`dfd926a` |
+   883→| Diffs de PRs | `git diff --stat a72cc95..origin/pr/5` | PR #5: 6 archivos, +203/−3416; PR #6: 11 archivos, +576/−6 |
+   884→| PR #4 | `git diff --stat 7acd169..origin/pr/4` (merge-base con main) | 2 archivos, +153 (test ACK +89, docs +64) |
+   885→| Idempotencia daemon (M5) | `git show a72cc95:src/whatsapp-daemon/idempotency.mjs` | Contrato completo org+idem_key, IN_FLIGHT/DONE/FAILED/UNCERTAIN, test presente |
+   886→| Worker outbox (M1) | `git grep CHANNEL_OUTBOX_WORKER_SECRET a72cc95 -- ':!src' ':!tests'` | Solo monitor de CI y docs: sin worker de despliegue |
+   887→| Healthchecks compose (O1) | `git show a72cc95:docker-compose.yml` | Healthcheck de app y daemon presentes |
+   888→| Doble bandeja (U1/M7) | `git ls-tree a72cc95 src/app/whatsapp src/app/inbox`; cabecera de `inbox.ts` | Ambas páginas existen; prioridad daemon sobre timeline documentada |
+   889→| Dependencias muertas (E3) | `git grep whatsapp-daemon-supervisor` (excluido el propio archivo) + `package.json` | Grep vacío; 8 dependencias sin uso |
+   890→| Scripts e2e (S6) | `git ls-tree a72cc95 scripts/ \| grep -c e2e-` | 26 |
+   891→| UI de conexiones (F2) | `git grep -l "wa-connections" a72cc95 -- src/components` | Sin resultados (API sí, UI no) |
+   892→| Ajustes (U4) | `git show a72cc95:src/components/settings/settings-page.tsx \| wc -l` | 2715 |
+   893→| Pepper CI (S5) | `git show a72cc95:.github/workflows/ci.yml` | `PII_PEPPER` opcional con aviso |
+   894→| Rama wave2 | `git log a72cc95..origin/impl/wave2-wa-connections` | Vacío: 100 % contenida |
+   895→| PRs vía API | GitHub API sin autenticación | Rate limit de IP: los estados de CI citados provienen de la evidencia autenticada del plan v1 (terceros) y se declaran como tales |
+   896→
+   897→### Anexo B: clases de evidencia aplicadas
+   898→
+   899→- **Verificado en esta sesión:** todo lo citado con comando en el Anexo A y en la Tabla 3.2.
+   900→- **Evidencia de terceros:** resultados de GitHub Actions citados del plan v1 (run 44428835497 del PR #5: pasos 1–10 verdes, paso 11 failure; CI success de dfd926a el 2026-11-19), no re-ejecutados aquí (sin API autenticada hoy por límite de tasa).
+   901→- **Evidencia de sesiones anteriores:** baterías 781/781 (CRM), 324/324 (WP), 284/284 (ULTRA) y E2E 3 servicios 20/20 con SENT=0; informadas como trabajo previo completado y no re-ejecutadas en esta fase.
+   902→- **Pruebas ejecutadas por esta fase: ninguna** (congelación de implementaciones). Ningún módulo se declaró terminado solo por existir: la clasificación exige prueba propia, de CI o de terceros.
+   903→
+   904→### Anexo C: correspondencia con el plan v1
+   905→
+   906→| Plan v1 (8 bloques, 3 repos) | Este plan (7 fases, 1 repo) |
+   907→|---|---|
+   908→| S. Seguridad (7) | Fase 1 (S1, S5, S6 + S2 mod) · Externas: S3, S4, S7 |
+   909→| M. Mensajería (8) | Fase 3 (M1, M7 + M8 mod) · Fase 3 toma F2/F3 · Descartada: M5 · Externas: M2, M3, M4, M6 |
+   910→| I. Integraciones (6) | Fase 7 (I1, I2 mod; I3) · Externas: I4, I5, I6 |
+   911→| E. Errores estructurales (7) | Fase 2 (E1–E4 + E7 mod) · Externas: E5, E6 |
+   912→| F. Funcionalidades (6) | Fase 2 (F1) · Fase 3 (F2, F3) · Fase 5 (F4) · Fase 6 (F5) · Externa: F6 |
+   913→| U. UX (6) | Fase 4 (U1–U5) · Pospuesta: U6 |
+   914→| O. Instalación y operación (4) | Fase 6 (O1–O4; O1/O2/O4 mod) |
+   915→| D. Documentación (4) | Fase 2 (D1) · Fase 7 (D4 + D2 mod) · Descartada: D3 (absorbida por E4) |
+   916→
+   917→Los criterios de aceptación y cierre del plan v1 siguen vigentes por tarea y se conservan en la matriz; este documento los amplía con los campos nuevos exigidos (beneficio para el usuario, archivos afectados y procedimiento de reversión).
+   918→
+   919→### Anexo D: composición de este paquete y cómo se publicó
+   920→
+   921→| Archivo | Contenido |
+   922→|---|---|
+   923→| `PLAN-DEFINITIVO-CRM-ALBRA.md` | Este documento |
+   924→| `MATRIZ-DE-TAREAS-CRM-ALBRA.xlsx` | Hojas: Matriz (48 tareas × decisión + 12 campos), Resumen por fase, Dependencias externas, Decisiones (A1–A12), Criterios |
+   925→| `RESUMEN-EJECUTIVO-CRM-ALBRA.pdf` | Versión ejecutiva con las dos figuras |
+   926→| `MAPA-DE-ARQUITECTURA-CRM-ALBRA.png` | Figura 1 |
+   927→| `ROADMAP-FASES-CRM-ALBRA.png` | Figura 2 |
+   928→
+   929→Publicación: rama documental independiente `docs/plan-definitivo-crm-2026-11-19` derivada de `repair/produccion-real` @ `a72cc95`, con una carpeta nueva `docs/plan-definitivo-2026-11-19/` que solo añade estos cinco archivos. **No se modificó ninguna rama de código existente, ningún archivo de código, ninguna migración, ningún workflow ni ningún PR, y no se abrió PR alguno.** Los PR #4, #5 y #6 permanecen abiertos y congelados.
+   930→

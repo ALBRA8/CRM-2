@@ -1,0 +1,580 @@
+     1→'use client'
+     2→
+     3→import { useCallback, useEffect, useMemo, useState } from 'react'
+     4→import { api } from '@/lib/api'
+     5→import { useAppStore } from '@/lib/store'
+     6→import { viewFromPath } from '@/lib/views'
+     7→import {
+     8→  buildOnboardingSteps,
+     9→  mapUnknownItem,
+    10→  validateReconcileForm,
+    11→  verdictLabel,
+    12→  verdictTone,
+    13→  type DoctorCheck,
+    14→  type DoctorPayload,
+    15→  type UnknownItemApi,
+    16→  type WhatsAppConnectionsPayload,
+    17→} from '@/lib/salud'
+    18→import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+    19→import { Badge } from '@/components/ui/badge'
+    20→import { Button } from '@/components/ui/button'
+    21→import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+    22→import { Checkbox } from '@/components/ui/checkbox'
+    23→import { Input } from '@/components/ui/input'
+    24→import { Label } from '@/components/ui/label'
+    25→import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+    26→import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+    27→import {
+    28→  AlertDialog,
+    29→  AlertDialogAction,
+    30→  AlertDialogCancel,
+    31→  AlertDialogContent,
+    32→  AlertDialogDescription,
+    33→  AlertDialogFooter,
+    34→  AlertDialogHeader,
+    35→  AlertDialogTitle,
+    36→} from '@/components/ui/alert-dialog'
+    37→import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+    38→import { Skeleton } from '@/components/ui/skeleton'
+    39→import { toast } from 'sonner'
+    40→import {
+    41→  Activity,
+    42→  AlertCircle,
+    43→  CheckCircle2,
+    44→  HeartPulse,
+    45→  Inbox,
+    46→  RefreshCw,
+    47→  Send,
+    48→  Stethoscope,
+    49→  Wrench,
+    50→} from 'lucide-react'
+    51→
+    52→/**
+    53→ * /salud (F5) — Veredicto del Doctor + wizard de puesta en marcha +
+    54→ * conciliación de envíos UNCERTAIN del outbox de canales.
+    55→ *
+    56→ * Solo owner/admin: cada API del servidor re-valida con requireAdmin; la UI
+    57→ * muestra estados accionables en español y jamás inventa datos (payloads
+    58→ * ausentes → estado pendiente o desconocido, nunca optimista).
+    59→ */
+    60→
+    61→interface OutboxHealthPayload {
+    62→  counts?: Record<string, number>
+    63→  unknownDetail?: { oldestCreatedAt?: string | null; oldestAgeSeconds?: number | null }
+    64→  flags?: { workerEnabled?: boolean; workerDeployedHint?: string | null }
+    65→  sampledAt?: string
+    66→}
+    67→
+    68→type Tone = 'ok' | 'warn' | 'fail'
+    69→
+    70→const verdictStyles: Record<Tone, { wrapper: string; icon: string; badge: string }> = {
+    71→  ok: { wrapper: 'border-emerald-200 bg-emerald-50', icon: 'text-emerald-600', badge: 'bg-emerald-100 text-emerald-700' },
+    72→  warn: { wrapper: 'border-amber-200 bg-amber-50', icon: 'text-amber-600', badge: 'bg-amber-100 text-amber-700' },
+    73→  fail: { wrapper: 'border-red-200 bg-red-50', icon: 'text-red-600', badge: 'bg-red-100 text-red-700' },
+    74→}
+    75→
+    76→const checkBadge: Record<string, { label: string; className: string }> = {
+    77→  ok: { label: 'OK', className: 'bg-emerald-100 text-emerald-700' },
+    78→  warn: { label: 'Atención', className: 'bg-amber-100 text-amber-700' },
+    79→  fail: { label: 'Fallo', className: 'bg-red-100 text-red-700' },
+    80→}
+    81→
+    82→function checkBadgeFor(status: string | undefined) {
+    83→  return checkBadge[status ?? ''] ?? { label: 'Desconocido', className: 'bg-red-100 text-red-700' }
+    84→}
+    85→
+    86→const countLabels: Array<{ key: string; label: string; tone: string }> = [
+    87→  { key: 'unknown', label: 'Uncertain', tone: 'text-red-600' },
+    88→  { key: 'queued', label: 'En cola', tone: 'text-sky-600' },
+    89→  { key: 'sending', label: 'Enviando', tone: 'text-amber-600' },
+    90→  { key: 'failed', label: 'Fallidos', tone: 'text-red-600' },
+    91→  { key: 'sent', label: 'Enviados', tone: 'text-emerald-600' },
+    92→]
+    93→
+    94→export function SaludPage() {
+    95→  const setView = useAppStore((s) => s.setView)
+    96→
+    97→  const [doctor, setDoctor] = useState<DoctorPayload | null>(null)
+    98→  const [connections, setConnections] = useState<WhatsAppConnectionsPayload | null>(null)
+    99→  const [outbox, setOutbox] = useState<OutboxHealthPayload | null>(null)
+   100→  const [unknownItems, setUnknownItems] = useState<UnknownItemApi[]>([])
+   101→  const [loading, setLoading] = useState(true)
+   102→  const [refreshing, setRefreshing] = useState(false)
+   103→  const [fixDialogOpen, setFixDialogOpen] = useState(false)
+   104→  const [applyingFix, setApplyingFix] = useState(false)
+   105→
+   106→  // Diálogo de conciliación
+   107→  const [reconcileTarget, setReconcileTarget] = useState<UnknownItemApi | null>(null)
+   108→  const [providerChecked, setProviderChecked] = useState(false)
+   109→  const [resolution, setResolution] = useState<'sent' | 'failed'>('sent')
+   110→  const [providerMessageId, setProviderMessageId] = useState('')
+   111→  const [submitting, setSubmitting] = useState(false)
+   112→
+   113→  const loadCore = useCallback(async () => {
+   114→    const [doctorRes, connectionsRes, outboxRes, unknownRes] = await Promise.allSettled([
+   115→      api.getDoctor(),
+   116→      api.getWhatsAppConnections(),
+   117→      api.getOutboxHealth(),
+   118→      api.getOutboxUnknown(),
+   119→    ])
+   120→    if (doctorRes.status === 'fulfilled') setDoctor(doctorRes.value as DoctorPayload)
+   121→    else setDoctor(null)
+   122→    if (connectionsRes.status === 'fulfilled') setConnections(connectionsRes.value as WhatsAppConnectionsPayload)
+   123→    else setConnections(null)
+   124→    if (outboxRes.status === 'fulfilled') setOutbox(outboxRes.value as OutboxHealthPayload)
+   125→    else setOutbox(null)
+   126→    if (unknownRes.status === 'fulfilled') {
+   127→      const payload = unknownRes.value as { items?: UnknownItemApi[] }
+   128→      setUnknownItems(Array.isArray(payload.items) ? payload.items : [])
+   129→    } else {
+   130→      setUnknownItems([])
+   131→    }
+   132→    if (doctorRes.status === 'rejected') {
+   133→      const message = doctorRes.reason instanceof Error ? doctorRes.reason.message : 'Error desconocido'
+   134→      toast.error(`No se pudo evaluar el sistema: ${message}`)
+   135→    }
+   136→  }, [])
+   137→
+   138→  useEffect(() => {
+   139→    loadCore().finally(() => setLoading(false))
+   140→  }, [loadCore])
+   141→
+   142→  const reevaluate = async () => {
+   143→    setRefreshing(true)
+   144→    try {
+   145→      const data = (await api.getDoctor()) as DoctorPayload
+   146→      setDoctor(data)
+   147→      toast.success('Diagnóstico actualizado')
+   148→    } catch (err) {
+   149→      toast.error(err instanceof Error ? err.message : 'No se pudo re-evaluar el sistema')
+   150→    } finally {
+   151→      setRefreshing(false)
+   152→    }
+   153→  }
+   154→
+   155→  const applySafeFixes = async () => {
+   156→    setApplyingFix(true)
+   157→    try {
+   158→      const data = (await api.getDoctor(true)) as DoctorPayload
+   159→      setDoctor(data)
+   160→      const fixed = data.fixed?.orphanRunsMarkedFailed ?? 0
+   161→      if (fixed > 0) {
+   162→        toast.success(`${fixed} ejecución${fixed === 1 ? ' huérfana marcada' : 'es huérfanas marcadas'} como fallida${fixed === 1 ? '' : 's'}`)
+   163→      } else {
+   164→        toast.info('No había ejecuciones huérfanas pendientes de corregir')
+   165→      }
+   166→    } catch (err) {
+   167→      toast.error(err instanceof Error ? err.message : 'No se pudieron aplicar los fixes')
+   168→    } finally {
+   169→      setApplyingFix(false)
+   170→      setFixDialogOpen(false)
+   171→    }
+   172→  }
+   173→
+   174→  const openReconcile = (item: UnknownItemApi) => {
+   175→    setReconcileTarget(item)
+   176→    setProviderChecked(false)
+   177→    setResolution('sent')
+   178→    setProviderMessageId('')
+   179→  }
+   180→
+   181→  const closeReconcile = () => {
+   182→    if (submitting) return
+   183→    setReconcileTarget(null)
+   184→  }
+   185→
+   186→  const confirmReconcile = async () => {
+   187→    if (!reconcileTarget) return
+   188→    const validation = validateReconcileForm({ checked: providerChecked, resolution, providerMessageId })
+   189→    if (!validation.ok) {
+   190→      toast.error(validation.error)
+   191→      return
+   192→    }
+   193→    setSubmitting(true)
+   194→    try {
+   195→      await api.reconcileOutbound({
+   196→        id: reconcileTarget.id,
+   197→        resolution: validation.resolution,
+   198→        providerChecked: true,
+   199→        providerMessageId: validation.providerMessageId,
+   200→      })
+   201→      toast.success(`Envío conciliado como ${validation.resolution === 'sent' ? 'entregado' : 'fallido'}`)
+   202→      setReconcileTarget(null)
+   203→      const [outboxRes, unknownRes] = await Promise.allSettled([api.getOutboxHealth(), api.getOutboxUnknown()])
+   204→      if (outboxRes.status === 'fulfilled') setOutbox(outboxRes.value as OutboxHealthPayload)
+   205→      if (unknownRes.status === 'fulfilled') {
+   206→        const payload = unknownRes.value as { items?: UnknownItemApi[] }
+   207→        setUnknownItems(Array.isArray(payload.items) ? payload.items : [])
+   208→      }
+   209→    } catch (err) {
+   210→      toast.error(err instanceof Error ? err.message : 'No se pudo conciliar el envío')
+   211→    } finally {
+   212→      setSubmitting(false)
+   213→    }
+   214→  }
+   215→
+   216→  const navigateTo = (href: string) => {
+   217→    setView(viewFromPath(href).view)
+   218→  }
+   219→
+   220→  const steps = useMemo(() => buildOnboardingSteps(doctor, connections), [doctor, connections])
+   221→  const doneSteps = steps.filter((s) => s.done).length
+   222→
+   223→  const tone: Tone = doctor ? verdictTone(doctor.verdict) : 'fail'
+   224→  const styles = verdictStyles[tone]
+   225→  const checks: DoctorCheck[] = Array.isArray(doctor?.checks) ? doctor.checks : []
+   226→  const unknownCount = outbox?.counts?.unknown ?? unknownItems.length
+   227→  const workerEnabled = outbox?.flags?.workerEnabled === true
+   228→
+   229→  return (
+   230→    <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
+   231→      {/* ──── Encabezado ──── */}
+   232→      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+   233→        <div>
+   234→          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+   235→            <HeartPulse className="w-6 h-6 text-emerald-600" />
+   236→            Salud del sistema
+   237→          </h1>
+   238→          <p className="text-sm text-slate-500 mt-1">
+   239→            Diagnóstico, puesta en marcha y conciliación de envíos inciertos
+   240→          </p>
+   241→        </div>
+   242→        <div className="flex items-center gap-2">
+   243→          <Button variant="outline" size="sm" onClick={reevaluate} disabled={refreshing || loading}>
+   244→            <RefreshCw className={`w-4 h-4 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
+   245→            Re-evaluar
+   246→          </Button>
+   247→          <Button variant="outline" size="sm" onClick={() => setFixDialogOpen(true)} disabled={loading}>
+   248→            <Wrench className="w-4 h-4 mr-1.5" />
+   249→            Aplicar fixes seguros
+   250→          </Button>
+   251→        </div>
+   252→      </div>
+   253→
+   254→      {loading ? (
+   255→        <Card className="border-0 shadow-sm">
+   256→          <CardContent className="p-6 space-y-3">
+   257→            <Skeleton className="h-8 w-64 rounded" />
+   258→            <Skeleton className="h-4 w-full rounded" />
+   259→            <Skeleton className="h-4 w-2/3 rounded" />
+   260→          </CardContent>
+   261→        </Card>
+   262→      ) : (
+   263→        <>
+   264→          {/* ──── Banner de veredicto ──── */}
+   265→          <div className={`rounded-xl border p-4 ${styles.wrapper}`}>
+   266→            <div className="flex items-start gap-3">
+   267→              {tone === 'ok' ? (
+   268→                <CheckCircle2 className={`w-6 h-6 flex-shrink-0 mt-0.5 ${styles.icon}`} />
+   269→              ) : (
+   270→                <AlertCircle className={`w-6 h-6 flex-shrink-0 mt-0.5 ${styles.icon}`} />
+   271→              )}
+   272→              <div className="min-w-0 flex-1">
+   273→                <div className="flex items-center gap-2 flex-wrap">
+   274→                  <h2 className="text-base font-semibold text-slate-900">
+   275→                    {doctor ? verdictLabel(doctor.verdict) : 'Diagnóstico no disponible'}
+   276→                  </h2>
+   277→                  <Badge className={styles.badge}>{doctor?.verdict ? doctor.verdict : 'sin datos'}</Badge>
+   278→                </div>
+   279→                <p className="text-sm text-slate-600 mt-1">
+   280→                  {!doctor
+   281→                    ? 'No se pudo obtener el veredicto del Doctor. Revisa la conexión y vuelve a evaluar.'
+   282→                    : `${checks.length} comprobaciones evaluadas${doctor.generatedAt ? ` · ${relativeFromIso(doctor.generatedAt)}` : ''}`}
+   283→                </p>
+   284→              </div>
+   285→            </div>
+   286→          </div>
+   287→
+   288→          {/* ──── Lista de checks del Doctor ──── */}
+   289→          <Card className="border-0 shadow-sm">
+   290→            <CardHeader className="pb-3">
+   291→              <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+   292→                <Stethoscope className="w-5 h-5 text-emerald-600" />
+   293→                Diagnóstico detallado
+   294→              </CardTitle>
+   295→              <CardDescription>Resultado de cada comprobación del Doctor para esta organización</CardDescription>
+   296→            </CardHeader>
+   297→            <CardContent className="space-y-1">
+   298→              {checks.length === 0 ? (
+   299→                <p className="text-sm text-slate-500 py-3">Sin comprobaciones disponibles. Pulsa Re-evaluar para repetir el diagnóstico.</p>
+   300→              ) : (
+   301→                checks.map((check, idx) => {
+   302→                  const badge = checkBadgeFor(check.status)
+   303→                  return (
+   304→                    <div key={`${check.id ?? 'check'}-${idx}`} className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 transition-colors">
+   305→                      {check.status === 'ok' ? (
+   306→                        <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0 text-emerald-500" />
+   307→                      ) : (
+   308→                        <AlertCircle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${check.status === 'fail' ? 'text-red-500' : 'text-amber-500'}`} />
+   309→                      )}
+   310→                      <div className="min-w-0 flex-1">
+   311→                        <div className="flex items-center gap-2 flex-wrap">
+   312→                          <span className="text-sm font-medium text-slate-800">{check.label || check.id}</span>
+   313→                          <Badge variant="outline" className={`text-[10px] border-0 ${badge.className}`}>{badge.label}</Badge>
+   314→                        </div>
+   315→                        {check.detail ? <p className="text-xs text-slate-500 mt-0.5 break-words">{check.detail}</p> : null}
+   316→                      </div>
+   317→                    </div>
+   318→                  )
+   319→                })
+   320→              )}
+   321→            </CardContent>
+   322→          </Card>
+   323→
+   324→          {/* ──── Wizard de puesta en marcha ──── */}
+   325→          <Card className="border-0 shadow-sm">
+   326→            <CardHeader className="pb-3">
+   327→              <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+   328→                <Activity className="w-5 h-5 text-emerald-600" />
+   329→                Puesta en marcha
+   330→              </CardTitle>
+   331→              <CardDescription>
+   332→                {doneSteps} de {steps.length} pasos completados{doneSteps === steps.length ? ' · todo listo' : ''}
+   333→              </CardDescription>
+   334→            </CardHeader>
+   335→            <CardContent className="space-y-2">
+   336→              {steps.map((step, idx) => (
+   337→                <div key={step.id} className="flex items-start gap-3 p-3 rounded-lg border border-slate-100">
+   338→                  <div className="flex items-center gap-2 flex-shrink-0 w-6 justify-center">
+   339→                    <span className="text-xs text-slate-400 font-medium">{idx + 1}</span>
+   340→                  </div>
+   341→                  {step.done ? (
+   342→                    <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0 text-emerald-500" />
+   343→                  ) : (
+   344→                    <AlertCircle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${step.optional ? 'text-slate-400' : 'text-amber-500'}`} />
+   345→                  )}
+   346→                  <div className="min-w-0 flex-1">
+   347→                    <div className="flex items-center gap-2 flex-wrap">
+   348→                      <span className="text-sm font-medium text-slate-800">{step.label}</span>
+   349→                      {step.optional ? <Badge variant="outline" className="text-[10px] text-slate-500">Opcional</Badge> : null}
+   350→                      <Badge variant="outline" className={`text-[10px] border-0 ${step.done ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+   351→                        {step.done ? 'Hecho' : 'Pendiente'}
+   352→                      </Badge>
+   353→                    </div>
+   354→                    <p className="text-xs text-slate-500 mt-0.5">{step.detail}</p>
+   355→                  </div>
+   356→                  <Button variant="ghost" size="sm" className="flex-shrink-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => navigateTo(step.href)}>
+   357→                    {step.done ? 'Ver' : 'Ir'}
+   358→                  </Button>
+   359→                </div>
+   360→              ))}
+   361→            </CardContent>
+   362→          </Card>
+   363→
+   364→          {/* ──── Outbox de canales (M8) ──── */}
+   365→          <Card className="border-0 shadow-sm">
+   366→            <CardHeader className="pb-3">
+   367→              <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+   368→                <Send className="w-5 h-5 text-emerald-600" />
+   369→                Outbox de canales
+   370→              </CardTitle>
+   371→              <CardDescription>
+   372→                Intenciones de envío de esta organización por estado
+   373→                {outbox?.flags ? (
+   374→                  <Badge variant="outline" className={`ml-2 text-[10px] border-0 ${workerEnabled ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+   375→                    {workerEnabled ? 'Worker de envío activado' : 'Worker de envío desactivado'}
+   376→                  </Badge>
+   377→                ) : null}
+   378→              </CardDescription>
+   379→            </CardHeader>
+   380→            <CardContent>
+   381→              {outbox?.counts ? (
+   382→                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+   383→                  {countLabels.map((c) => (
+   384→                    <div key={c.key} className="rounded-lg border border-slate-100 p-3">
+   385→                      <p className={`text-2xl font-bold ${c.tone}`}>{outbox.counts?.[c.key] ?? 0}</p>
+   386→                      <p className="text-xs text-slate-500 mt-0.5">{c.label}</p>
+   387→                    </div>
+   388→                  ))}
+   389→                </div>
+   390→              ) : (
+   391→                <p className="text-sm text-slate-500">No se pudieron cargar las métricas del outbox.</p>
+   392→              )}
+   393→            </CardContent>
+   394→          </Card>
+   395→
+   396→          {/* ──── Conciliación de envíos UNCERTAIN ──── */}
+   397→          <Card className="border-0 shadow-sm">
+   398→            <CardHeader className="pb-3">
+   399→              <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+   400→                <Inbox className="w-5 h-5 text-emerald-600" />
+   401→                Conciliación de envíos UNCERTAIN
+   402→              </CardTitle>
+   403→              <CardDescription>
+   404→                Envíos cuyo resultado es desconocido: se resuelven manualmente tras verificar el proveedor. Nunca se reenvían automáticamente.
+   405→              </CardDescription>
+   406→            </CardHeader>
+   407→            <CardContent className="space-y-3">
+   408→              {!workerEnabled && unknownCount === 0 && (
+   409→                <Alert className="border-sky-200 bg-sky-50">
+   410→                  <AlertCircle className="w-4 h-4 text-sky-600" />
+   411→                  <AlertTitle className="text-sky-900">Modo de envío manual</AlertTitle>
+   412→                  <AlertDescription className="text-sky-800">
+   413→                    El worker de despacho está desactivado (CHANNEL_OUTBOUND_DISPATCH_ENABLED distinto de true): los envíos se registran en el outbox pero no se despachan automáticamente. Cuando se active, los resultados inciertos aparecerán aquí para conciliar.
+   414→                  </AlertDescription>
+   415→                </Alert>
+   416→              )}
+   417→
+   418→              {unknownItems.length === 0 ? (
+   419→                <div className="flex flex-col items-center justify-center py-8 text-center">
+   420→                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center mb-3">
+   421→                    <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+   422→                  </div>
+   423→                  <p className="text-sm font-medium text-slate-800">No hay envíos por conciliar</p>
+   424→                  <p className="text-xs text-slate-500 mt-1 max-w-md">
+   425→                    Todas las intenciones de envío tienen un estado resuelto. Si un envío queda en estado desconocido, aparecerá aquí para su verificación manual.
+   426→                  </p>
+   427→                </div>
+   428→              ) : (
+   429→                <div className="rounded-lg border border-slate-200 overflow-x-auto">
+   430→                  <Table>
+   431→                    <TableHeader>
+   432→                      <TableRow className="bg-slate-50">
+   433→                        <TableHead className="text-xs">Creado</TableHead>
+   434→                        <TableHead className="text-xs">Canal</TableHead>
+   435→                        <TableHead className="text-xs">Conexión</TableHead>
+   436→                        <TableHead className="text-xs">Intentos</TableHead>
+   437→                        <TableHead className="text-xs">Mensaje</TableHead>
+   438→                        <TableHead className="text-xs text-right">Acción</TableHead>
+   439→                      </TableRow>
+   440→                    </TableHeader>
+   441→                    <TableBody>
+   442→                      {unknownItems.map((item) => {
+   443→                        const view = mapUnknownItem(item)
+   444→                        return (
+   445→                          <TableRow key={view.id}>
+   446→                            <TableCell className="text-xs text-slate-500 whitespace-nowrap">{view.createdAtRelative}</TableCell>
+   447→                            <TableCell className="text-xs">
+   448→                              <Badge variant="outline" className="text-[10px]">{view.channelLabel}</Badge>
+   449→                            </TableCell>
+   450→                            <TableCell className="text-xs text-slate-600 max-w-[180px] truncate">{view.connectionLabel}</TableCell>
+   451→                            <TableCell className="text-xs text-slate-600">{view.attempts}</TableCell>
+   452→                            <TableCell className="text-xs text-slate-600 max-w-[320px] truncate" title={typeof item.body === 'string' ? item.body : undefined}>
+   453→                              {view.bodyPreview}
+   454→                            </TableCell>
+   455→                            <TableCell className="text-right">
+   456→                              <Button variant="outline" size="sm" onClick={() => openReconcile(item)}>
+   457→                                Conciliar
+   458→                              </Button>
+   459→                            </TableCell>
+   460→                          </TableRow>
+   461→                        )
+   462→                      })}
+   463→                    </TableBody>
+   464→                  </Table>
+   465→                </div>
+   466→              )}
+   467→            </CardContent>
+   468→          </Card>
+   469→        </>
+   470→      )}
+   471→
+   472→      {/* ──── Diálogo de conciliación ──── */}
+   473→      <Dialog open={!!reconcileTarget} onOpenChange={(open) => { if (!open) closeReconcile() }}>
+   474→        <DialogContent className="max-w-lg">
+   475→          <DialogHeader>
+   476→            <DialogTitle>Conciliar envío UNCERTAIN</DialogTitle>
+   477→            <DialogDescription>
+   478→              Confirma el resultado real del envío consultando el proveedor. Esta acción no reenvía el mensaje.
+   479→            </DialogDescription>
+   480→          </DialogHeader>
+   481→
+   482→          {reconcileTarget ? (
+   483→            <div className="space-y-4">
+   484→              <div className="rounded-lg bg-slate-50 border border-slate-100 p-3 space-y-1">
+   485→                {(() => {
+   486→                  const view = mapUnknownItem(reconcileTarget)
+   487→                  return (
+   488→                    <>
+   489→                      <p className="text-xs text-slate-500">
+   490→                        {view.channelLabel} · {view.connectionLabel} · {view.attempts} intento{view.attempts === 1 ? '' : 's'} · {view.createdAtRelative}
+   491→                      </p>
+   492→                      <p className="text-sm text-slate-800 break-words">{view.bodyPreview}</p>
+   493→                    </>
+   494→                  )
+   495→                })()}
+   496→              </div>
+   497→
+   498→              <div className="flex items-start gap-2">
+   499→                <Checkbox
+   500→                  id="provider-checked"
+   501→                  checked={providerChecked}
+   502→                  onCheckedChange={(v) => setProviderChecked(v === true)}
+   503→                />
+   504→                <Label htmlFor="provider-checked" className="text-sm text-slate-700 leading-snug cursor-pointer">
+   505→                  Verifiqué el estado del envío en el proveedor
+   506→                </Label>
+   507→              </div>
+   508→
+   509→              <RadioGroup value={resolution} onValueChange={(v) => setResolution(v === 'failed' ? 'failed' : 'sent')} className="gap-2">
+   510→                <div className={`flex items-start gap-2 rounded-lg border p-3 ${resolution === 'sent' ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}>
+   511→                  <RadioGroupItem value="sent" id="resolution-sent" className="mt-0.5" />
+   512→                  <div className="min-w-0 flex-1">
+   513→                    <Label htmlFor="resolution-sent" className="text-sm font-medium text-slate-800 cursor-pointer">Llegó al destinatario</Label>
+   514→                    <p className="text-xs text-slate-500 mt-0.5">Marca la intención como enviada y la asocia a la conversación.</p>
+   515→                    {resolution === 'sent' && (
+   516→                      <div className="mt-2">
+   517→                        <Input
+   518→                          value={providerMessageId}
+   519→                          onChange={(e) => setProviderMessageId(e.target.value)}
+   520→                          placeholder="Identificador del mensaje en el proveedor (opcional)"
+   521→                          className="h-8 text-xs"
+   522→                          maxLength={256}
+   523→                        />
+   524→                      </div>
+   525→                    )}
+   526→                  </div>
+   527→                </div>
+   528→                <div className={`flex items-start gap-2 rounded-lg border p-3 ${resolution === 'failed' ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}>
+   529→                  <RadioGroupItem value="failed" id="resolution-failed" className="mt-0.5" />
+   530→                  <div className="min-w-0 flex-1">
+   531→                    <Label htmlFor="resolution-failed" className="text-sm font-medium text-slate-800 cursor-pointer">No llegó / falló</Label>
+   532→                    <p className="text-xs text-slate-500 mt-0.5">Marca la intención como fallida. No se reenvía automáticamente.</p>
+   533→                  </div>
+   534→                </div>
+   535→              </RadioGroup>
+   536→            </div>
+   537→          ) : null}
+   538→
+   539→          <DialogFooter>
+   540→            <Button variant="outline" onClick={closeReconcile} disabled={submitting}>Cancelar</Button>
+   541→            <Button onClick={confirmReconcile} disabled={!providerChecked || submitting}>
+   542→              {submitting ? 'Conciliando…' : 'Confirmar conciliación'}
+   543→            </Button>
+   544→          </DialogFooter>
+   545→        </DialogContent>
+   546→      </Dialog>
+   547→
+   548→      {/* ──── Confirmación de fixes seguros ──── */}
+   549→      <AlertDialog open={fixDialogOpen} onOpenChange={setFixDialogOpen}>
+   550→        <AlertDialogContent>
+   551→          <AlertDialogHeader>
+   552→            <AlertDialogTitle>Aplicar fixes seguros</AlertDialogTitle>
+   553→            <AlertDialogDescription>
+   554→              Esta acción SOLO marca como fallidas las ejecuciones de automatización huérfanas (runs atascados en estado running durante más de 15 minutos) de esta organización, para que el historial refleje la realidad. No toca datos comerciales, no reintenta envíos y no modifica ninguna otra configuración.
+   555→            </AlertDialogDescription>
+   556→          </AlertDialogHeader>
+   557→          <AlertDialogFooter>
+   558→            <AlertDialogCancel disabled={applyingFix}>Cancelar</AlertDialogCancel>
+   559→            <AlertDialogAction onClick={(e) => { e.preventDefault(); applySafeFixes() }} disabled={applyingFix}>
+   560→              {applyingFix ? 'Aplicando…' : 'Aplicar fix seguro'}
+   561→            </AlertDialogAction>
+   562→          </AlertDialogFooter>
+   563→        </AlertDialogContent>
+   564→      </AlertDialog>
+   565→    </div>
+   566→  )
+   567→}
+   568→
+   569→/** Fecha relativa para el banner (evita depender de date-fns/locale aquí). */
+   570→function relativeFromIso(iso: string): string {
+   571→  const t = new Date(iso).getTime()
+   572→  if (Number.isNaN(t)) return 'fecha desconocida'
+   573→  const diff = Date.now() - t
+   574→  const abs = Math.abs(diff)
+   575→  if (abs < 60_000) return 'evaluado hace unos segundos'
+   576→  if (abs < 3_600_000) return `evaluado hace ${Math.floor(abs / 60_000)} min`
+   577→  if (abs < 86_400_000) return `evaluado hace ${Math.floor(abs / 3_600_000)} h`
+   578→  return `evaluado el ${new Date(t).toLocaleDateString('es')}`
+   579→}
+   580→

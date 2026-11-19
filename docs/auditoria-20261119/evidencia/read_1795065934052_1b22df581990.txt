@@ -1,0 +1,894 @@
+     1→'use client'
+     2→
+     3→import { useEffect, useState } from 'react'
+     4→import { api } from '@/lib/api'
+     5→import { useAppStore } from '@/lib/store'
+     6→import type { FocusItem, FocusType } from '@/lib/dashboard-focus'
+     7→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+     8→import { Badge } from '@/components/ui/badge'
+     9→import { Skeleton } from '@/components/ui/skeleton'
+    10→import { Button } from '@/components/ui/button'
+    11→import {
+    12→  Users,
+    13→  TrendingUp,
+    14→  DollarSign,
+    15→  Target,
+    16→  Calendar,
+    17→  ArrowUpRight,
+    18→  ArrowDownRight,
+    19→  Clock,
+    20→  Sparkles,
+    21→  ChevronRight,
+    22→  Phone,
+    23→  ArrowRight,
+    24→  Activity,
+    25→  FilePlus,
+    26→  ArrowRightLeft,
+    27→  Edit3,
+    28→  Trash2,
+    29→  StickyNote,
+    30→  Badge as BadgeIcon,
+    31→  Inbox,
+    32→  Zap,
+    33→  FileText,
+    34→  ListChecks,
+    35→} from 'lucide-react'
+    36→import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+    37→import { format, formatDistanceToNow } from 'date-fns'
+    38→import { es } from 'date-fns/locale'
+    39→import { motion } from 'framer-motion'
+    40→import { toast } from 'sonner'
+    41→
+    42→/* ------------------------------------------------------------------ */
+    43→/*  Types                                                              */
+    44→/* ------------------------------------------------------------------ */
+    45→
+    46→interface PipelineStage {
+    47→  id: string
+    48→  name: string
+    49→  order: number
+    50→  color: string
+    51→  count: number
+    52→  value: number
+    53→}
+    54→
+    55→interface Reservation {
+    56→  id: string
+    57→  title: string
+    58→  date: string
+    59→  duration: number
+    60→  client?: { id: string; name: string }
+    61→}
+    62→
+    63→interface ActivityItem {
+    64→  id: string
+    65→  role: string
+    66→  content: string
+    67→  createdAt: string
+    68→  client?: { id: string; name: string }
+    69→}
+    70→
+    71→interface Suggestion {
+    72→  client: {
+    73→    id: string
+    74→    name: string
+    75→    phone?: string | null
+    76→    email?: string | null
+    77→    temperature: string
+    78→    score: number
+    79→    daysSinceContact: number
+    80→    latestOpportunity?: {
+    81→      id: string
+    82→      title: string
+    83→      stage: string
+    84→      estimatedValue: number
+    85→    } | null
+    86→    upcomingReservation?: {
+    87→      id: string
+    88→      title: string
+    89→      date: string
+    90→    } | null
+    91→  }
+    92→  priorityScore: number
+    93→  reasons: string[]
+    94→}
+    95→
+    96→interface DashboardData {
+    97→  totalClients: number
+    98→  opportunitiesByStage: PipelineStage[]
+    99→  pipelineValue: number
+   100→  monthlyRevenue: number
+   101→  upcomingReservations: Reservation[]
+   102→  clientsNeedingFollowUp: Array<{
+   103→    id: string
+   104→    title: string
+   105→    nextAction?: string
+   106→    nextActionDate?: string
+   107→    client: { id: string; name: string; temperature: string }
+   108→    stage: { name: string }
+   109→  }>
+   110→  inactiveClients: number
+   111→  recentActivity: ActivityItem[]
+   112→  monthlyTrend: Array<{ month: string; revenue: number }>
+   113→  conversionRate: number
+   114→}
+   115→
+   116→interface SuggestionsData {
+   117→  suggestions: Suggestion[]
+   118→  totalClients: number
+   119→}
+   120→
+   121→/* ------------------------------------------------------------------ */
+   122→/*  Helpers                                                            */
+   123→/* ------------------------------------------------------------------ */
+   124→
+   125→const formatCurrency = (value: number) =>
+   126→  new Intl.NumberFormat('es-CO', {
+   127→    style: 'currency',
+   128→    currency: 'COP',
+   129→    minimumFractionDigits: 0,
+   130→  }).format(value)
+   131→
+   132→const stageColorMap: Record<string, { bg: string; border: string; text: string; dot: string }> = {
+   133→  Prospección: { bg: 'bg-slate-50', border: 'border-slate-300', text: 'text-slate-700', dot: 'bg-slate-400' },
+   134→  Calificación: { bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-700', dot: 'bg-blue-500' },
+   135→  Oferta: { bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-700', dot: 'bg-amber-500' },
+   136→  Seguimiento: { bg: 'bg-orange-50', border: 'border-orange-300', text: 'text-orange-700', dot: 'bg-orange-500' },
+   137→  'Cierre Ganado': { bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+   138→  'Cierre Perdido': { bg: 'bg-red-50', border: 'border-red-300', text: 'text-red-700', dot: 'bg-red-500' },
+   139→}
+   140→
+   141→const defaultStageStyle = { bg: 'bg-slate-50', border: 'border-slate-300', text: 'text-slate-700', dot: 'bg-slate-400' }
+   142→
+   143→const tempColors: Record<string, string> = {
+   144→  Frio: 'bg-slate-100 text-slate-600',
+   145→  Tibio: 'bg-amber-100 text-amber-700',
+   146→  Caliente: 'bg-orange-100 text-orange-700',
+   147→  Fuego: 'bg-red-100 text-red-700',
+   148→}
+   149→
+   150→/* ------------------------------------------------------------------ */
+   151→/*  Skeleton Loaders                                                   */
+   152→/* ------------------------------------------------------------------ */
+   153→
+   154→function KPISkeleton() {
+   155→  return (
+   156→    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   157→      {[...Array(4)].map((_, i) => (
+   158→        <Card key={i} className="border-0 shadow-sm">
+   159→          <CardContent className="p-5">
+   160→            <div className="flex items-start justify-between">
+   161→              <Skeleton className="w-10 h-10 rounded-lg" />
+   162→              <Skeleton className="w-16 h-4 rounded" />
+   163→            </div>
+   164→            <Skeleton className="w-24 h-7 rounded mt-3" />
+   165→            <Skeleton className="w-20 h-3 rounded mt-1" />
+   166→          </CardContent>
+   167→        </Card>
+   168→      ))}
+   169→    </div>
+   170→  )
+   171→}
+   172→
+   173→function PipelineSkeleton() {
+   174→  return (
+   175→    <Card className="border-0 shadow-sm">
+   176→      <CardHeader className="pb-3">
+   177→        <Skeleton className="w-40 h-6 rounded" />
+   178→      </CardHeader>
+   179→      <CardContent>
+   180→        <div className="flex gap-3 overflow-x-auto pb-2">
+   181→          {[...Array(5)].map((_, i) => (
+   182→            <Skeleton key={i} className="w-[170px] h-24 rounded-xl flex-shrink-0" />
+   183→          ))}
+   184→        </div>
+   185→      </CardContent>
+   186→    </Card>
+   187→  )
+   188→}
+   189→
+   190→/* ------------------------------------------------------------------ */
+   191→/*  Audit Trail Section                                                */
+   192→/* ------------------------------------------------------------------ */
+   193→
+   194→interface AuditLogEntry {
+   195→  id: string
+   196→  action: string
+   197→  entity: string
+   198→  entityId?: string | null
+   199→  description: string
+   200→  metadata?: string | null
+   201→  createdAt: string
+   202→}
+   203→
+   204→const auditActionIcons: Record<string, React.ReactNode> = {
+   205→  created: <FilePlus className="w-3 h-3" />,
+   206→  updated: <Edit3 className="w-3 h-3" />,
+   207→  deleted: <Trash2 className="w-3 h-3" />,
+   208→  stage_changed: <ArrowRightLeft className="w-3 h-3" />,
+   209→  note_added: <StickyNote className="w-3 h-3" />,
+   210→}
+   211→
+   212→const auditActionColors: Record<string, string> = {
+   213→  created: 'bg-emerald-500',
+   214→  updated: 'bg-sky-500',
+   215→  deleted: 'bg-red-500',
+   216→  stage_changed: 'bg-amber-500',
+   217→  note_added: 'bg-purple-500',
+   218→}
+   219→
+   220→function AuditTrailSection() {
+   221→  const [logs, setLogs] = useState<AuditLogEntry[]>([])
+   222→  const [loading, setLoading] = useState(true)
+   223→
+   224→  useEffect(() => {
+   225→    loadLogs()
+   226→  }, [])
+   227→
+   228→  const loadLogs = async () => {
+   229→    try {
+   230→      setLoading(true)
+   231→      const data = await api.getActivityLog({ limit: '10' })
+   232→      setLogs((data.logs as AuditLogEntry[]) || [])
+   233→    } catch {
+   234→      // May fail if no auth
+   235→    } finally {
+   236→      setLoading(false)
+   237→    }
+   238→  }
+   239→
+   240→  if (loading) {
+   241→    return (
+   242→      <Card className="border-0 shadow-sm bg-white">
+   243→        <CardHeader className="pb-3">
+   244→          <CardTitle className="text-lg font-semibold text-slate-900">Registro de Actividad</CardTitle>
+   245→        </CardHeader>
+   246→        <CardContent>
+   247→          <div className="space-y-3">
+   248→            {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 rounded-lg" />)}
+   249→          </div>
+   250→        </CardContent>
+   251→      </Card>
+   252→    )
+   253→  }
+   254→
+   255→  return (
+   256→    <motion.div
+   257→      initial={{ opacity: 0, y: 12 }}
+   258→      animate={{ opacity: 1, y: 0 }}
+   259→      transition={{ duration: 0.3, delay: 0.48 }}
+   260→    >
+   261→      <Card className="border-0 shadow-sm bg-white">
+   262→        <CardHeader className="pb-3">
+   263→          <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+   264→            <BadgeIcon className="w-5 h-5 text-emerald-600" />
+   265→            Registro de Actividad
+   266→          </CardTitle>
+   267→          <p className="text-xs text-slate-400">Últimas acciones en el CRM</p>
+   268→        </CardHeader>
+   269→        <CardContent>
+   270→          {logs.length > 0 ? (
+   271→            <div className="space-y-1 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+   272→              {logs.map((log) => (
+   273→                <div
+   274→                  key={log.id}
+   275→                  className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 transition-colors"
+   276→                >
+   277→                  <div className={`w-5 h-5 rounded-full mt-0.5 flex-shrink-0 ${auditActionColors[log.action] || 'bg-slate-400'} text-white flex items-center justify-center`}>
+   278→                    {auditActionIcons[log.action] || <Activity className="w-2.5 h-2.5" />}
+   279→                  </div>
+   280→                  <div className="min-w-0 flex-1">
+   281→                    <p className="text-sm text-slate-700 line-clamp-2">{log.description}</p>
+   282→                    <div className="flex items-center gap-2 mt-0.5">
+   283→                      <Badge variant="outline" className="text-[10px]">{log.action}</Badge>
+   284→                      <Badge variant="outline" className="text-[10px]">{log.entity}</Badge>
+   285→                      <span className="text-xs text-slate-400">
+   286→                        {formatDistanceToNow(new Date(log.createdAt), { locale: es, addSuffix: true })}
+   287→                      </span>
+   288→                    </div>
+   289→                  </div>
+   290→                </div>
+   291→              ))}
+   292→            </div>
+   293→          ) : (
+   294→            <div className="py-8 text-center text-slate-400 text-sm">
+   295→              <BadgeIcon className="w-10 h-10 mx-auto mb-2 text-slate-200" />
+   296→              No hay registro de actividad
+   297→            </div>
+   298→          )}
+   299→        </CardContent>
+   300→      </Card>
+   301→    </motion.div>
+   302→  )
+   303→}
+   304→
+   305→/* ------------------------------------------------------------------ */
+   306→/*  U2 — Focus "Qué te toca ahora"                                     */
+   307→/* ------------------------------------------------------------------ */
+   308→
+   309→interface FocusResponse {
+   310→  items: FocusItem[]
+   311→  generatedAt: string
+   312→}
+   313→
+   314→// href del focus → id de vista del shell (app-shell.tsx, patrón de navegación
+   315→// de esta página: setView). /pipeline se renderiza como vista 'opportunities';
+   316→// el resto mapea 1:1 con las páginas existentes en src/app.
+   317→const FOCUS_HREF_TO_VIEW: Record<string, string> = {
+   318→  '/inbox': 'inbox',
+   319→  '/automations': 'automations',
+   320→  '/calendar': 'calendar',
+   321→  '/quotes': 'quotes',
+   322→  '/pipeline': 'opportunities',
+   323→  '/clients': 'clients',
+   324→}
+   325→
+   326→const focusTypeStyles: Record<FocusType, { icon: React.ComponentType<{ className?: string }>; chip: string }> = {
+   327→  automation: { icon: Zap, chip: 'bg-red-50 text-red-600' },
+   328→  inbox: { icon: Inbox, chip: 'bg-emerald-50 text-emerald-600' },
+   329→  reservation: { icon: Calendar, chip: 'bg-sky-50 text-sky-600' },
+   330→  quote: { icon: FileText, chip: 'bg-amber-50 text-amber-600' },
+   331→  opportunity: { icon: TrendingUp, chip: 'bg-purple-50 text-purple-600' },
+   332→  client: { icon: Users, chip: 'bg-slate-100 text-slate-600' },
+   333→}
+   334→
+   335→const priorityBadge: Record<FocusItem['priority'], { label: string; className: string }> = {
+   336→  1: { label: 'Alta', className: 'bg-red-50 text-red-700 border-0' },
+   337→  2: { label: 'Media', className: 'bg-amber-50 text-amber-700 border-0' },
+   338→  3: { label: 'Baja', className: 'bg-slate-100 text-slate-600 border-0' },
+   339→}
+   340→
+   341→/**
+   342→ * U2 — Sección accionable "Qué te toca ahora": items priorizados por
+   343→ * GET /api/dashboard/focus. Estados propios (carga, vacío, error) para no
+   344→ * acoplarse a la carga de las métricas ni alterar las secciones existentes.
+   345→ */
+   346→function FocusSection() {
+   347→  const { setView } = useAppStore()
+   348→  const [items, setItems] = useState<FocusItem[]>([])
+   349→  const [loading, setLoading] = useState(true)
+   350→  const [error, setError] = useState(false)
+   351→
+   352→  useEffect(() => {
+   353→    loadFocus()
+   354→  }, [])
+   355→
+   356→  const loadFocus = async () => {
+   357→    try {
+   358→      setLoading(true)
+   359→      setError(false)
+   360→      const data = await api.getDashboardFocus() as FocusResponse
+   361→      setItems(Array.isArray(data?.items) ? data.items : [])
+   362→    } catch {
+   363→      setError(true)
+   364→    } finally {
+   365→      setLoading(false)
+   366→    }
+   367→  }
+   368→
+   369→  const navigate = (href: string) => {
+   370→    setView(FOCUS_HREF_TO_VIEW[href] ?? href.replace(/^\//, ''))
+   371→  }
+   372→
+   373→  return (
+   374→    <motion.div
+   375→      initial={{ opacity: 0, y: 12 }}
+   376→      animate={{ opacity: 1, y: 0 }}
+   377→      transition={{ duration: 0.3 }}
+   378→    >
+   379→      <Card className="border-0 shadow-sm bg-white border-l-4 border-l-emerald-500">
+   380→        <CardHeader className="pb-3">
+   381→          <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+   382→            <ListChecks className="w-5 h-5 text-emerald-600" />
+   383→            Qué te toca ahora
+   384→          </CardTitle>
+   385→          <p className="text-xs text-slate-400">Pendientes accionables ordenados por prioridad</p>
+   386→        </CardHeader>
+   387→        <CardContent>
+   388→          {loading ? (
+   389→            <div className="space-y-2">
+   390→              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
+   391→            </div>
+   392→          ) : error ? (
+   393→            <div className="py-4 text-center">
+   394→              <p className="text-sm text-slate-400">No se pudo cargar el focus de acciones.</p>
+   395→              <Button onClick={loadFocus} variant="outline" size="sm" className="mt-3">
+   396→                Reintentar
+   397→              </Button>
+   398→            </div>
+   399→          ) : items.length > 0 ? (
+   400→            <div className="space-y-1">
+   401→              {items.map((item) => {
+   402→                const style = focusTypeStyles[item.type]
+   403→                const badge = priorityBadge[item.priority]
+   404→                const Icon = style.icon
+   405→                return (
+   406→                  <button
+   407→                    key={item.id}
+   408→                    onClick={() => navigate(item.href)}
+   409→                    className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-50 transition-colors text-left group"
+   410→                  >
+   411→                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${style.chip}`}>
+   412→                      <Icon className="w-4 h-4" />
+   413→                    </div>
+   414→                    <div className="min-w-0 flex-1">
+   415→                      <p className="text-sm font-medium text-slate-900 truncate">{item.title}</p>
+   416→                      <p className="text-xs text-slate-500 truncate">{item.detail}</p>
+   417→                    </div>
+   418→                    <Badge variant="outline" className={`text-[10px] flex-shrink-0 ${badge.className}`}>
+   419→                      {badge.label}
+   420→                    </Badge>
+   421→                    <ChevronRight className="w-4 h-4 text-slate-300 flex-shrink-0 group-hover:text-slate-500 transition-colors" />
+   422→                  </button>
+   423→                )
+   424→              })}
+   425→            </div>
+   426→          ) : (
+   427→            <div className="py-6 text-center text-slate-400 text-sm">
+   428→              <ListChecks className="w-10 h-10 mx-auto mb-2 text-slate-200" />
+   429→              Todo al día. No hay nada urgente.
+   430→            </div>
+   431→          )}
+   432→        </CardContent>
+   433→      </Card>
+   434→    </motion.div>
+   435→  )
+   436→}
+   437→
+   438→/* ------------------------------------------------------------------ */
+   439→/*  Main Component                                                     */
+   440→/* ------------------------------------------------------------------ */
+   441→
+   442→export function DashboardPage() {
+   443→  const { setView, setSelectedClientId } = useAppStore()
+   444→  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
+   445→  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+   446→  const [loading, setLoading] = useState(true)
+   447→  const [error, setError] = useState<string | null>(null)
+   448→
+   449→  useEffect(() => {
+   450→    loadDashboard()
+   451→  }, [])
+   452→
+   453→  const loadDashboard = async () => {
+   454→    try {
+   455→      setLoading(true)
+   456→      setError(null)
+   457→
+   458→      const [dashboardResult, suggestionsResult] = await Promise.allSettled([
+   459→        api.getDashboard(),
+   460→        api.getSuggestions(),
+   461→      ])
+   462→
+   463→      if (dashboardResult.status === 'fulfilled') {
+   464→        setDashboardData(dashboardResult.value as DashboardData)
+   465→      } else {
+   466→        console.error('Dashboard error:', dashboardResult.reason)
+   467→        setError('Error al cargar los datos del dashboard')
+   468→      }
+   469→
+   470→      if (suggestionsResult.status === 'fulfilled') {
+   471→        const sugData = suggestionsResult.value as SuggestionsData
+   472→        setSuggestions(sugData.suggestions ?? [])
+   473→      }
+   474→      // Suggestions failure is non-critical, silently ignore
+   475→    } catch {
+   476→      setError('Error de conexión al cargar el dashboard')
+   477→      toast.error('Error de conexión', {
+   478→        description: 'No se pudieron cargar los datos del dashboard',
+   479→      })
+   480→    } finally {
+   481→      setLoading(false)
+   482→    }
+   483→  }
+   484→
+   485→  /* ---- Loading State ---- */
+   486→  if (loading) {
+   487→    return (
+   488→      <div className="space-y-6">
+   489→        <div>
+   490→          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+   491→          <p className="text-sm text-slate-500 mt-1">Resumen general de tu negocio</p>
+   492→        </div>
+   493→        <FocusSection />
+   494→        <KPISkeleton />
+   495→        <PipelineSkeleton />
+   496→        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+   497→          <Card className="border-0 shadow-sm">
+   498→            <CardHeader><Skeleton className="w-44 h-6 rounded" /></CardHeader>
+   499→            <CardContent><Skeleton className="w-full h-64 rounded" /></CardContent>
+   500→          </Card>
+   501→          <Card className="border-0 shadow-sm">
+   502→            <CardHeader><Skeleton className="w-36 h-6 rounded" /></CardHeader>
+   503→            <CardContent><Skeleton className="w-full h-64 rounded" /></CardContent>
+   504→          </Card>
+   505→        </div>
+   506→      </div>
+   507→    )
+   508→  }
+   509→
+   510→  /* ---- Error State ---- */
+   511→  if (error || !dashboardData) {
+   512→    return (
+   513→      <div className="space-y-6">
+   514→        <div>
+   515→          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+   516→          <p className="text-sm text-slate-500 mt-1">Resumen general de tu negocio</p>
+   517→        </div>
+   518→        <Card className="border-0 shadow-sm">
+   519→          <CardContent className="p-10 text-center">
+   520→            <Activity className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+   521→            <p className="text-slate-500 font-medium">{error ?? 'No se pudieron cargar los datos'}</p>
+   522→            <Button onClick={loadDashboard} variant="outline" className="mt-4">
+   523→              Reintentar
+   524→            </Button>
+   525→          </CardContent>
+   526→        </Card>
+   527→      </div>
+   528→    )
+   529→  }
+   530→
+   531→  const data = dashboardData
+   532→
+   533→  /* ---- KPI Config ---- */
+   534→  const kpis = [
+   535→    {
+   536→      title: 'Clientes Activos',
+   537→      value: data.totalClients.toString(),
+   538→      icon: Users,
+   539→      trend: data.inactiveClients > 0 ? `-${data.inactiveClients} inactivos` : 'Todos activos',
+   540→      trendUp: data.inactiveClients === 0,
+   541→      iconBg: 'bg-emerald-50',
+   542→      iconColor: 'text-emerald-600',
+   543→    },
+   544→    {
+   545→      title: 'Valor Pipeline',
+   546→      value: formatCurrency(data.pipelineValue),
+   547→      icon: TrendingUp,
+   548→      trend: `${data.opportunitiesByStage.reduce((a, s) => a + s.count, 0)} oportunidades`,
+   549→      trendUp: true,
+   550→      iconBg: 'bg-teal-50',
+   551→      iconColor: 'text-teal-600',
+   552→    },
+   553→    {
+   554→      title: 'Ingresos del Mes',
+   555→      value: formatCurrency(data.monthlyRevenue),
+   556→      icon: DollarSign,
+   557→      trend: data.monthlyRevenue > 0 ? 'Este mes' : 'Sin ingresos',
+   558→      trendUp: data.monthlyRevenue > 0,
+   559→      iconBg: 'bg-green-50',
+   560→      iconColor: 'text-green-600',
+   561→    },
+   562→    {
+   563→      title: 'Tasa de Conversión',
+   564→      value: `${data.conversionRate}%`,
+   565→      icon: Target,
+   566→      trend: data.conversionRate >= 30 ? 'Sobre promedio' : 'Mejorable',
+   567→      trendUp: data.conversionRate >= 30,
+   568→      iconBg: 'bg-purple-50',
+   569→      iconColor: 'text-purple-600',
+   570→    },
+   571→  ]
+   572→
+   573→  /* ---- Render ---- */
+   574→  return (
+   575→    <div className="space-y-6">
+   576→      {/* Page Title */}
+   577→      <div>
+   578→        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+   579→        <p className="text-sm text-slate-500 mt-1">Resumen general de tu negocio</p>
+   580→      </div>
+   581→
+   582→      {/* ─── U2: Focus "Qué te toca ahora" (arriba de las métricas) ─── */}
+   583→      <FocusSection />
+   584→
+   585→      {/* ─── KPI Cards ─── */}
+   586→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   587→        {kpis.map((kpi, index) => {
+   588→          const Icon = kpi.icon
+   589→          return (
+   590→            <motion.div
+   591→              key={kpi.title}
+   592→              initial={{ opacity: 0, y: 12 }}
+   593→              animate={{ opacity: 1, y: 0 }}
+   594→              transition={{ duration: 0.3, delay: index * 0.06 }}
+   595→            >
+   596→              <Card className="border-0 shadow-sm hover:shadow-md transition-shadow bg-white">
+   597→                <CardContent className="p-5">
+   598→                  <div className="flex items-start justify-between">
+   599→                    <div className={`w-10 h-10 rounded-lg ${kpi.iconBg} flex items-center justify-center`}>
+   600→                      <Icon className={`w-5 h-5 ${kpi.iconColor}`} />
+   601→                    </div>
+   602→                    <div className={`flex items-center gap-1 text-xs font-medium ${kpi.trendUp ? 'text-emerald-600' : 'text-slate-400'}`}>
+   603→                      {kpi.trendUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+   604→                      {kpi.trend}
+   605→                    </div>
+   606→                  </div>
+   607→                  <div className="mt-3">
+   608→                    <p className="text-2xl font-bold text-slate-900 tracking-tight">{kpi.value}</p>
+   609→                    <p className="text-xs text-slate-500 mt-0.5">{kpi.title}</p>
+   610→                  </div>
+   611→                </CardContent>
+   612→              </Card>
+   613→            </motion.div>
+   614→          )
+   615→        })}
+   616→      </div>
+   617→
+   618→      {/* ─── Pipeline Visual ─── */}
+   619→      <motion.div
+   620→        initial={{ opacity: 0, y: 12 }}
+   621→        animate={{ opacity: 1, y: 0 }}
+   622→        transition={{ duration: 0.3, delay: 0.24 }}
+   623→      >
+   624→        <Card className="border-0 shadow-sm bg-white">
+   625→          <CardHeader className="pb-3">
+   626→            <CardTitle className="text-lg font-semibold text-slate-900">Pipeline de Ventas</CardTitle>
+   627→          </CardHeader>
+   628→          <CardContent>
+   629→            <div className="flex items-center gap-0 overflow-x-auto pb-2">
+   630→              {data.opportunitiesByStage.map((stage, idx) => {
+   631→                const style = stageColorMap[stage.name] ?? defaultStageStyle
+   632→                return (
+   633→                  <div key={stage.id} className="flex items-center flex-shrink-0">
+   634→                    <div
+   635→                      className={`${style.bg} border ${style.border} rounded-xl p-4 min-w-[160px] hover:shadow-sm transition-shadow cursor-default`}
+   636→                    >
+   637→                      <div className="flex items-center gap-2 mb-2">
+   638→                        <div className={`w-2.5 h-2.5 rounded-full ${style.dot}`} />
+   639→                        <span className={`text-sm font-medium ${style.text} truncate`}>{stage.name}</span>
+   640→                      </div>
+   641→                      <p className="text-2xl font-bold text-slate-900">{stage.count}</p>
+   642→                      <p className="text-xs text-slate-500 mt-0.5">{formatCurrency(stage.value)}</p>
+   643→                    </div>
+   644→                    {idx < data.opportunitiesByStage.length - 1 && (
+   645→                      <ArrowRight className="w-5 h-5 text-slate-300 mx-1 flex-shrink-0" />
+   646→                    )}
+   647→                  </div>
+   648→                )
+   649→              })}
+   650→              {data.opportunitiesByStage.length === 0 && (
+   651→                <div className="w-full py-8 text-center text-slate-400 text-sm">
+   652→                  No hay etapas de pipeline configuradas
+   653→                </div>
+   654→              )}
+   655→            </div>
+   656→          </CardContent>
+   657→        </Card>
+   658→      </motion.div>
+   659→
+   660→      {/* ─── Two Column Layout ─── */}
+   661→      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+   662→        {/* Left Column (wider) - Revenue Chart */}
+   663→        <motion.div
+   664→          className="lg:col-span-3"
+   665→          initial={{ opacity: 0, y: 12 }}
+   666→          animate={{ opacity: 1, y: 0 }}
+   667→          transition={{ duration: 0.3, delay: 0.3 }}
+   668→        >
+   669→          <Card className="border-0 shadow-sm bg-white h-full">
+   670→            <CardHeader className="pb-3">
+   671→              <CardTitle className="text-lg font-semibold text-slate-900">Tendencia de Ingresos</CardTitle>
+   672→              <p className="text-xs text-slate-400">Últimos 6 meses</p>
+   673→            </CardHeader>
+   674→            <CardContent>
+   675→              {data.monthlyTrend.some((t) => t.revenue > 0) ? (
+   676→                <ResponsiveContainer width="100%" height={280}>
+   677→                  <AreaChart data={data.monthlyTrend}>
+   678→                    <defs>
+   679→                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+   680→                        <stop offset="5%" stopColor="#059669" stopOpacity={0.2} />
+   681→                        <stop offset="95%" stopColor="#059669" stopOpacity={0} />
+   682→                      </linearGradient>
+   683→                    </defs>
+   684→                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+   685→                    <XAxis
+   686→                      dataKey="month"
+   687→                      tick={{ fontSize: 12, fill: '#94a3b8' }}
+   688→                      axisLine={false}
+   689→                      tickLine={false}
+   690→                    />
+   691→                    <YAxis
+   692→                      tick={{ fontSize: 12, fill: '#94a3b8' }}
+   693→                      axisLine={false}
+   694→                      tickLine={false}
+   695→                      tickFormatter={(v: number) => `$${(v / 1000000).toFixed(1)}M`}
+   696→                    />
+   697→                    <Tooltip
+   698→                      formatter={(value: number) => [formatCurrency(value), 'Ingresos']}
+   699→                      contentStyle={{
+   700→                        borderRadius: 10,
+   701→                        border: '1px solid #e2e8f0',
+   702→                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+   703→                        fontSize: 13,
+   704→                      }}
+   705→                      labelStyle={{ color: '#475569', fontWeight: 600 }}
+   706→                    />
+   707→                    <Area
+   708→                      type="monotone"
+   709→                      dataKey="revenue"
+   710→                      stroke="#059669"
+   711→                      strokeWidth={2.5}
+   712→                      fill="url(#colorRevenue)"
+   713→                      dot={{ r: 4, fill: '#059669', strokeWidth: 2, stroke: '#fff' }}
+   714→                      activeDot={{ r: 6, fill: '#059669', strokeWidth: 2, stroke: '#fff' }}
+   715→                    />
+   716→                  </AreaChart>
+   717→                </ResponsiveContainer>
+   718→              ) : (
+   719→                <div className="h-[280px] flex items-center justify-center text-slate-400 text-sm">
+   720→                  <div className="text-center">
+   721→                    <TrendingUp className="w-10 h-10 mx-auto mb-2 text-slate-200" />
+   722→                    Los datos de ingresos aparecerán aquí
+   723→                  </div>
+   724→                </div>
+   725→              )}
+   726→            </CardContent>
+   727→          </Card>
+   728→        </motion.div>
+   729→
+   730→        {/* Right Column - Reservations + Suggestions */}
+   731→        <motion.div
+   732→          className="lg:col-span-2 space-y-6"
+   733→          initial={{ opacity: 0, y: 12 }}
+   734→          animate={{ opacity: 1, y: 0 }}
+   735→          transition={{ duration: 0.3, delay: 0.36 }}
+   736→        >
+   737→          {/* Próximas Reservas */}
+   738→          <Card className="border-0 shadow-sm bg-white">
+   739→            <CardHeader className="pb-3">
+   740→              <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+   741→                <Calendar className="w-5 h-5 text-emerald-600" />
+   742→                Próximas Reservas
+   743→              </CardTitle>
+   744→              <p className="text-xs text-slate-400">Próximos 7 días</p>
+   745→            </CardHeader>
+   746→            <CardContent>
+   747→              {data.upcomingReservations.length > 0 ? (
+   748→                <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
+   749→                  {data.upcomingReservations.map((res) => (
+   750→                    <div
+   751→                      key={res.id}
+   752→                      className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
+   753→                    >
+   754→                      <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0">
+   755→                        <Clock className="w-4 h-4" />
+   756→                      </div>
+   757→                      <div className="min-w-0 flex-1">
+   758→                        <p className="text-sm font-medium text-slate-900 truncate">{res.title}</p>
+   759→                        <p className="text-xs text-slate-500">
+   760→                          {res.client?.name ?? 'Sin cliente'} · {format(new Date(res.date), "d MMM, HH:mm", { locale: es })}
+   761→                        </p>
+   762→                      </div>
+   763→                      <Badge variant="secondary" className="text-xs bg-emerald-50 text-emerald-700 border-0">
+   764→                        Confirmada
+   765→                      </Badge>
+   766→                    </div>
+   767→                  ))}
+   768→                </div>
+   769→              ) : (
+   770→                <div className="py-8 text-center text-slate-400 text-sm">
+   771→                  <Calendar className="w-10 h-10 mx-auto mb-2 text-slate-200" />
+   772→                  No hay reservas próximas
+   773→                </div>
+   774→              )}
+   775→            </CardContent>
+   776→          </Card>
+   777→
+   778→          {/* Sugerencias de Contacto */}
+   779→          <Card className="border-0 shadow-sm bg-white">
+   780→            <CardHeader className="pb-3">
+   781→              <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+   782→                <Sparkles className="w-5 h-5 text-amber-500" />
+   783→                Sugerencias de Contacto
+   784→              </CardTitle>
+   785→              <p className="text-xs text-slate-400">Clientes que debes contactar hoy</p>
+   786→            </CardHeader>
+   787→            <CardContent>
+   788→              {suggestions.length > 0 ? (
+   789→                <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
+   790→                  {suggestions.slice(0, 5).map((sug) => (
+   791→                    <div
+   792→                      key={sug.client.id}
+   793→                      className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
+   794→                    >
+   795→                      <div className="w-8 h-8 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
+   796→                        {sug.client.name.charAt(0).toUpperCase()}
+   797→                      </div>
+   798→                      <div className="min-w-0 flex-1">
+   799→                        <p className="text-sm font-medium text-slate-900 truncate">{sug.client.name}</p>
+   800→                        <p className="text-xs text-slate-500 truncate">
+   801→                          {sug.reasons[0] ?? 'Contacto general'}
+   802→                        </p>
+   803→                      </div>
+   804→                      <Button
+   805→                        size="sm"
+   806→                        variant="outline"
+   807→                        className="h-7 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50 flex-shrink-0"
+   808→                        onClick={() => {
+   809→                          setSelectedClientId(sug.client.id)
+   810→                          setView('client-detail')
+   811→                          toast.info(`Navegando a ${sug.client.name}`)
+   812→                        }}
+   813→                      >
+   814→                        <Phone className="w-3 h-3 mr-1" />
+   815→                        Contactar
+   816→                      </Button>
+   817→                    </div>
+   818→                  ))}
+   819→                </div>
+   820→              ) : (
+   821→                <div className="py-6 text-center text-slate-400 text-sm">
+   822→                  <Sparkles className="w-10 h-10 mx-auto mb-2 text-slate-200" />
+   823→                  ¡Todo al día! No hay sugerencias pendientes.
+   824→                </div>
+   825→              )}
+   826→            </CardContent>
+   827→          </Card>
+   828→        </motion.div>
+   829→      </div>
+   830→
+   831→      {/* ─── Recent Activity (Chat Logs) ─── */}
+   832→      <motion.div
+   833→        initial={{ opacity: 0, y: 12 }}
+   834→        animate={{ opacity: 1, y: 0 }}
+   835→        transition={{ duration: 0.3, delay: 0.42 }}
+   836→      >
+   837→        <Card className="border-0 shadow-sm bg-white">
+   838→          <CardHeader className="pb-3">
+   839→            <CardTitle className="text-lg font-semibold text-slate-900">Actividad Reciente</CardTitle>
+   840→          </CardHeader>
+   841→          <CardContent>
+   842→            {data.recentActivity.length > 0 ? (
+   843→              <div className="space-y-1 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+   844→                {data.recentActivity.slice(0, 10).map((activity) => {
+   845→                  const isUser = activity.role === 'user'
+   846→                  return (
+   847→                    <div
+   848→                      key={activity.id}
+   849→                      className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 transition-colors"
+   850→                    >
+   851→                      <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${isUser ? 'bg-emerald-500' : 'bg-teal-400'}`} />
+   852→                      <div className="min-w-0 flex-1">
+   853→                        <p className="text-sm text-slate-700 line-clamp-1">{activity.content}</p>
+   854→                        <p className="text-xs text-slate-400 mt-0.5">
+   855→                          {activity.client?.name ?? 'Sistema'} · {formatDistanceToNow(new Date(activity.createdAt), { locale: es, addSuffix: true })}
+   856→                        </p>
+   857→                      </div>
+   858→                    </div>
+   859→                  )
+   860→                })}
+   861→              </div>
+   862→            ) : (
+   863→              <div className="py-8 text-center text-slate-400 text-sm">
+   864→                <Activity className="w-10 h-10 mx-auto mb-2 text-slate-200" />
+   865→                No hay actividad reciente
+   866→              </div>
+   867→            )}
+   868→          </CardContent>
+   869→        </Card>
+   870→      </motion.div>
+   871→
+   872→      {/* ─── Audit Trail (Activity Log) ─── */}
+   873→      <AuditTrailSection />
+   874→
+   875→      {/* Global style for custom scrollbar */}
+   876→      <style jsx global>{`
+   877→        .custom-scrollbar::-webkit-scrollbar {
+   878→          width: 4px;
+   879→        }
+   880→        .custom-scrollbar::-webkit-scrollbar-track {
+   881→          background: transparent;
+   882→        }
+   883→        .custom-scrollbar::-webkit-scrollbar-thumb {
+   884→          background: #cbd5e1;
+   885→          border-radius: 9999px;
+   886→        }
+   887→        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+   888→          background: #94a3b8;
+   889→        }
+   890→      `}</style>
+   891→    </div>
+   892→  )
+   893→}
+   894→
