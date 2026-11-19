@@ -50,4 +50,4 @@ Nada de lo siguiente se simuló ni se fingió completado.
 - [ ] Tras el merge, crear tag de versión y desplegar en staging antes de producción.
 
 ## 7. Notas de la sesión sandbox 2026-11-15
-- [ ] Migrar o eliminar los scripts E2E antiguos (`scripts/e2e-wp-main.mjs`, `e2e-wp-bridge.mjs`, `e2e-wp-ultra.mjs`): contienen rutas de otra máquina y secretos literales ya usados solo en pruebas; el flujo E2E oficial es `scripts/e2e-3-servicios.mjs` (fail-fast, sin secretos versionados).
+- [x] RESUELTO (S6, 2026-11-20): los 24 scripts E2E antiguos se ARCHIVARON en `docs/historia/scripts/` (inventario y cómo restaurar en su README). El flujo E2E oficial es `scripts/e2e-3-servicios.mjs` (`npm run e2e:3`); `npm run security:scan` en verde tras el traslado.
