@@ -22,9 +22,11 @@ interface ReservationFormDialogProps {
   open: boolean
   onClose: () => void
   defaultDate?: Date
+  /** Hora preseleccionada 'HH:mm' (F4: crear desde un hueco libre en 2 clics). */
+  defaultTime?: string
 }
 
-export function ReservationFormDialog({ open, onClose, defaultDate }: ReservationFormDialogProps) {
+export function ReservationFormDialog({ open, onClose, defaultDate, defaultTime }: ReservationFormDialogProps) {
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
   const [form, setForm] = useState({
     clientId: '',
@@ -44,8 +46,11 @@ export function ReservationFormDialog({ open, onClose, defaultDate }: Reservatio
       if (defaultDate) {
         setForm((p) => ({ ...p, date: format(defaultDate, 'yyyy-MM-dd') }))
       }
+      if (defaultTime) {
+        setForm((p) => ({ ...p, time: defaultTime }))
+      }
     }
-  }, [open, defaultDate])
+  }, [open, defaultDate, defaultTime])
 
   const loadClients = async () => {
     try {
