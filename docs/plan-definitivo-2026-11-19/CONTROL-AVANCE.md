@@ -12,11 +12,11 @@ Este documento se actualiza por tarea al cerrarla, con estado, archivos y prueba
 | E1 | Diagnóstico CI PR #5 | Terminada (sesión previa) | PR #5 |
 | E2 | Renumeración migraciones | Terminada (sesión previa) | migraciones renumeradas |
 | F2 | UI de conexiones WhatsApp multi-número | **Terminada 2026-11-20** | commit F2; 803/803 tests |
+| M7 | Criterio unificación doble bandeja | **Terminada 2026-11-20** | CRITERIO-BANDEJA-UNICA-M7.md; dedup + 14 tests |
 | E4 | Readiness/CHANGELOG | En desarrollo | — |
 | D4 | Check de cifras en CI | En desarrollo | — |
 | E3 | Análisis | En desarrollo | — |
-| M7 | Criterio unificación doble bandeja | Pendiente (siguiente en cola) | — |
-| F3 | Filtros canal/cuenta + búsqueda bandeja | Pendiente (depende de M7) | — |
+| F3 | Filtros canal/cuenta + búsqueda bandeja | Pendiente (siguiente en cola) | — |
 | M8 | Reconciliación operable UNCERTAIN | Pendiente | — |
 | F4 | — (fase 3/4) | Pendiente | — |
 | F5 | Salud / monitor de conexiones | Pendiente (orden recomendado tras F2/M7) | — |
@@ -60,3 +60,28 @@ fechas/expiración, parseo del evento `WA_EMBEDDED_SIGNUP`, URL del SDK). Arranq
 queda para F5/prueba de punta con E2E.
 
 **Reversión.** Componente y helpers aditivos; `git revert` del PR no toca API ni datos.
+
+## M7 — Criterio de unificación de la doble bandeja (cerrada 2026-11-20)
+
+**Criterio aplicado** (documentado en `docs/plan-definitivo-2026-11-19/CRITERIO-BANDEJA-UNICA-M7.md`):
+canónico primero con respaldo del daemon.
+
+- Las conversaciones canónicas (`cc:`) NUNCA se ocultan entre sí: mismo teléfono por dos números
+  distintos = dos conversaciones legítimas (multi-número).
+- Una fila legacy (`wa:/tg:/ig:/fb:`) cuya identidad (canal + contacto normalizado) coincide con
+  cualquier canónica se OCULTA de la lista unificada; sus no leídos se SUMAN al canónico más
+  reciente de esa identidad (ninguna señal de atención se pierda).
+- Identidad: WhatsApp por teléfono normalizado a dígitos (daemon `57300…` vs Cloud `+57300…`);
+  TG/IG/FB por handle exacto; filas sin identidad fiable no participan (fail-closed).
+- CERO borrado de datos: dedup READ-ONLY; el historial legacy sigue íntegro en la ficha 360.
+
+**Archivos.** `src/lib/inbox.ts` (función pura `dedupeInboxConversations` + aplicación en `listInbox`
++ cabecera actualizada con el criterio), `docs/plan-definitivo-2026-11-19/CRITERIO-BANDEJA-UNICA-M7.md`,
+`tests/unit/inbox-dedup.test.ts` (14 pruebas nuevas).
+
+**Pruebas.** tsc limpio; 14/14 dedup + 9/9 inbox existente; suite completa en verde.
+
+**Criterios de aceptación.** Un contacto aparece una sola vez con canal y cuenta claros; el historial
+completo sigue visible en la ficha — cumplido.
+
+**Reversión.** `git revert` del commit; sin migraciones ni borrados, la vuelta atrás es limpia.

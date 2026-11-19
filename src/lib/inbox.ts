@@ -1,23 +1,30 @@
 import { db } from './db'
 
 /**
- * Bandeja omnicanal (Fase 4 del plan maestro).
+ * Bandeja omnicanal (Fase 4 del plan maestro; criterio M7 2026-11-20).
  *
- * Unifica en una sola lista las conversaciones de los 4 canales:
+ * Unifica en una sola lista las conversaciones de los 5 canales:
  *   - WhatsApp (daemon Baileys) → tabla WhatsAppConversation/WhatsAppMessage
+ *   - WhatsApp Cloud API multi-número → modelo canónico ChannelConversation (key "cc:")
  *   - Telegram  → TimelineEvent type="telegram" agrupado por cliente
  *   - Instagram → TimelineEvent type="instagram" agrupado por cliente
  *   - Facebook  → TimelineEvent type="facebook" agrupado por cliente (Messenger de la Página)
  *
  * Decisiones de diseño:
- *  - Cada conversación tiene una `key` estable: "wa:<convId>" | "tg:<clientId>" | "ig:<clientId>".
- *    Es el único identificador que viaja al frontend y vuelve en cada petición.
+ *  - Cada conversación tiene una `key` estable: "wa:<convId>" | "tg:<clientId>" |
+ *    "ig:<clientId>" | "fb:<clientId>" | "cc:<convId>". Es el único identificador
+ *    que viaja al frontend y vuelve en cada petición.
  *  - El merge es READ-ONLY sobre las fuentes (no migra datos): Telegram/Instagram
  *    ya viven como timeline y WhatsApp como tablas propias; la bandeja es una
  *    vista coherente encima. Cero riesgo de duplicación o pérdida.
- *  - WhatsApp manda en la conversación "global": si el mismo teléfono aparece en
- *    timeline whatsapp (Cloud API) y en el daemon, se prioriza la del daemon
- *    (es el canal principal del producto) y el timeline queda en la ficha del cliente.
+ *  - CRITERIO M7 DE UNIFICACIÓN (canónico primero, respaldo del daemon): si el
+ *    MISMO contacto en el MISMO canal existe en el modelo canónico y en una fuente
+ *    legacy, gana SIEMPRE la conversación canónica ("cc:") y la legacy se oculta
+ *    de la lista unificada SIN borrarse: su historial sigue íntegro en la ficha
+ *    del cliente (ficha 360) y en sus tablas. Los no leídos de la fila oculta se
+ *    SUMAN al contador del ganador para que ninguna señal de atención se pierda.
+ *    Dos conversaciones canónicas del mismo teléfono por números distintos son
+ *    legítimas (multi-número) y NUNCA se deduplican entre sí.
  *  - Nunca lanza: si un canal falla, se degrada a lista vacía de ese canal.
  */
 
@@ -143,6 +150,123 @@ export function timelineToMessages(
       } satisfies InboxMessage
     })
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+}
+
+// ---------- criterio M7 de unificación (puro, testeable) ----------
+
+/** Fuente de una conversación de la bandeja: modelo canónico o legacy. */
+export type InboxSource = 'canonical' | 'legacy'
+
+export function inboxSource(key: string): InboxSource {
+  return key.startsWith('cc:') ? 'canonical' : 'legacy'
+}
+
+/**
+ * Identidad de dedup de un contacto: canal + cuenta/contacto normalizados.
+ *  - WhatsApp: teléfono normalizado a dígitos (daemon usa '573…', Cloud '+573…').
+ *  - Telegram/Instagram/Facebook/TikTok: handle de la plataforma tal cual.
+ * Devuelve null cuando no hay identity fiable (no participa en dedup).
+ */
+function dedupIdentity(conv: InboxConversation): string | null {
+  if (conv.channel === 'whatsapp') {
+    const phone = normalizeWaPhone(conv.contactHandle)
+    return phone ? `whatsapp:${phone}` : null
+  }
+  const handle = conv.contactHandle?.trim()
+  if (!handle) return null
+  return `${conv.channel}:${handle.toLowerCase()}`
+}
+
+export interface DedupeResult {
+  /** Lista deduplicada (orden de entrada preservado dentro de cada fuente). */
+  list: InboxConversation[]
+  /** Conversaciones ocultas por el criterio (legado cubierto por canónico). */
+  suppressed: InboxConversation[]
+}
+
+/**
+ * Criterio M7: un contacto, una conversación en la bandeja.
+ *
+ * Reglas:
+ *  1. Las conversaciones CANÓNICAS ("cc:") NUNCA se ocultan entre sí: dos
+ *     conversaciones del mismo teléfono por números distintos son legítimas
+ *     (multi-número, partición por conexión).
+ *  2. Una fila LEGACY (daemon/timeline) cuya identidad (canal+contacto) coincide
+ *     con CUALQUIER conversación canónica se oculta; sus no leídos se SUMAN al
+ *     canónico más reciente de esa identidad (ninguna señal de atención se pierde).
+ *  3. Entre dos legacy de la misma identidad sin canónico se conserva la más
+ *     reciente y se suman los no leídos del resto (estado degenerado protegido).
+ *  4. Sin identidad fiable (handle vacío/teléfono basura) → la fila pasa intacta.
+ *
+ * READ-ONLY: nunca toca base de datos; el historial oculto sigue en la ficha.
+ */
+export function dedupeInboxConversations(conversations: InboxConversation[]): DedupeResult {
+  const suppressed: InboxConversation[] = []
+
+  // Pass 1: canónicas indexadas por identidad (pueden convivir N por identidad).
+  const canonicalByIdentity = new Map<string, InboxConversation[]>()
+  for (const conv of conversations) {
+    if (inboxSource(conv.key) !== 'canonical') continue
+    const identity = dedupIdentity(conv)
+    if (!identity) continue
+    const bucket = canonicalByIdentity.get(identity)
+    if (bucket) bucket.push(conv)
+    else canonicalByIdentity.set(identity, [conv])
+  }
+
+  // Pass 2: las canónicas pasan siempre; las legacy se ocultan si hay canónico
+  // para su identidad (acumulando no leídos en el más reciente) o se agrupan
+  // entre sí (se conserva la más reciente) cuando no hay canónico.
+  const visible: InboxConversation[] = []
+  const legacyExtras = new Map<InboxConversation, number>()
+  const legacyByIdentity = new Map<string, InboxConversation[]>()
+  for (const conv of conversations) {
+    if (inboxSource(conv.key) === 'canonical') {
+      visible.push(conv)
+      continue
+    }
+    const identity = dedupIdentity(conv)
+    if (!identity) {
+      visible.push(conv)
+      continue
+    }
+    const canonicals = canonicalByIdentity.get(identity)
+    if (canonicals && canonicals.length > 0) {
+      suppressed.push(conv)
+      const winner = canonicals
+        .slice()
+        .sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''))[0]
+      legacyExtras.set(winner, (legacyExtras.get(winner) ?? 0) + conv.unreadCount)
+      continue
+    }
+    const bucket = legacyByIdentity.get(identity)
+    if (bucket) bucket.push(conv)
+    else legacyByIdentity.set(identity, [conv])
+    visible.push(conv)
+  }
+
+  // Degenerado: dos legacy sin canónico → conservar la más reciente por identidad.
+  const legacyDropped = new Map<InboxConversation, number>()
+  for (const [identity, rows] of legacyByIdentity) {
+    if (rows.length <= 1) continue
+    const sorted = rows.slice().sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''))
+    const winner = sorted[0]
+    for (const older of sorted.slice(1)) {
+      suppressed.push(older)
+      legacyDropped.set(winner, (legacyDropped.get(winner) ?? 0) + older.unreadCount)
+      const idx = visible.indexOf(older)
+      if (idx >= 0) visible.splice(idx, 1)
+    }
+    void identity
+  }
+
+  // Aplicar los no leídos acumulados de las filas ocultas.
+  const list = visible.map((conv) => {
+    const extra = (legacyExtras.get(conv) ?? 0) + (legacyDropped.get(conv) ?? 0)
+    return extra > 0 ? { ...conv, unreadCount: conv.unreadCount + extra } : conv
+  })
+
+  return { list, suppressed }
 }
 
 // ---------- listado unificado ----------
@@ -284,7 +408,7 @@ async function listCanonicalChannelConversations(orgId: string, limit: number): 
   }
 }
 
-/** Lista unificada, ordenada por actividad reciente. Las fuentes legacy siguen visibles durante expand. */
+/** Lista unificada con criterio M7 (canónico primero) y orden por actividad. */
 export async function listInbox(orgId: string, limit = 100): Promise<InboxConversation[]> {
   const [canonical, wa, tg, ig, fb] = await Promise.all([
     listCanonicalChannelConversations(orgId, limit),
@@ -293,7 +417,10 @@ export async function listInbox(orgId: string, limit = 100): Promise<InboxConver
     listTimelineConversations(orgId, 'instagram', limit),
     listTimelineConversations(orgId, 'facebook', limit),
   ])
-  return [...canonical, ...wa, ...tg, ...ig, ...fb]
+  // M7: el mismo contacto (canal+identidad) aparece UNA sola vez; gana el
+  // modelo canónico y el legacy queda visible solo en la ficha del cliente.
+  const { list } = dedupeInboxConversations([...canonical, ...wa, ...tg, ...ig, ...fb])
+  return list
     .sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''))
     .slice(0, limit)
 }
