@@ -20,6 +20,8 @@ import { toast } from 'sonner'
 interface QuoteFormDialogProps {
   open: boolean
   onClose: () => void
+  /** Cliente preseleccionado al abrir (cierre integral: quick-actions de la ficha 360). */
+  defaultClientId?: string
 }
 
 interface QuoteItemForm {
@@ -29,7 +31,7 @@ interface QuoteItemForm {
   unitPrice: string
 }
 
-export function QuoteFormDialog({ open, onClose }: QuoteFormDialogProps) {
+export function QuoteFormDialog({ open, onClose, defaultClientId }: QuoteFormDialogProps) {
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
   const [opportunities, setOpportunities] = useState<Array<{ id: string; title: string }>>([])
   const [form, setForm] = useState({
@@ -47,6 +49,11 @@ export function QuoteFormDialog({ open, onClose }: QuoteFormDialogProps) {
   useEffect(() => {
     if (open) loadOptions()
   }, [open])
+
+  // Preselección de cliente al abrir desde la ficha 360 (cierre integral)
+  useEffect(() => {
+    if (open && defaultClientId) setForm((f) => ({ ...f, clientId: defaultClientId }))
+  }, [open, defaultClientId])
 
   useEffect(() => {
     if (form.clientId) loadOpportunities()

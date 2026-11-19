@@ -31,6 +31,7 @@ model Organization {
   pipelineStages        PipelineStage[]
   opportunities         Opportunity[]
   reservations          Reservation[]
+  tasks                 Task[]
   quotes                Quote[]
   quoteItems            QuoteItem[]
   knowledge             Knowledge[]
@@ -155,6 +156,7 @@ model Client {
   preferences           ClientPreferences?
   opportunities         Opportunity[]
   reservations          Reservation[]
+  tasks                 Task[]
   quotes                Quote[]
   transactions          Transaction[]
   memories              AgentMemory[]
@@ -256,6 +258,30 @@ model Reservation {
   updatedAt      DateTime     @updatedAt
 
   @@index([organizationId, startsAt])
+}
+
+// Cierre integral (bloque C): tareas y recordatorios comerciales por organización.
+// userId sigue el patrón de Reservation.userId (string plano, sin FK) — el
+// responsable se guarda para mostrarlo; la tenencia vive en organizationId.
+model Task {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title          String
+  notes          String?
+  dueAt          DateTime?
+  priority       String       @default("normal") // alta | normal | baja
+  status         String       @default("open") // open | done
+  completedAt    DateTime?
+  userId         String?
+  clientId       String?
+  client         Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, dueAt])
+  @@index([clientId])
 }
 
 model Quote {
