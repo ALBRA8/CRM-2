@@ -38,6 +38,13 @@ El CRM expone tres contratos formales para que un host externo lo opere sin cono
 
 Detalle completo de capacidades, permisos, estados, errores y operaciones destructivas: **[docs/HARNESS.md](./docs/HARNESS.md)**.
 
+## Contratos (fuente única de verdad)
+
+El inventario completo de endpoints de la API — método, autenticación, org-scoping y archivo que
+implementa cada ruta — vive en **[docs/CONTRATOS-ECOSISTEMA.md](./docs/CONTRATOS-ECOSISTEMA.md)**.
+Complementos: `docs/API_CONTRACT.md` (convenciones), `docs/INTEGRATION_CONTRACT.md` (cross-repo
+HMAC v2) y `docs/CONTRATO-WHATSAPP-ORG.md` (daemon Baileys multi-org).
+
 ## Multi-tenancy
 
 Cada organización tiene sus propios clientes, oportunidades, automatizaciones, plantillas y configuraciones (modelo `Organization` + `organizationId` en toda la capa de datos). La IA del CRM (auto-respuesta de canales, sugerencias) y los hosts se configuran por organización.
