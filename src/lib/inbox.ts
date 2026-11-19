@@ -8,16 +8,25 @@ import { db } from './db'
  *   - Telegram  → TimelineEvent type="telegram" agrupado por cliente
  *   - Instagram → TimelineEvent type="instagram" agrupado por cliente
  *   - Facebook  → TimelineEvent type="facebook" agrupado por cliente (Messenger de la Página)
+ *   - TikTok / WhatsApp Cloud / canales nuevos → modelo canónico Channel*
  *
  * Decisiones de diseño:
- *  - Cada conversación tiene una `key` estable: "wa:<convId>" | "tg:<clientId>" | "ig:<clientId>".
+ *  - Cada conversación tiene una `key` estable: "wa:<convId>" | "tg:<clientId>" | "ig:<clientId>" | "cc:<id>".
  *    Es el único identificador que viaja al frontend y vuelve en cada petición.
  *  - El merge es READ-ONLY sobre las fuentes (no migra datos): Telegram/Instagram
  *    ya viven como timeline y WhatsApp como tablas propias; la bandeja es una
  *    vista coherente encima. Cero riesgo de duplicación o pérdida.
- *  - WhatsApp manda en la conversación "global": si el mismo teléfono aparece en
- *    timeline whatsapp (Cloud API) y en el daemon, se prioriza la del daemon
- *    (es el canal principal del producto) y el timeline queda en la ficha del cliente.
+ *  - (M7, plan definitivo) CRITERIO DE UNIFICACIÓN DE LA DOBLE BANDEJA —
+ *    "canónico primero, legacy como respaldo": si el MISMO contacto aparece
+ *    en el modelo canónico (cc:) y en una fuente legacy (wa:/tg:/ig:/fb:) del
+ *    mismo canal, la conversación CANÓNICA gana y la legacy se suprime del
+ *    listado (queda accesible vía ficha 360; SIN borrar datos). El criterio
+ *    vive en dedupeInboxConversations() (puro, con pruebas) y la constante
+ *    INBOX_UNIFICATION_RULE lo documenta para operadores y auditoría.
+ *  - (F3, plan definitivo) La bandeja expone filtros server-side por canal,
+ *    cuenta conectada y búsqueda por nombre/teléfono (filterInboxConversations,
+ *    puro y con pruebas), con paginación por offset para mantener el
+ *    rendimiento sobre SQLite.
  *  - Nunca lanza: si un canal falla, se degrada a lista vacía de ese canal.
  */
 
@@ -116,6 +125,133 @@ function safeMetadata(raw: string | null | undefined): Record<string, unknown> {
   } catch {
     return {}
   }
+}
+
+// ---------- (M7) unificación de la doble bandeja: criterio y dedup ----------
+
+/**
+ * Criterio de unificación aprobado para la bandeja única (M7, plan definitivo):
+ * "canónico primero, legacy como respaldo". Un contacto del mismo canal aparece
+ * UNA sola vez; la fuente canónica (cc:) gana y la legacy se suprime del
+ * listado sin borrado de datos (el historial completo sigue en la ficha 360).
+ */
+export const INBOX_UNIFICATION_RULE = 'canónico primero, legacy como respaldo' as const
+
+/**
+ * Prioridad de fuente por prefijo de key: mayor número gana. cc: (modelo
+ * canónico, 3) > wa: (daemon, 2) > tg:/ig:/fb: (timeline, 1). Desconocido → 0.
+ */
+const SOURCE_PRIORITY: Record<string, number> = { cc: 3, wa: 2, tg: 1, ig: 1, fb: 1 }
+
+/**
+ * Identidad de contacto para el dedup: (canal, handle normalizado). Para
+ * WhatsApp se compara por teléfono E.164 sin '+' (normalizeWaPhone); para los
+ * demás canales el handle se compara en minúsculas y sin espacios. Si el
+ * handle es vacío la identidad es única (no se puede agrupar: fail-open para
+ * NO esconder conversaciones).
+ */
+export function inboxIdentityKey(conv: InboxConversation): string {
+  const prefix = conv.key.split(':')[0] ?? ''
+  const handle = conv.channel === 'whatsapp'
+    ? normalizeWaPhone(conv.contactHandle)
+    : conv.contactHandle.trim().toLowerCase()
+  if (!handle) return `unmatched:${conv.key}`
+  return `${conv.channel}::${handle}`
+}
+
+export interface DedupeResult {
+  /** Lista deduplicada: el ganador de cada identidad. */
+  inbox: InboxConversation[]
+  /** Conversaciones suprimidas por el criterio, con su ganadora (auditoría/UI). */
+  suppressed: Array<{ conversation: InboxConversation; winnerKey: string }>
+}
+
+/**
+ * Dedup READ-ONLY de la bandeja por identidad de contacto (M7):
+ *  - agrupa por inboxIdentityKey;
+ *  - dentro de cada grupo gana la de mayor prioridad de fuente (cc > wa > timeline),
+ *    desempate por actividad más reciente;
+ *  - NO muta la entrada y NO borra datos: solo decide qué conversación se ve.
+ */
+export function dedupeInboxConversations(conversations: InboxConversation[]): DedupeResult {
+  const byIdentity = new Map<string, InboxConversation[]>()
+  for (const conv of conversations) {
+    const identity = inboxIdentityKey(conv)
+    const bucket = byIdentity.get(identity)
+    if (bucket) bucket.push(conv)
+    else byIdentity.set(identity, [conv])
+  }
+  const inbox: InboxConversation[] = []
+  const suppressed: DedupeResult['suppressed'] = []
+  for (const group of byIdentity.values()) {
+    if (group.length === 1) {
+      inbox.push(group[0])
+      continue
+    }
+    const winner = [...group].sort((a, b) => {
+      const prio = (c: InboxConversation) => SOURCE_PRIORITY[c.key.split(':')[0] ?? ''] ?? 0
+      if (prio(b) !== prio(a)) return prio(b) - prio(a)
+      return (b.lastMessageAt || '').localeCompare(a.lastMessageAt || '')
+    })[0]
+    inbox.push(winner)
+    for (const loser of group) {
+      if (loser.key !== winner.key) suppressed.push({ conversation: loser, winnerKey: winner.key })
+    }
+  }
+  return { inbox, suppressed }
+}
+
+// ---------- (F3) filtros server-side de la bandeja ----------
+
+export interface InboxFilters {
+  /** Canal exacto; 'all' o ausente = todos. */
+  channel?: InboxChannel | 'all'
+  /** Cuenta conectada por displayName exacto (solo conversaciones cc: la exponen). */
+  account?: string
+  /** Búsqueda case-insensitive por nombre de contacto o handle (teléfono/chat). */
+  search?: string
+}
+
+const INBOX_CHANNELS: InboxChannel[] = ['whatsapp', 'telegram', 'instagram', 'facebook', 'tiktok']
+
+/** Valida y normaliza los filtros de la API (fail-closed: valor inválido → undefined). */
+export function parseInboxFilters(params: {
+  channel?: string | null
+  account?: string | null
+  search?: string | null
+}): InboxFilters {
+  const channel = params.channel && INBOX_CHANNELS.includes(params.channel as InboxChannel)
+    ? (params.channel as InboxChannel)
+    : undefined
+  const account = params.account && params.account.trim() ? params.account.trim().slice(0, 120) : undefined
+  const search = params.search && params.search.trim() ? params.search.trim().slice(0, 100) : undefined
+  return { ...(channel ? { channel } : {}), ...(account ? { account } : {}), ...(search ? { search } : {}) }
+}
+
+/**
+ * Filtro puro de la bandeja (F3): canal, cuenta conectada y búsqueda por
+ * nombre/handle. Separado del fetch para poder probarlo sin BD y reutilizarlo
+ * en UI si el listado viene completo.
+ */
+export function filterInboxConversations(
+  conversations: InboxConversation[],
+  filters: InboxFilters,
+): InboxConversation[] {
+  let out = conversations
+  if (filters.channel && filters.channel !== 'all') {
+    out = out.filter((c) => c.channel === filters.channel)
+  }
+  if (filters.account) {
+    const account = filters.account.toLowerCase()
+    out = out.filter((c) => (c.connectionName ?? '').toLowerCase() === account)
+  }
+  if (filters.search) {
+    const q = filters.search.toLowerCase()
+    out = out.filter((c) =>
+      c.contactName.toLowerCase().includes(q) || c.contactHandle.toLowerCase().includes(q)
+    )
+  }
+  return out
 }
 
 /** Eventos de timeline → mensajes normalizados (asc por fecha). */
@@ -284,8 +420,8 @@ async function listCanonicalChannelConversations(orgId: string, limit: number): 
   }
 }
 
-/** Lista unificada, ordenada por actividad reciente. Las fuentes legacy siguen visibles durante expand. */
-export async function listInbox(orgId: string, limit = 100): Promise<InboxConversation[]> {
+/** Lista unificada SIN dedup (compat: página completa como antes del M7). */
+export async function listInboxRaw(orgId: string, limit = 100): Promise<InboxConversation[]> {
   const [canonical, wa, tg, ig, fb] = await Promise.all([
     listCanonicalChannelConversations(orgId, limit),
     listWhatsAppConversations(orgId, limit),
@@ -296,6 +432,46 @@ export async function listInbox(orgId: string, limit = 100): Promise<InboxConver
   return [...canonical, ...wa, ...tg, ...ig, ...fb]
     .sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''))
     .slice(0, limit)
+}
+
+export interface ListInboxOptions extends InboxFilters {
+  limit?: number
+  offset?: number
+}
+
+export interface ListInboxResult {
+  /** Página de conversaciones (dedup aplicado, orden por actividad). */
+  conversations: InboxConversation[]
+  /** Conversaciones legacy suprimidas por el criterio de unificación (M7). */
+  suppressedCount: number
+  /** true si quedan conversaciones después de esta página (paginación F3). */
+  hasMore: boolean
+}
+
+/**
+ * Bandeja única final (M7 + F3): merge de fuentes → dedup "canónico primero"
+ * → filtros server-side → página por offset. READ-ONLY: nunca borra datos;
+ * el historial suprimido sigue en la ficha 360.
+ */
+export async function listInboxPage(orgId: string, options: ListInboxOptions = {}): Promise<ListInboxResult> {
+  const limit = Math.min(Math.max(options.limit ?? 50, 1), 200)
+  const offset = Math.max(options.offset ?? 0, 0)
+  const all = await listInboxRaw(orgId, 200)
+  const { inbox, suppressed } = dedupeInboxConversations(all)
+  const filtered = filterInboxConversations(
+    [...inbox].sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || '')),
+    options,
+  )
+  return {
+    conversations: filtered.slice(offset, offset + limit),
+    suppressedCount: suppressed.length,
+    hasMore: offset + limit < filtered.length,
+  }
+}
+
+/** Lista unificada, ordenada por actividad reciente (compat: sin dedup ni filtros). */
+export async function listInbox(orgId: string, limit = 100): Promise<InboxConversation[]> {
+  return listInboxRaw(orgId, limit)
 }
 
 // ---------- canales disponibles por cliente (IA de cierre) ----------
