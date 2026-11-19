@@ -37,7 +37,7 @@ import {
 export const FIXTURE = {
   timestamp: '1700000000',
   rawBody: '{"eventId":"e2e-fixture-001","orgId":"org-demo","contact":{"phone":"573000000001","name":"Operador Demo"},"message":{"text":"Hola"}}',
-  secret: 'fixture-secreto-compartido-e2e-32-chars-minimo!',
+  secret: 'fixture-secreto-compartido-e2e-32-chars-minimo!', // scan-secrets:allow (fixture dummy I2; jamás un valor real)
 } as const
 
 export const FIXTURE_EXPECTED_HEX = createHmac('sha256', FIXTURE.secret)
@@ -92,7 +92,7 @@ describe('HMAC v2 compartido (CRM ↔ 2A, contrato v1.1.0)', () => {
 })
 
 describe('SSO espejado (CRM → 2A/2B, canje en /studio/login-ecosystem)', () => {
-  const SECRET = 'ecosystem-sso-secreto-compartido-32-chars!'
+  const SECRET = 'ecosystem-sso-secreto-compartido-32-chars!' // scan-secrets:allow (fixture dummy I2; jamás un valor real)
 
   it('formato del token: v1.<payloadB64url>.<macB64url> con scope fijo', () => {
     const token = signEcosystemToken(SECRET, 1_700_000_000_000)
