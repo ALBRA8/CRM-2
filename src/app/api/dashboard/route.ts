@@ -5,6 +5,8 @@ import { handle, json, monthKey, monthLabel } from '../_lib/shared'
 import { loadClientAttrs, stripForeignClients } from '../_lib/clients'
 import { parseOppMeta } from '../_lib/opportunities'
 import { parseResMeta } from '../_lib/reservations'
+import { listInbox } from '@/lib/inbox'
+import { buildAttentionMotivos } from '@/lib/atencion'
 
 /**
  * GET /api/dashboard — métricas con el shape exacto que consume
@@ -174,6 +176,38 @@ export async function GET(req: NextRequest) {
       wonOpportunities: wonCount,
     }
 
+    // ---- (U2) Bloque "Requiere atención": motivos accionables sobre datos
+    // reales de ESTA organización. Falla blandos: si la bandeja o cualquier
+    // conteo no está disponible, el motivo simplemente no aparece.
+    let attention: ReturnType<typeof buildAttentionMotivos> = []
+    try {
+      const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+      const followUpCut = new Date(now.getTime() - 3 * 86_400_000)
+      const [inboxConvs, quotesDraft, quotesAwaiting, appointmentsToday] = await Promise.all([
+        listInbox(orgId, 100).catch(() => []),
+        db.quote.count({ where: { organizationId: orgId, status: 'draft' } }),
+        db.quote.count({ where: { organizationId: orgId, status: 'sent', updatedAt: { lt: followUpCut } } }),
+        db.reservation.count({ where: { organizationId: orgId, startsAt: { gte: dayStart, lt: dayEnd }, status: 'confirmed' } }),
+      ])
+      const inboxPending = inboxConvs.filter((c) => c.lastMessageFrom === 'in').length
+      const opportunitiesOverdue = openOpps.filter((o) => {
+        const meta = parseOppMeta(o.notes)
+        if (!meta.nextActionDate) return false
+        return new Date(`${meta.nextActionDate}T23:59:59`).getTime() <= dayEnd.getTime()
+      }).length
+
+      attention = buildAttentionMotivos({
+        inboxPending,
+        quotesDraft,
+        quotesAwaiting,
+        appointmentsToday,
+        opportunitiesOverdue,
+      })
+    } catch {
+      attention = []
+    }
+
     return json({
       // Shape plano consumido por dashboard-page.tsx
       ...stats,
@@ -182,6 +216,8 @@ export async function GET(req: NextRequest) {
       upcomingReservations: upcoming,
       clientsNeedingFollowUp,
       recentActivity,
+      // (U2) motivos accionables
+      attention,
       // Alias del contrato documentado
       stats,
       pipeline: opportunitiesByStage,

@@ -35,6 +35,8 @@ import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { OnboardingWizard } from '@/components/health/onboarding-wizard'
 import { wizardComplete, wizardSteps, type DoctorResponse } from '@/lib/health-ui'
+import { attentionTotal, type AttentionMotivo } from '@/lib/atencion'
+import { viewFromPath } from '@/lib/views'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -108,6 +110,8 @@ interface DashboardData {
   recentActivity: ActivityItem[]
   monthlyTrend: Array<{ month: string; revenue: number }>
   conversionRate: number
+  /** (U2) Motivos accionables "requiere atención" (puede faltar: API vieja). */
+  attention?: AttentionMotivo[]
 }
 
 interface SuggestionsData {
@@ -445,6 +449,11 @@ export function DashboardPage() {
       {/* (F5) Puesta en marcha guiada: solo admins y solo si falta un paso */}
       <DashboardOnboarding />
 
+      {/* ─── (U2) Requiere atención: motivos accionables a un clic ─── */}
+      {dashboardData?.attention && dashboardData.attention.length > 0 && (
+        <AttentionBlock motivos={dashboardData.attention} />
+      )}
+
       {/* ─── KPI Cards ─── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi, index) => {
@@ -777,4 +786,67 @@ function DashboardOnboarding() {
 
   if (!steps) return null
   return <OnboardingWizard steps={steps} />
+}
+
+/* ──── (U2) Bloque "Requiere atención" ────
+ * Motivos calculados sobre datos reales por la API (src/lib/atencion.ts);
+ * cada tarjeta lleva a la acción en 1 clic. Sin motivos vacíos: si todo
+ * está al día el bloque no se renderiza. */
+function AttentionBlock({ motivos }: { motivos: AttentionMotivo[] }) {
+  const { setView } = useAppStore()
+  const total = attentionTotal(motivos)
+
+  const severityStyle: Record<AttentionMotivo['severity'], { badge: string; ring: string }> = {
+    alta: { badge: 'bg-red-100 text-red-700', ring: 'hover:ring-red-200' },
+    media: { badge: 'bg-amber-100 text-amber-700', ring: 'hover:ring-amber-200' },
+    baja: { badge: 'bg-slate-100 text-slate-600', ring: 'hover:ring-slate-200' },
+  }
+
+  const go = (href: string) => {
+    // Las rutas con parámetros (p. ej. tabs de Ajustes) necesitan la URL
+    // completa; el resto navega por el store (SPA, sin recarga).
+    if (href.includes('?') || href.startsWith('/settings')) {
+      if (typeof window !== 'undefined') window.location.assign(href)
+      return
+    }
+    const v = viewFromPath(href).view
+    if (v && v !== 'landing') setView(v)
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <h2 className="text-sm font-bold text-slate-900">Requiere atención</h2>
+        <Badge className="bg-red-50 text-red-700 border border-red-200 text-[10px] h-5">
+          {total} {total === 1 ? 'asunto' : 'asuntos'}
+        </Badge>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {motivos.map((m, idx) => {
+          const st = severityStyle[m.severity]
+          return (
+            <motion.button
+              key={m.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: idx * 0.05 }}
+              onClick={() => go(m.href)}
+              className={`text-left rounded-xl border border-slate-200 bg-white p-4 ring-2 ring-transparent hover:ring-4 ${st.ring} transition-all hover:shadow-md`}
+              title={m.description}
+            >
+              <div className="flex items-start justify-between">
+                <span className={`text-[10px] font-bold uppercase tracking-wide rounded-full px-2 py-0.5 ${st.badge}`}>
+                  {m.severity}
+                </span>
+                <ChevronRight className="w-4 h-4 text-slate-300" />
+              </div>
+              <p className="text-2xl font-bold text-slate-900 tracking-tight mt-2">{m.count}</p>
+              <p className="text-xs font-semibold text-slate-700 mt-0.5">{m.label}</p>
+              <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">{m.description}</p>
+            </motion.button>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
