@@ -74,6 +74,33 @@ import { OutboxTab } from './outbox-tab'
 import { useAppStore } from '@/lib/store'
 import { TikTokTab } from './tiktok-tab'
 import { FacebookTab, MessengerIcon } from './facebook-tab'
+import {
+  SETTINGS_DOMAINS,
+  firstTabOfDomain,
+  resolveInitialDomain,
+  tabsOfDomain,
+  type SettingsDomainId,
+} from '@/lib/settings-dominios'
+
+// (U4) Iconos por tab, en el mismo orden que src/lib/settings-dominios.ts.
+const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  negocio: Building2,
+  plantillas: Mail,
+  'custom-fields': Database,
+  whatsapp: MessageCircle,
+  conexiones: Smartphone,
+  instagram: Instagram,
+  tiktok: Music2,
+  telegram: Send,
+  facebook: MessengerIcon,
+  email: Mail,
+  google: Cloud,
+  llm: Brain,
+  envios: Zap,
+  seguridad: Shield,
+  team: Users,
+  backup: Database,
+}
 import { PushNotificationsCard } from './push-notifications-card'
 import { TwoFactorCard } from './two-factor-card'
 import { KnowledgeCard } from './knowledge-card'
@@ -350,6 +377,16 @@ export function SettingsPage() {
     const t = new URLSearchParams(window.location.search).get('tab')
     if (t) setInitialTab(t)
   }, [])
+
+  // (U4) Navegación 2 niveles: dominio (Negocio/Canales/Inteligencia/Seguridad
+  // y equipo) + tab dentro del dominio. El dominio sigue al tab inicial para
+  // que los deep-links ?tab= aterricen en su sección correcta.
+  const [domain, setDomain] = useState<SettingsDomainId>(() => resolveInitialDomain('negocio', true))
+  const [activeTab, setActiveTab] = useState('negocio')
+  useEffect(() => {
+    setDomain(resolveInitialDomain(initialTab, isAdminUser))
+    setActiveTab(initialTab)
+  }, [initialTab, isAdminUser])
 
   // Form state - LLM
   const [apiKey, setApiKey] = useState('')
@@ -1062,65 +1099,39 @@ export function SettingsPage() {
         <p className="text-sm text-slate-500 mt-1">Configura las APIs y servicios del CRM</p>
       </div>
 
-      {/* Tabs */}
-      {/* Orden de izquierda a derecha por importancia:
-          1. Negocio (define el comportamiento del CRM y del agente)
-          2. IA del CRM (el motor: LLM que potencia auto-respuestas y sugerencias)
-          3. Google (Calendar/Gmail)
-          4. Canales de comunicación: WhatsApp → Instagram → Telegram → Email
-          5. Operativas: Inventario → Plantillas → Campos Custom → Equipo → Respaldo */}
-      <Tabs key={initialTab} defaultValue={initialTab} className="w-full">
-        <TabsList className="bg-slate-100 min-h-10 h-auto flex-wrap max-w-full">
-          <TabsTrigger value="negocio" className="gap-1.5 text-xs">
-            <Building2 className="w-3.5 h-3.5" /> Negocio
-          </TabsTrigger>
-          <TabsTrigger value="llm" className="gap-1.5 text-xs">
-            <Brain className="w-3.5 h-3.5" /> IA del CRM
-          </TabsTrigger>
-          <TabsTrigger value="google" className="gap-1.5 text-xs">
-            <Cloud className="w-3.5 h-3.5" /> Google
-          </TabsTrigger>
-          <TabsTrigger value="whatsapp" className="gap-1.5 text-xs">
-            <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-          </TabsTrigger>
-          <TabsTrigger value="conexiones" className="gap-1.5 text-xs">
-            <Smartphone className="w-3.5 h-3.5" /> Números WA
-          </TabsTrigger>
-          <TabsTrigger value="instagram" className="gap-1.5 text-xs">
-            <Instagram className="w-3.5 h-3.5" /> Instagram
-          </TabsTrigger>
-          <TabsTrigger value="tiktok" className="gap-1.5 text-xs">
-            <Music2 className="w-3.5 h-3.5" /> TikTok
-          </TabsTrigger>
-          <TabsTrigger value="telegram" className="gap-1.5 text-xs">
-            <Send className="w-3.5 h-3.5" /> Telegram
-          </TabsTrigger>
-          <TabsTrigger value="facebook" className="gap-1.5 text-xs">
-            <MessengerIcon className="w-3.5 h-3.5 text-[#0084FF]" /> Messenger
-          </TabsTrigger>
-          <TabsTrigger value="email" className="gap-1.5 text-xs">
-            <Mail className="w-3.5 h-3.5" /> Email SMTP
-          </TabsTrigger>
-          <TabsTrigger value="plantillas" className="gap-1.5 text-xs">
-            <Mail className="w-3.5 h-3.5" /> Plantillas
-          </TabsTrigger>
-          <TabsTrigger value="custom-fields" className="gap-1.5 text-xs">
-            <Database className="w-3.5 h-3.5" /> Campos Custom
-          </TabsTrigger>
-          <TabsTrigger value="seguridad" className="gap-1.5 text-xs">
-            <Shield className="w-3.5 h-3.5" /> Seguridad
-          </TabsTrigger>
-          <TabsTrigger value="team" className="gap-1.5 text-xs">
-            <Users className="w-3.5 h-3.5" /> Equipo
-          </TabsTrigger>
-          {isAdminUser && (
-            <TabsTrigger value="envios" className="gap-1.5 text-xs">
-              <Zap className="w-3.5 h-3.5" /> Envíos
-            </TabsTrigger>
-          )}
-          <TabsTrigger value="backup" className="gap-1.5 text-xs">
-            <Database className="w-3.5 h-3.5" /> Respaldo
-          </TabsTrigger>
+      {/* Tabs — (U4) 2 niveles: dominio + tab. Los ids de tab NO cambian:
+          los deep-links ?tab= y el retorno del OAuth siguen funcionando. */}
+      <Tabs key={initialTab} value={activeTab} onValueChange={(v) => setActiveTab(v)} className="w-full">
+        {/* Nivel 1: dominios */}
+        <div className="flex flex-wrap gap-1.5">
+          {SETTINGS_DOMAINS.map((d) => (
+            <button
+              key={d.id}
+              onClick={() => {
+                setDomain(d.id)
+                setActiveTab(firstTabOfDomain(d.id, isAdminUser))
+              }}
+              className={`rounded-lg px-3 h-9 text-xs font-bold transition-colors ${
+                domain === d.id
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+              }`}
+              title={d.description}
+            >
+              {d.label}
+            </button>
+          ))}
+        </div>
+        {/* Nivel 2: tabs del dominio activo */}
+        <TabsList className="bg-slate-100 min-h-10 h-auto flex-wrap max-w-full mt-2">
+          {tabsOfDomain(domain, isAdminUser).map((t) => {
+            const Icon = TAB_ICONS[t.id] ?? Database
+            return (
+              <TabsTrigger key={t.id} value={t.id} className="gap-1.5 text-xs">
+                <Icon className="w-3.5 h-3.5" /> {t.label}
+              </TabsTrigger>
+            )
+          })}
         </TabsList>
 
         {/* ============ TAB: Chat AI / LLM ============ */}
