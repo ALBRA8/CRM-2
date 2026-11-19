@@ -36,6 +36,7 @@ import {
 } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { toast } from 'sonner'
+import { notifyError } from '@/components/ui/error-alert'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   agendaWeekDays,
@@ -106,7 +107,7 @@ export function CalendarPage() {
       })
       setReservations(data.reservations as Reservation[])
     } catch {
-      toast.error('Error al cargar reservas')
+      notifyError({}, 'No se pudieron cargar las reservas')
     } finally {
       setLoading(false)
     }
@@ -725,7 +726,7 @@ function ReservationMiniCard({ reservation, onUpdate }: { reservation: Reservati
       toast.success('Reserva cancelada')
       onUpdate()
     } catch {
-      toast.error('Error al cancelar reserva')
+      notifyError({}, 'No se pudo cancelar la reserva')
     }
   }
 
@@ -735,7 +736,7 @@ function ReservationMiniCard({ reservation, onUpdate }: { reservation: Reservati
       toast.success('Reserva completada')
       onUpdate()
     } catch {
-      toast.error('Error al actualizar reserva')
+      notifyError({}, 'No se pudo actualizar la reserva')
     }
   }
 

@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { notifyError } from '@/components/ui/error-alert'
 import { format } from 'date-fns'
 
 interface ReservationFormDialogProps {
@@ -83,7 +84,7 @@ export function ReservationFormDialog({ open, onClose, defaultDate, defaultTime 
       toast.success('Reserva creada exitosamente')
       onClose()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error al crear reserva')
+      notifyError({ message: err instanceof Error ? err.message : undefined }, 'No se pudo crear la reserva')
     } finally {
       setLoading(false)
     }

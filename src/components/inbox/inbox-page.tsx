@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Inbox as InboxIcon, MessageCircle, Send as SendIcon, Instagram, RefreshCw, Loader2, Mic, Music2, Search, Building2, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { notifyError } from '@/components/ui/error-alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -239,7 +240,7 @@ export function InboxPage() {
       } else {
         setMessages((prev) => prev.filter((m) => m.id !== optimistic.id))
         setDraft(text)
-        toast.error(err instanceof Error ? err.message : 'No se pudo enviar el mensaje')
+        notifyError({ message: err instanceof Error ? err.message : undefined }, 'No se pudo enviar el mensaje')
       }
     } finally {
       setSending(false)

@@ -61,6 +61,7 @@ import {
   AlertTriangle,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { notifyError } from '@/components/ui/error-alert'
 import {
   connectionEventUi,
   connectionUiState,
@@ -160,7 +161,7 @@ export function ConnectionsTab() {
       setConnections(data.connections ?? [])
       setPlan(data.plan ?? { maxConnections: 1, activeConnections: 0 })
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error al cargar conexiones')
+      notifyError({ message: err instanceof Error ? err.message : undefined }, 'No se pudieron cargar las conexiones')
     } finally {
       setLoading(false)
     }
@@ -226,7 +227,7 @@ export function ConnectionsTab() {
       setShowAddForm(false)
       await loadConnections()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'No se pudo conectar el número')
+      notifyError({ message: err instanceof Error ? err.message : undefined }, 'No se pudo conectar el número')
     } finally {
       setAdding(false)
     }
@@ -239,7 +240,7 @@ export function ConnectionsTab() {
       toast.success('Token verificado contra Meta')
       await loadConnections()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Verificación falló')
+      notifyError({ message: err instanceof Error ? err.message : undefined }, 'Verificación falló')
       await loadConnections()
     } finally {
       setBusyId(null)
@@ -263,7 +264,7 @@ export function ConnectionsTab() {
       await loadConnections()
       await loadDaemonStatus()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'No se pudo desconectar')
+      notifyError({ message: err instanceof Error ? err.message : undefined }, 'No se pudo desconectar')
     } finally {
       setBusyId(null)
       setDisconnectState({ phase: 'idle' })
@@ -286,7 +287,7 @@ export function ConnectionsTab() {
       const data = (await api.getWaConnection(id)) as { events?: WaConnectionEventView[] }
       setDetailEvents(data.events ?? [])
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'No se pudo cargar el detalle')
+      notifyError({ message: err instanceof Error ? err.message : undefined }, 'No se pudo cargar el detalle')
       setDetailId(null)
     } finally {
       setDetailLoading(false)
@@ -300,7 +301,7 @@ export function ConnectionsTab() {
       await loadDaemonStatus()
       await loadDaemonQr()
     } catch {
-      toast.error('No se pudo iniciar la sesión QR')
+      notifyError({}, 'No se pudo iniciar la sesión QR')
     }
   }
 
@@ -311,7 +312,7 @@ export function ConnectionsTab() {
       setDaemonQr(null)
       await loadDaemonStatus()
     } catch {
-      toast.error('No se pudo cerrar la sesión QR')
+      notifyError({}, 'No se pudo cerrar la sesión QR')
     }
   }
 
@@ -336,7 +337,7 @@ export function ConnectionsTab() {
             toast.success('Número conectado vía Embedded Signup')
             await loadConnections()
           } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Canje de código falló')
+            notifyError({ message: err instanceof Error ? err.message : undefined }, 'Canje de código falló')
           } finally {
             setEsLoading(false)
           }
@@ -346,7 +347,7 @@ export function ConnectionsTab() {
         setEsLoading(false)
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Embedded Signup no disponible')
+      notifyError({ message: err instanceof Error ? err.message : undefined }, 'Embedded Signup no disponible')
       setEsLoading(false)
     }
   }
