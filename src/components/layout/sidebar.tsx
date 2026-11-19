@@ -26,6 +26,7 @@ import {
   ShieldCheck,
   Clock,
   Layers,
+  Link2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -54,6 +55,7 @@ const navItems = [
   { id: 'calendar', label: 'Calendario', icon: Calendar, perm: 'reservations.read' },
   { id: 'quotes', label: 'Cotizaciones', icon: FileText, perm: 'quotes.read' },
   { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, perm: 'whatsapp.read' },
+  { id: 'wa-connections', label: 'Conexiones WA', icon: Link2, perm: 'whatsapp.read' },
   { id: 'inbox', label: 'Bandeja', icon: Inbox, perm: 'whatsapp.read' },
   { id: 'automations', label: 'Automatizaciones', icon: Zap, perm: 'automations.read' },
   { id: 'finances', label: 'Finanzas', icon: DollarSign, perm: 'transactions.read' },
