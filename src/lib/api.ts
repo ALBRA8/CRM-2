@@ -379,6 +379,25 @@ class ApiClient {
     return this.request('/whatsapp/embedded-signup', { method: 'POST', body: JSON.stringify(data) })
   }
 
+  // ── Reconciliación de envíos UNCERTAIN (M8, solo administradores) ──
+  // Lista de intenciones unknown de la organización y resolución con evidencia
+  // obligatoria (providerChecked + nota auditada). Nunca reintenta: registra.
+  async getUncertainOutbound() {
+    return this.request('/outbox/uncertain')
+  }
+
+  async reconcileUncertainOutbound(id: string, data: {
+    resolution: 'sent' | 'failed'
+    providerChecked: boolean
+    evidence: string
+    providerMessageId?: string
+  }) {
+    return this.request(`/outbox/uncertain/${encodeURIComponent(id)}/reconcile`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
   // Bandeja omnicanal (Fase 4) — unifica WhatsApp + Telegram + Instagram
   async getInbox(params?: Record<string, string>) {
     const query = params ? `?${new URLSearchParams(params).toString()}` : ''

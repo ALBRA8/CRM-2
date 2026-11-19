@@ -21,6 +21,7 @@ import { ProductsPage } from '@/components/products/products-page'
 import { WhatsAppPage } from '@/components/whatsapp/whatsapp-page'
 import { WaConnectionsPage } from '@/components/whatsapp/wa-connections-page'
 import { InboxPage } from '@/components/inbox/inbox-page'
+import { OutboxReconciliationPage } from '@/components/outbox/outbox-page'
 import { PushManager } from '@/components/pwa/push-manager'
 import { TeamPage } from '@/components/team/team-page'
 import { ActivityPage } from '@/components/activity/activity-page'
@@ -196,6 +197,8 @@ function renderView(view: string): ReactNode {
       return <WaConnectionsPage />
     case 'inbox':
       return <InboxPage />
+    case 'outbox':
+      return <OutboxReconciliationPage />
     case 'automations':
       return <AutomationsPage />
     case 'quotes':
