@@ -22,6 +22,7 @@ import { WhatsAppPage } from '@/components/whatsapp/whatsapp-page'
 import { WaConnectionsPage } from '@/components/whatsapp/wa-connections-page'
 import { InboxPage } from '@/components/inbox/inbox-page'
 import { OutboxReconciliationPage } from '@/components/outbox/outbox-page'
+import { HealthPage } from '@/components/health/health-page'
 import { PushManager } from '@/components/pwa/push-manager'
 import { TeamPage } from '@/components/team/team-page'
 import { ActivityPage } from '@/components/activity/activity-page'
@@ -199,6 +200,8 @@ function renderView(view: string): ReactNode {
       return <InboxPage />
     case 'outbox':
       return <OutboxReconciliationPage />
+    case 'health':
+      return <HealthPage />
     case 'automations':
       return <AutomationsPage />
     case 'quotes':

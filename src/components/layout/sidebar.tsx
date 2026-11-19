@@ -28,6 +28,7 @@ import {
   Layers,
   Link2,
   ShieldAlert,
+  HeartPulse,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -59,6 +60,7 @@ const navItems = [
   { id: 'wa-connections', label: 'Conexiones WA', icon: Link2, perm: 'whatsapp.read' },
   { id: 'inbox', label: 'Bandeja', icon: Inbox, perm: 'whatsapp.read' },
   { id: 'outbox', label: 'Reconciliación', icon: ShieldAlert, perm: 'team.manage' },
+  { id: 'health', label: 'Salud', icon: HeartPulse, perm: 'team.manage' },
   { id: 'automations', label: 'Automatizaciones', icon: Zap, perm: 'automations.read' },
   { id: 'finances', label: 'Finanzas', icon: DollarSign, perm: 'transactions.read' },
   { id: 'reports', label: 'Reportes', icon: BarChart3, perm: 'reports.read' },

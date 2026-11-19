@@ -27,6 +27,7 @@ const STATIC_VIEW_PATH: Record<string, string> = {
   'wa-connections': '/whatsapp/conexiones',
   inbox: '/inbox',
   outbox: '/outbox',
+  health: '/health',
   automations: '/automations',
   finances: '/finances',
   reports: '/reports',
@@ -57,6 +58,7 @@ export const VIEW_PERMISSIONS: Record<string, string> = {
   // Reconciliación de envíos UNCERTAIN: operación administrativa (team.manage
   // es exclusiva de owner/admin/superadmin en ROLE_PERMISSIONS).
   outbox: 'team.manage',
+  health: 'team.manage',
   automations: 'automations.read',
   finances: 'transactions.read',
   reports: 'reports.read',

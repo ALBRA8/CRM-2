@@ -379,6 +379,20 @@ class ApiClient {
     return this.request('/whatsapp/embedded-signup', { method: 'POST', body: JSON.stringify(data) })
   }
 
+  // ── Salud del sistema (F5/F6-T02): doctor + wizard de puesta en marcha ──
+  async getDoctor() {
+    return this.request('/doctor')
+  }
+
+  // Fix determinista del doctor (?fix=1): SOLO runs huérfanos → failed de la org.
+  async runDoctorFix() {
+    return this.request('/doctor?fix=1')
+  }
+
+  async getHealthSetup() {
+    return this.request('/health/setup')
+  }
+
   // ── Dashboard "Requiere atención" (F4/U2): motivos accionables ──
   async getAttentionMotives() {
     return this.request('/dashboard/attention')
