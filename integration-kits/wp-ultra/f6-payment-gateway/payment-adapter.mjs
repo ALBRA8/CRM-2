@@ -31,6 +31,10 @@ const ENV_BY_PROVIDER = {
   stripe: ['STRIPE_SECRET_KEY'],
 }
 
+/**
+ * Fábrica del adaptador.
+ * @param {{ policyJson?: string, env?: Record<string, string | undefined> }} opts
+ */
 export function createPaymentAdapter({ policyJson, env = process.env } = {}) {
   let policy = {}
   if (policyJson) {
@@ -56,6 +60,7 @@ export function createPaymentAdapter({ policyJson, env = process.env } = {}) {
      * Crea el cobro. Devuelve { provider, simulator, reference, status } o lanza.
      * Con proveedor real sin credenciales → error EXPLÍCITO de configuración
      * (jamás degrada a simulador en silencio: eso ocultaría un cobro no hecho).
+     * @param {{ orgId: string, amount: number, currency?: string, reference?: string }} charge
      */
     async createCharge({ orgId, amount, currency = 'COP', reference }) {
       const provider = this.resolveProvider(orgId)

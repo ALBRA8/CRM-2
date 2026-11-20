@@ -23,6 +23,10 @@ import Database from 'better-sqlite3'
 import { mkdirSync } from 'fs'
 import { dirname } from 'path'
 
+/**
+ * Fábrica del gate de pacing.
+ * @param {{ dbPath?: string, clock?: () => number }} opts
+ */
 export function createDurablePacing({ dbPath, clock = () => Date.now() } = {}) {
   if (!dbPath) throw new Error('[pacing] dbPath es requerido (fail-closed: sin persistencia no hay pacing durable)')
   mkdirSync(dirname(dbPath), { recursive: true })

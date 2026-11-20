@@ -32,6 +32,7 @@ describe('kit F6 — payment-adapter', () => {
     await expect(adapter.createCharge({ orgId: 'org-a', amount: -5 })).rejects.toThrow(/número positivo/)
     await expect(adapter.createCharge({ orgId: 'org-a', amount: 0 })).rejects.toThrow(/número positivo/)
     await expect(adapter.createCharge({ orgId: 'org-a', amount: 100, currency: 'BTC' })).rejects.toThrow(/moneda no soportada/)
+    // @ts-expect-error — guarda deliberadamente violada (orgId ausente)
     await expect(adapter.createCharge({ amount: 100 })).rejects.toThrow(/orgId requerido/)
     await expect(adapter.createCharge({ orgId: 'org-a', amount: 100, currency: 'COP' })).resolves.toBeTruthy()
   })

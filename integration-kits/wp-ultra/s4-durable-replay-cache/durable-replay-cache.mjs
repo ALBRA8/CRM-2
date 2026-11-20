@@ -28,6 +28,10 @@ export class DurableReplayCacheError extends Error {
   }
 }
 
+/**
+ * Fábrica de la cache durable.
+ * @param {{ dbPath?: string, retentionMs?: number }} opts
+ */
 export function createDurableReplayCache({ dbPath, retentionMs = 6 * 60 * 60 * 1000 } = {}) {
   if (!dbPath) {
     throw new DurableReplayCacheError('dbPath es requerido (fail-closed: sin persistencia no hay cache durable)')
