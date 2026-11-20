@@ -62,6 +62,7 @@ import {
   Instagram,
   Music2,
   Search,
+  Link2,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
@@ -74,6 +75,7 @@ import { FacebookTab, MessengerIcon } from './facebook-tab'
 import { PushNotificationsCard } from './push-notifications-card'
 import { TwoFactorCard } from './two-factor-card'
 import { KnowledgeCard } from './knowledge-card'
+import { ConnectionsTab } from './connections-tab'
 // Force recompile trigger
 
 // Use the Next.js API proxy to reach WhatsApp daemon (works from any hostname)
@@ -1079,6 +1081,9 @@ export function SettingsPage() {
           <TabsTrigger value="whatsapp" className="gap-1.5 text-xs">
             <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
           </TabsTrigger>
+          <TabsTrigger value="conexiones" className="gap-1.5 text-xs">
+            <Link2 className="w-3.5 h-3.5" /> Conexiones
+          </TabsTrigger>
           <TabsTrigger value="instagram" className="gap-1.5 text-xs">
             <Instagram className="w-3.5 h-3.5" /> Instagram
           </TabsTrigger>
@@ -1110,6 +1115,11 @@ export function SettingsPage() {
             <Database className="w-3.5 h-3.5" /> Respaldo
           </TabsTrigger>
         </TabsList>
+
+        {/* ============ TAB: Conexiones WhatsApp multi-número (F2) ============ */}
+        <TabsContent value="conexiones" className="space-y-6 mt-4">
+          <ConnectionsTab />
+        </TabsContent>
 
         {/* ============ TAB: Chat AI / LLM ============ */}
         <TabsContent value="llm" className="space-y-6 mt-4">
