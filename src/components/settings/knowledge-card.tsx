@@ -187,11 +187,11 @@ export function KnowledgeCard() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium text-slate-900">{entry.title}</span>
-                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${CATEGORY_BADGE[entry.category] ?? CATEGORY_BADGE.general}`}>
+                      <Badge variant="outline" className={`text-[13px] px-1.5 py-0 ${CATEGORY_BADGE[entry.category] ?? CATEGORY_BADGE.general}`}>
                         {CATEGORY_LABELS[entry.category] ?? entry.category}
                       </Badge>
                       {!entry.isActive && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-slate-50 text-slate-400 border-slate-200">
+                        <Badge variant="outline" className="text-[13px] px-1.5 py-0 bg-slate-50 text-slate-400 border-slate-200">
                           Inactiva
                         </Badge>
                       )}
@@ -257,7 +257,7 @@ export function KnowledgeCard() {
                   value={form.content}
                   onChange={(e) => setForm({ ...form, content: e.target.value })}
                 />
-                <p className="text-[11px] text-slate-400">{form.content.length}/8000 caracteres</p>
+                <p className="text-[13px] text-slate-400">{form.content.length}/8000 caracteres</p>
               </div>
             </div>
             <DialogFooter>

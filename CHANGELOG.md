@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-11-20 — U5: pulido visual (tipografía 13px, dark mode consistente, estados vacíos)
+
+- **`feat(u5)`** (F4-T05, rama `impl/u5-pulido-visual`):
+  - **Escala tipográfica mínima 13px**: `text-xs` se redefinió como TOKEN en `src/app/globals.css` vía `@utility` (13px/1.45), de modo que incluso sus variantes responsivas heredan el mínimo. Barrido de las 195 clases arbitrarias `text-[9px|10px|11px|12px]` → `text-[13px]` en 30 archivos. Ninguna pantalla tiene ya texto por debajo de 13px.
+  - **Dark mode consistente (decisión: completarlo)**: la capa `.dark` de globals.css (superficies, textos, bordes, estados semánticos, scrollbars) se BLOQUEA con un test invariante — si alguien borra el ThemeProvider, el ThemeToggle del header o el remapeo de superficies, CI lo detecta (el modo oscuro a medias era la queja del diagnóstico v1).
+  - **Estados vacíos reutilizables**: nuevo `src/components/ui/empty-state.tsx` (icono + título + descripción + CTA, tamaño sm/md) adoptado en las 6 pantallas principales: Bandeja omnicanal (con CTA «Conectar un número»), WhatsApp clásico, Cotizaciones, Automatizaciones, Clientes (con variante «Sin resultados» al filtrar) y Productos. Ninguna pantalla principal vuelve a pintar vacíos artesanales sin guía.
+  - **Invariante CI**: `tests/unit/pulido-visual.test.ts` (9 tests) bloquea: cero clases sub-13px en `src/`, token `text-xs` = 13px, sistema de tema completo y EmptyState adoptado en las 6 pantallas.
+  - **Verificación**: `tsc --noEmit` 0 errores; eslint limpio; `next build` OK; suite 961/964 (los 4.º fallo — verify-doc-figures — se resolvió actualizando el bloque canónico a 108 archivos de prueba y 105 componentes UI; los otros 3 son preexistentes del proxy legacy del daemon).
+
 ## 2026-11-20 — Construcción del plan definitivo v2.0 (oleadas F2→O2) y cifras conciliadas (E4)
 
 - **Construcción** (rama `docs/plan-definitivo-crm-2026-11-19` + ramas `impl/*`): F2 (UI de conexiones WhatsApp multi-número), M7 (criterio de unificación de bandeja), F3 (filtros y búsqueda server-side), M8 (conciliación operable UNCERTAIN), E7 (test backup/restore roundtrip), F4 (agenda semana/día), F5 (pantalla de Salud + wizard de puesta en marcha), U1 (navegación 5+1, una sola bandeja), U2 (dashboard "Requiere atención"), U3 (catálogo de errores accionables), U4 (ajustes por dominio), I3 (contratos del ecosistema), O3 (instalador idempotente), S6 (saneamiento de scripts e2e históricos), O2 (runbook único).

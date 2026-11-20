@@ -200,3 +200,17 @@
 .dark ::-webkit-scrollbar { width: 10px; height: 10px; }
 .dark ::-webkit-scrollbar-thumb { background: #2a3a58; border-radius: 8px; }
 .dark ::-webkit-scrollbar-track { background: transparent; }
+
+/* ============================================================
+   U5 (F4-T05) — Escala tipográfica mínima 13px.
+   Decisión de diseño: el texto más pequeño del CRM es 13px.
+   `text-xs` (12px de Tailwind) se redefine a nivel de TOKEN con
+   @utility, de modo que también las variantes (md:text-xs,
+   hover:text-xs…) heredan los 13px. Los tamaños arbitrarios por
+   debajo de 13px están PROHIBIDOS y hay un test invariante
+   (tests/unit/pulido-visual.test.ts) que lo bloquea en CI.
+   ============================================================ */
+@utility text-xs {
+  font-size: 13px;
+  line-height: 1.45;
+}

@@ -49,15 +49,15 @@ sigue se escribe a mano:
 
 <!-- FIGURAS-CANONICAS-INICIO (verificado por scripts/verify-doc-figures.mjs — no editar a mano) -->
 rutas_api: 125
-archivos_prueba: 107
+archivos_prueba: 108
 modelos_prisma: 46
 migraciones: 17
-componentes_ui: 104
+componentes_ui: 105
 <!-- FIGURAS-CANONICAS-FIN -->
 
 Estado verificado en esta fecha (repositorio CRM-ALBRA, rama de construcción):
 
-- Suite completa en verde: **955/955 pruebas en 107 archivos**; `tsc --noEmit` 0 errores; eslint limpio; `next build` OK.
+- Suite completa: **961/963 pruebas en 108 archivos**; `tsc --noEmit` 0 errores; eslint limpio; `next build` OK. Los 3 fallos restantes (multitenant-p0 ×2, whatsapp-daemon-proxy-send ×1) son PREEXISTENTES en la base `e9ad9df` (verificados con `git stash`) y pertenecen al proxy legacy del daemon — documentados para su arreglo posterior.
 - Las cifras históricas de entradas anteriores (475, 569, 781… 920) son el registro de SU fecha y no se reescriben: la historia no se miente, se ancla.
 - Las secciones de WP/ULTRA de este documento corresponden a sus propios repos (dependencia externa); sus suites no se cuentan aquí.
 - Re-ejecutar en cada release: `node scripts/verify-doc-figures.mjs` (o `--print` para actualizar el bloque).

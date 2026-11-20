@@ -254,7 +254,7 @@ export function FinancesPage() {
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs text-slate-400">{format(new Date(t.date), "d MMM yyyy", { locale: es })}</span>
                         {t.category && (
-                          <Badge variant="outline" className="text-[10px]">
+                          <Badge variant="outline" className="text-[13px]">
                             {categoryLabels[t.category] ?? t.category}
                           </Badge>
                         )}

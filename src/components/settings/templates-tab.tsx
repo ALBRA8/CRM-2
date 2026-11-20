@@ -198,8 +198,8 @@ export function TemplatesTab() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium text-slate-900 truncate">{t.name}</p>
-                  <Badge variant="outline" className="text-[10px]">{t.channel}</Badge>
-                  {t.category && <Badge variant="outline" className="text-[10px]">{categoryLabels[t.category] || t.category}</Badge>}
+                  <Badge variant="outline" className="text-[13px]">{t.channel}</Badge>
+                  {t.category && <Badge variant="outline" className="text-[13px]">{categoryLabels[t.category] || t.category}</Badge>}
                 </div>
                 <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">{t.content}</p>
               </div>

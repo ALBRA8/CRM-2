@@ -249,7 +249,7 @@ export function ClientTimeline({ clientId }: ClientTimelineProps) {
           <div className="max-h-[560px] overflow-y-auto pr-1" aria-label="Línea de tiempo del cliente">
             {Object.entries(groups).map(([label, groupEvents]) => (
               <div key={label} className="mb-6 last:mb-0">
-                <h4 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3 sticky top-0 bg-white py-1 z-10">
+                <h4 className="text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-3 sticky top-0 bg-white py-1 z-10">
                   {label}
                 </h4>
                 <div className="relative">
@@ -279,13 +279,13 @@ export function ClientTimeline({ clientId }: ClientTimelineProps) {
                             <div className="flex-1 min-w-0 bg-white border border-slate-100 rounded-lg p-3 shadow-sm hover:border-slate-200 transition-colors">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="text-sm font-medium text-slate-900">{ev.title}</p>
-                                <Badge variant="outline" className={`text-[10px] ${badgeColor}`}>
+                                <Badge variant="outline" className={`text-[13px] ${badgeColor}`}>
                                   {sourceLabels[ev.source] ?? ev.source}
                                 </Badge>
-                                <Badge variant="outline" className="text-[10px] font-normal text-slate-400">
+                                <Badge variant="outline" className="text-[13px] font-normal text-slate-400">
                                   {typeLabels[ev.type] ?? ev.type}
                                 </Badge>
-                                <span className="text-[11px] text-slate-400 ml-auto flex-shrink-0">
+                                <span className="text-[13px] text-slate-400 ml-auto flex-shrink-0">
                                   {formatDistanceToNow(new Date(ev.createdAt), { addSuffix: true, locale: es })}
                                 </span>
                               </div>
@@ -297,14 +297,14 @@ export function ClientTimeline({ clientId }: ClientTimelineProps) {
                                   {metaEntries.map(([k, v]) => (
                                     <span
                                       key={k}
-                                      className="text-[10px] bg-slate-50 border border-slate-100 text-slate-400 rounded px-1.5 py-0.5 max-w-full truncate"
+                                      className="text-[13px] bg-slate-50 border border-slate-100 text-slate-400 rounded px-1.5 py-0.5 max-w-full truncate"
                                     >
                                       {k}: {v}
                                     </span>
                                   ))}
                                 </div>
                               )}
-                              <p className="text-[10px] text-slate-300 mt-1.5 sm:hidden">
+                              <p className="text-[13px] text-slate-300 mt-1.5 sm:hidden">
                                 {format(new Date(ev.createdAt), "d MMM, HH:mm", { locale: es })}
                               </p>
                             </div>

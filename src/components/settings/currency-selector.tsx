@@ -91,7 +91,7 @@ export function CurrencySelector() {
               <p className="text-xs font-medium text-emerald-900 dark:text-emerald-100">
                 Vista previa: <span className="font-mono">{activeInfo.code}</span>
               </p>
-              <p className="text-[11px] text-emerald-700 dark:text-emerald-300">
+              <p className="text-[13px] text-emerald-700 dark:text-emerald-300">
                 1,234.56 se muestra como: <strong>{new Intl.NumberFormat(activeInfo.locale, { style: 'currency', currency: activeInfo.code }).format(1234.56)}</strong>
               </p>
             </div>

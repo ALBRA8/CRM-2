@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Progress } from '@/components/ui/progress'
 import {
   Table,
@@ -290,7 +291,7 @@ export function ClientsList() {
 
           {/* Source Filter Buttons */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] font-medium text-slate-500 self-center mr-0.5">Fuente:</span>
+            <span className="text-[13px] font-medium text-slate-500 self-center mr-0.5">Fuente:</span>
             {sourceFilters.map((f) => (
               <Button
                 key={f.value}
@@ -299,8 +300,8 @@ export function ClientsList() {
                 onClick={() => { setSourceFilter(f.value); setPage(1) }}
                 className={
                   sourceFilter === f.value
-                    ? 'h-6 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white'
-                    : 'h-6 text-[11px]'
+                    ? 'h-6 text-[13px] bg-emerald-600 hover:bg-emerald-700 text-white'
+                    : 'h-6 text-[13px]'
                 }
               >
                 {f.label}
@@ -310,7 +311,7 @@ export function ClientsList() {
 
           {/* Temperature Filter Buttons */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] font-medium text-slate-500 self-center mr-0.5">Temp:</span>
+            <span className="text-[13px] font-medium text-slate-500 self-center mr-0.5">Temp:</span>
             {tempFilters.map((f) => (
               <Button
                 key={f.value}
@@ -319,8 +320,8 @@ export function ClientsList() {
                 onClick={() => { setTemperatureFilter(f.value); setPage(1) }}
                 className={
                   temperatureFilter === f.value
-                    ? 'h-6 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white'
-                    : 'h-6 text-[11px]'
+                    ? 'h-6 text-[13px] bg-emerald-600 hover:bg-emerald-700 text-white'
+                    : 'h-6 text-[13px]'
                 }
               >
                 {f.value !== 'all' && temperatureConfig[f.value]?.icon}
@@ -367,29 +368,24 @@ export function ClientsList() {
               ))}
             </div>
           ) : clients.length === 0 ? (
-            <div className="p-16 text-center">
-              <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <UserRound className="w-10 h-10 text-emerald-300" />
-              </div>
-              <h3 className="text-lg font-semibold text-slate-700">
-                {debouncedSearch || sourceFilter !== 'all' || temperatureFilter !== 'all' || viewFilters.length > 0
+            <EmptyState
+              icon={UserRound}
+              title={
+                debouncedSearch || sourceFilter !== 'all' || temperatureFilter !== 'all' || viewFilters.length > 0
                   ? 'Sin resultados'
-                  : 'Agrega tu primer cliente'}
-              </h3>
-              <p className="text-sm text-slate-400 mt-1 max-w-sm mx-auto">
-                {debouncedSearch || sourceFilter !== 'all' || temperatureFilter !== 'all' || viewFilters.length > 0
+                  : 'Agrega tu primer cliente'
+              }
+              description={
+                debouncedSearch || sourceFilter !== 'all' || temperatureFilter !== 'all' || viewFilters.length > 0
                   ? 'Intenta ajustar los filtros de búsqueda para encontrar lo que buscas'
-                  : 'Comienza registrando tus contactos y prospectos para gestionarlos fácilmente'}
-              </p>
-              {!debouncedSearch && sourceFilter === 'all' && temperatureFilter === 'all' && viewFilters.length === 0 && (
-                <Button
-                  onClick={() => { setEditClient(null); setShowForm(true) }}
-                  className="mt-6 bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  <Plus className="w-4 h-4 mr-2" /> Agregar Cliente
-                </Button>
-              )}
-            </div>
+                  : 'Comienza registrando tus contactos y prospectos para gestionarlos fácilmente'
+              }
+              action={
+                !debouncedSearch && sourceFilter === 'all' && temperatureFilter === 'all' && viewFilters.length === 0
+                  ? { label: 'Agregar Cliente', icon: Plus, onClick: () => { setEditClient(null); setShowForm(true) } }
+                  : undefined
+              }
+            />
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -423,7 +419,7 @@ export function ClientsList() {
                         >
                           <TableCell className="py-2">
                             <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 group-hover:bg-emerald-200 transition-colors">
+                              <div className="w-7 h-7 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-[13px] font-bold flex-shrink-0 group-hover:bg-emerald-200 transition-colors">
                                 {client.name.charAt(0).toUpperCase()}
                               </div>
                               <div className="min-w-0">
@@ -442,22 +438,22 @@ export function ClientsList() {
                           </TableCell>
                           <TableCell className="hidden lg:table-cell">
                             {srcConf ? (
-                              <Badge variant="outline" className="text-[11px] font-normal gap-1">
+                              <Badge variant="outline" className="text-[13px] font-normal gap-1">
                                 {srcConf.icon}
                                 {srcConf.label}
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="text-[11px] font-normal">{client.source}</Badge>
+                              <Badge variant="outline" className="text-[13px] font-normal">{client.source}</Badge>
                             )}
                           </TableCell>
                           <TableCell>
                             {tempConf ? (
-                              <Badge variant="outline" className={`text-[11px] border gap-1 ${tempConf.color}`}>
+                              <Badge variant="outline" className={`text-[13px] border gap-1 ${tempConf.color}`}>
                                 {tempConf.icon}
                                 {tempConf.label}
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="text-[11px]">{client.temperature}</Badge>
+                              <Badge variant="outline" className="text-[13px]">{client.temperature}</Badge>
                             )}
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
@@ -465,10 +461,10 @@ export function ClientsList() {
                               <div className="w-14">
                                 <Progress value={client.score} className={`h-1.5 ${scoreColor(client.score)}`} />
                               </div>
-                              <span className="text-[11px] text-slate-500 w-6 text-right">{client.score}</span>
+                              <span className="text-[13px] text-slate-500 w-6 text-right">{client.score}</span>
                             </div>
                           </TableCell>
-                          <TableCell className="text-[11px] text-slate-400 hidden xl:table-cell">
+                          <TableCell className="text-[13px] text-slate-400 hidden xl:table-cell">
                             {client.lastContactAt
                               ? formatDistanceToNow(new Date(client.lastContactAt), { addSuffix: true, locale: es })
                               : <span className="text-slate-300">—</span>}

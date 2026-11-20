@@ -88,7 +88,7 @@ export function EcosystemDialog({ open, onOpenChange }: { open: boolean; onOpenC
               <LayoutDashboard className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">CRM ALBRA <span className="text-[10px] uppercase tracking-wide text-emerald-600 dark:text-emerald-400">Capa 1 · estás aquí</span></p>
+              <p className="text-sm font-medium">CRM ALBRA <span className="text-[13px] uppercase tracking-wide text-emerald-600 dark:text-emerald-400">Capa 1 · estás aquí</span></p>
               <p className="text-xs text-muted-foreground">Clientes, pipeline, finanzas, inbox y WhatsApp multi-organización.</p>
             </div>
           </div>
@@ -103,7 +103,7 @@ export function EcosystemDialog({ open, onOpenChange }: { open: boolean; onOpenC
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium">
-                    {s.title} <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{s.tier}</span>
+                    {s.title} <span className="text-[13px] uppercase tracking-wide text-muted-foreground">{s.tier}</span>
                   </p>
                   <p className="text-xs text-muted-foreground truncate">{s.desc}</p>
                 </div>

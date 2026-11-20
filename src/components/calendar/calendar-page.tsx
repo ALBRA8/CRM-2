@@ -244,7 +244,7 @@ export function CalendarPage() {
               <h2 className="text-sm font-bold text-slate-900 tracking-tight capitalize">
                 {periodTitle}
               </h2>
-              <Badge variant="outline" className="text-[10px] px-2 py-0 h-5 border-slate-200 text-slate-500">
+              <Badge variant="outline" className="text-[13px] px-2 py-0 h-5 border-slate-200 text-slate-500">
                 {reservations.length} reservas
               </Badge>
             </div>
@@ -289,7 +289,7 @@ export function CalendarPage() {
               <CardContent className="p-3.5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">
+                    <p className="text-[13px] text-slate-400 uppercase tracking-widest font-bold">
                       {selectedDate ? format(selectedDate, 'EEEE', { locale: es }) : ''}
                     </p>
                     <h3 className="text-lg font-bold text-slate-900 capitalize mt-0.5 leading-tight">
@@ -307,13 +307,13 @@ export function CalendarPage() {
 
                 {selectedDayReservations.length > 0 && (
                   <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-slate-100">
-                    <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] h-5">
+                    <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[13px] h-5">
                       {selectedDayReservations.length} {selectedDayReservations.length === 1 ? 'reserva' : 'reservas'}
                     </Badge>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-5 text-[10px] text-emerald-600 hover:text-emerald-700 gap-0.5 px-1.5"
+                      className="h-5 text-[13px] text-emerald-600 hover:text-emerald-700 gap-0.5 px-1.5"
                       onClick={() => openFormAt(selectedDate)}
                     >
                       <Plus className="w-2.5 h-2.5" /> Agregar
@@ -358,11 +358,11 @@ export function CalendarPage() {
                       <CalendarDays className="w-6 h-6 text-slate-300" />
                     </div>
                     <p className="text-xs font-medium text-slate-400">Sin reservas</p>
-                    <p className="text-[10px] text-slate-300 mt-0.5">Este día no tiene citas</p>
+                    <p className="text-[13px] text-slate-300 mt-0.5">Este día no tiene citas</p>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="mt-2 text-[10px] h-6 gap-1 border-dashed"
+                      className="mt-2 text-[13px] h-6 gap-1 border-dashed"
                       onClick={() => openFormAt(selectedDate)}
                     >
                       <Plus className="w-2.5 h-2.5" /> Agendar
@@ -407,7 +407,7 @@ function MonthView({
         {WEEKDAY_LABELS.map((day) => (
           <div
             key={day}
-            className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest py-1.5"
+            className="text-center text-[13px] font-bold text-slate-400 uppercase tracking-widest py-1.5"
           >
             {day}
           </div>
@@ -521,7 +521,7 @@ function WeekView({
                   isTodayDate ? 'bg-emerald-50 hover:bg-emerald-100' : 'bg-slate-50/60 hover:bg-slate-100'
                 }`}
               >
-                <span className={`text-[10px] font-bold uppercase tracking-widest ${isTodayDate ? 'text-emerald-700' : 'text-slate-400'}`}>
+                <span className={`text-[13px] font-bold uppercase tracking-widest ${isTodayDate ? 'text-emerald-700' : 'text-slate-400'}`}>
                   {format(day, 'EEE', { locale: es })}
                 </span>
                 <span className={`text-xs font-bold ${isTodayDate ? 'text-emerald-700' : 'text-slate-600'}`}>
@@ -546,14 +546,14 @@ function WeekView({
                         >
                           <div className="flex items-center gap-1">
                             <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${sc.dot}`} />
-                            <span className="text-[10px] font-bold text-slate-700">{format(start, 'HH:mm')}</span>
-                            <span className="text-[9px] text-slate-400">{res.duration}m</span>
+                            <span className="text-[13px] font-bold text-slate-700">{format(start, 'HH:mm')}</span>
+                            <span className="text-[13px] text-slate-400">{res.duration}m</span>
                           </div>
-                          <p className="text-[10px] font-semibold text-slate-800 truncate mt-0.5 leading-tight">
+                          <p className="text-[13px] font-semibold text-slate-800 truncate mt-0.5 leading-tight">
                             {res.title}
                           </p>
                           {res.client?.name && (
-                            <p className="text-[9px] text-slate-400 truncate">{res.client.name}</p>
+                            <p className="text-[13px] text-slate-400 truncate">{res.client.name}</p>
                           )}
                         </button>
                       )
@@ -565,13 +565,13 @@ function WeekView({
                         className="w-full text-left rounded-md px-1.5 py-1 border border-dashed border-slate-200 text-slate-400 hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50/40 transition-all"
                         title="Crear cita en este hueco"
                       >
-                        <span className="text-[9px] font-semibold">
+                        <span className="text-[13px] font-semibold">
                           Libre {minutesToLabel(g.startMinutes)}–{minutesToLabel(g.endMinutes)}
                         </span>
                       </button>
                     ))}
                     {items.length === 0 && gaps.length === 0 && (
-                      <p className="text-[9px] text-slate-300 text-center py-2">Sin huecos</p>
+                      <p className="text-[13px] text-slate-300 text-center py-2">Sin huecos</p>
                     )}
                   </>
                 )}
@@ -630,7 +630,7 @@ function DayView({
             {/* Hour labels */}
             <div className="w-12 flex-shrink-0 pt-1">
               {hours.slice(0, -1).map((h) => (
-                <div key={h} className="text-[10px] font-semibold text-slate-400 text-right pr-2" style={{ height: HOUR_HEIGHT }}>
+                <div key={h} className="text-[13px] font-semibold text-slate-400 text-right pr-2" style={{ height: HOUR_HEIGHT }}>
                   {minutesToLabel(h)}
                 </div>
               ))}
@@ -660,7 +660,7 @@ function DayView({
                   >
                     <div className="flex items-center gap-1.5">
                       <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${sc.dot}`} />
-                      <span className="text-[10px] font-bold text-slate-700">
+                      <span className="text-[13px] font-bold text-slate-700">
                         {minutesToLabel(startMin)}–{minutesToLabel(startMin + (res.duration || 60))}
                       </span>
                       <Badge className={`text-[8px] h-4 px-1 border-0 ${sc.bg} ${sc.text} font-medium`}>
@@ -669,7 +669,7 @@ function DayView({
                     </div>
                     <p className="text-xs font-bold text-slate-900 truncate mt-0.5 leading-tight">{res.title}</p>
                     {res.client?.name && (
-                      <p className="text-[10px] text-slate-500 truncate flex items-center gap-0.5">
+                      <p className="text-[13px] text-slate-500 truncate flex items-center gap-0.5">
                         <User className="w-2.5 h-2.5 flex-shrink-0" /> {res.client.name}
                       </p>
                     )}
@@ -683,7 +683,7 @@ function DayView({
 
       {/* Free gaps sidebar */}
       <div className="w-44 flex-shrink-0 border-l border-slate-100 p-2 overflow-y-auto">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1 mb-1.5">
+        <p className="text-[13px] font-bold text-slate-400 uppercase tracking-widest px-1 mb-1.5">
           Huecos libres
         </p>
         {loading ? (
@@ -697,19 +697,19 @@ function DayView({
                 className="w-full text-left rounded-md px-2 py-1.5 border border-dashed border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40 transition-all"
                 title="Crear cita en este hueco"
               >
-                <span className="text-[10px] font-semibold text-slate-500">
+                <span className="text-[13px] font-semibold text-slate-500">
                   {minutesToLabel(g.startMinutes)}–{minutesToLabel(g.endMinutes)}
                 </span>
-                <span className="text-[9px] text-slate-400 block">{g.minutes} min libres</span>
+                <span className="text-[13px] text-slate-400 block">{g.minutes} min libres</span>
               </button>
             ))}
           </div>
         ) : (
-          <p className="text-[10px] text-slate-300 px-1">Día completo, sin huecos</p>
+          <p className="text-[13px] text-slate-300 px-1">Día completo, sin huecos</p>
         )}
         <button
           onClick={() => onOpenForm(day)}
-          className="mt-2 w-full flex items-center justify-center gap-1 rounded-md px-2 py-1.5 bg-emerald-600 text-white text-[10px] font-semibold hover:bg-emerald-700 transition-colors"
+          className="mt-2 w-full flex items-center justify-center gap-1 rounded-md px-2 py-1.5 bg-emerald-600 text-white text-[13px] font-semibold hover:bg-emerald-700 transition-colors"
         >
           <Plus className="w-3 h-3" /> Nueva cita
         </button>
@@ -750,7 +750,7 @@ function ReservationMiniCard({ reservation, onUpdate }: { reservation: Reservati
           <div className="min-w-0">
             <h4 className="text-xs font-bold text-slate-900 truncate leading-tight">{reservation.title}</h4>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-[10px] text-slate-500 flex items-center gap-0.5">
+              <span className="text-[13px] text-slate-500 flex items-center gap-0.5">
                 <Clock className="w-2.5 h-2.5" />
                 {format(new Date(reservation.date), 'HH:mm', { locale: es })} · {reservation.duration}min
               </span>
@@ -766,13 +766,13 @@ function ReservationMiniCard({ reservation, onUpdate }: { reservation: Reservati
       {(reservation.client || reservation.location) && (
         <div className="flex flex-wrap gap-x-2.5 gap-y-0 mt-1.5 ml-3">
           {reservation.client && (
-            <span className="text-[10px] text-slate-500 flex items-center gap-0.5">
+            <span className="text-[13px] text-slate-500 flex items-center gap-0.5">
               <User className="w-2.5 h-2.5" />
               {reservation.client.name}
             </span>
           )}
           {reservation.location && (
-            <span className="text-[10px] text-slate-500 flex items-center gap-0.5 truncate">
+            <span className="text-[13px] text-slate-500 flex items-center gap-0.5 truncate">
               <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
               <span className="truncate">{reservation.location}</span>
             </span>
@@ -785,13 +785,13 @@ function ReservationMiniCard({ reservation, onUpdate }: { reservation: Reservati
         <div className="flex gap-3 mt-1.5 ml-3 pt-1.5 border-t border-black/5">
           <button
             onClick={handleMarkComplete}
-            className="text-[10px] font-semibold text-emerald-600 hover:text-emerald-800 transition-colors flex items-center gap-0.5"
+            className="text-[13px] font-semibold text-emerald-600 hover:text-emerald-800 transition-colors flex items-center gap-0.5"
           >
             <CheckCircle2 className="w-2.5 h-2.5" /> Completar
           </button>
           <button
             onClick={handleCancel}
-            className="text-[10px] font-semibold text-red-400 hover:text-red-600 transition-colors flex items-center gap-0.5"
+            className="text-[13px] font-semibold text-red-400 hover:text-red-600 transition-colors flex items-center gap-0.5"
           >
             <XCircle className="w-2.5 h-2.5" /> Cancelar
           </button>

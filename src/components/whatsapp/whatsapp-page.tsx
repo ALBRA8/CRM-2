@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import {
   MessageCircle,
   Search,
@@ -232,11 +233,11 @@ export function WhatsAppPage() {
                 <MessageCircle className="w-4 h-4 text-emerald-600" />
                 <h2 className="text-sm font-bold text-slate-900">WhatsApp</h2>
                 {isWaConnected ? (
-                  <Badge className="text-[9px] h-4 px-1.5 bg-emerald-50 text-emerald-700 border-0">
+                  <Badge className="text-[13px] h-4 px-1.5 bg-emerald-50 text-emerald-700 border-0">
                     <Wifi className="w-2.5 h-2.5 mr-0.5" /> Online
                   </Badge>
                 ) : (
-                  <Badge className="text-[9px] h-4 px-1.5 bg-slate-100 text-slate-500 border-0">
+                  <Badge className="text-[13px] h-4 px-1.5 bg-slate-100 text-slate-500 border-0">
                     <WifiOff className="w-2.5 h-2.5 mr-0.5" /> Off
                   </Badge>
                 )}
@@ -266,7 +267,7 @@ export function WhatsAppPage() {
               <div className="p-6 text-center">
                 <WifiOff className="w-8 h-8 text-slate-200 mx-auto mb-2" />
                 <p className="text-xs text-slate-400">Daemon de WhatsApp no disponible</p>
-                <p className="text-[10px] text-slate-300 mt-1">Verifica que el servicio esté corriendo en el puerto 3002</p>
+                <p className="text-[13px] text-slate-300 mt-1">Verifica que el servicio esté corriendo en el puerto 3002</p>
               </div>
             ) : !isWaConnected ? (
               <div className="p-6 text-center">
@@ -277,11 +278,12 @@ export function WhatsAppPage() {
                 </Button>
               </div>
             ) : filtered.length === 0 ? (
-              <div className="p-6 text-center">
-                <MessageCircle className="w-8 h-8 text-slate-200 mx-auto mb-2" />
-                <p className="text-xs text-slate-400">Sin conversaciones aún</p>
-                <p className="text-[10px] text-slate-300 mt-1">Los mensajes entrantes aparecerán aquí</p>
-              </div>
+              <EmptyState
+                size="sm"
+                icon={MessageCircle}
+                title="Sin conversaciones aún"
+                description="Los mensajes entrantes de tus clientes aparecerán aquí"
+              />
             ) : (
               filtered.map(conv => (
                 <button
@@ -300,12 +302,12 @@ export function WhatsAppPage() {
                         <span className="text-[13px] font-medium text-slate-900 truncate">
                           {conv.contactName ?? conv.contactPhone}
                         </span>
-                        <span className="text-[10px] text-slate-400 flex-shrink-0 ml-1">
+                        <span className="text-[13px] text-slate-400 flex-shrink-0 ml-1">
                           {formatTime(conv.lastMessageAt)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between mt-0.5">
-                        <span className="text-[11px] text-slate-500 truncate pr-2">
+                        <span className="text-[13px] text-slate-500 truncate pr-2">
                           {conv.lastMessageFrom === 'agent' && <Bot className="w-2.5 h-2.5 inline mr-0.5 text-emerald-500" />}
                           {conv.lastMessageFrom === 'human' && <User className="w-2.5 h-2.5 inline mr-0.5 text-blue-500" />}
                           {conv.lastMessage ?? 'Sin mensajes'}
@@ -318,7 +320,7 @@ export function WhatsAppPage() {
                             <Zap className="w-3 h-3 text-emerald-500" />
                           )}
                           {conv.unreadCount > 0 && (
-                            <span className="w-4 h-4 bg-emerald-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold">
+                            <span className="w-4 h-4 bg-emerald-500 text-white text-[13px] rounded-full flex items-center justify-center font-bold">
                               {conv.unreadCount}
                             </span>
                           )}
@@ -347,9 +349,9 @@ export function WhatsAppPage() {
                   <h3 className="text-sm font-bold text-slate-900">{selectedConv.contactName ?? selectedConv.contactPhone}</h3>
                   <div className="flex items-center gap-2 mt-0.5">
                     <Phone className="w-3 h-3 text-slate-400" />
-                    <span className="text-[11px] text-slate-500">{selectedConv.contactPhone}</span>
+                    <span className="text-[13px] text-slate-500">{selectedConv.contactPhone}</span>
                     {selectedConv.clientId && selectedConv.clientTemperature && (
-                      <Badge variant="outline" className="text-[9px] h-4 px-1 cursor-pointer" onClick={() => { setSelectedClientId(selectedConv.clientId!); setView('client-detail') }}>
+                      <Badge variant="outline" className="text-[13px] h-4 px-1 cursor-pointer" onClick={() => { setSelectedClientId(selectedConv.clientId!); setView('client-detail') }}>
                         {selectedConv.clientTemperature}
                       </Badge>
                     )}
@@ -358,14 +360,14 @@ export function WhatsAppPage() {
               </div>
               <div className="flex items-center gap-1.5">
                 {selectedConv.status === 'transferred' ? (
-                  <Button size="sm" className="h-7 text-[11px] bg-amber-500 hover:bg-amber-600 text-white gap-1" onClick={() => takeOverConversation(selectedConv)}>
+                  <Button size="sm" className="h-7 text-[13px] bg-amber-500 hover:bg-amber-600 text-white gap-1" onClick={() => takeOverConversation(selectedConv)}>
                     <UserCheck className="w-3 h-3" /> Retomar
                   </Button>
                 ) : (
                   <Button
                     size="sm"
                     variant={selectedConv.isAutoReply ? 'default' : 'outline'}
-                    className={`h-7 text-[11px] gap-1 ${selectedConv.isAutoReply ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`}
+                    className={`h-7 text-[13px] gap-1 ${selectedConv.isAutoReply ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`}
                     onClick={() => toggleAutoReply(selectedConv)}
                   >
                     {selectedConv.isAutoReply ? <><Bot className="w-3 h-3" /> IA Activa</> : <><User className="w-3 h-3" /> Manual</>}
@@ -406,18 +408,18 @@ export function WhatsAppPage() {
                           ) : (
                             <User className="w-2.5 h-2.5 opacity-70" />
                           )}
-                          <span className="text-[9px] opacity-70">
+                          <span className="text-[13px] opacity-70">
                             {msg.senderType === 'agent' ? 'IA' : 'Tú'}
                           </span>
                         </div>
                       )}
                       {msg.messageType === 'voice' && (
-                        <div className="flex items-center gap-1 text-[9px] font-medium text-slate-500 dark:text-slate-400 mb-0.5">
+                        <div className="flex items-center gap-1 text-[13px] font-medium text-slate-500 dark:text-slate-400 mb-0.5">
                           <Mic className="w-2.5 h-2.5" /> Nota de voz (transcrita)
                         </div>
                       )}
                       <p className="text-[13px] whitespace-pre-wrap leading-relaxed">{msg.text}</p>
-                      <p className={`text-[9px] mt-0.5 ${msg.direction === 'inbound' ? 'text-slate-400' : 'opacity-60'}`}>
+                      <p className={`text-[13px] mt-0.5 ${msg.direction === 'inbound' ? 'text-slate-400' : 'opacity-60'}`}>
                         {format(new Date(msg.createdAt), 'HH:mm', { locale: es })}
                       </p>
                     </div>
@@ -473,18 +475,18 @@ export function WhatsAppPage() {
               <div className="grid grid-cols-3 gap-3 mt-6 text-left">
                 <div className="bg-white rounded-xl p-3 border border-slate-100">
                   <Bot className="w-5 h-5 text-emerald-600 mb-1.5" />
-                  <p className="text-[11px] font-semibold text-slate-700">Auto-respuesta IA</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">El agente responde y califica prospectos 24/7</p>
+                  <p className="text-[13px] font-semibold text-slate-700">Auto-respuesta IA</p>
+                  <p className="text-[13px] text-slate-400 mt-0.5">El agente responde y califica prospectos 24/7</p>
                 </div>
                 <div className="bg-white rounded-xl p-3 border border-slate-100">
                   <UserCheck className="w-5 h-5 text-amber-500 mb-1.5" />
-                  <p className="text-[11px] font-semibold text-slate-700">Transferencia humana</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Pasa a un humano cuando el agente no pueda</p>
+                  <p className="text-[13px] font-semibold text-slate-700">Transferencia humana</p>
+                  <p className="text-[13px] text-slate-400 mt-0.5">Pasa a un humano cuando el agente no pueda</p>
                 </div>
                 <div className="bg-white rounded-xl p-3 border border-slate-100">
                   <Clock className="w-5 h-5 text-blue-500 mb-1.5" />
-                  <p className="text-[11px] font-semibold text-slate-700">Seguimiento auto</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Follow-up programado hasta cerrar la venta</p>
+                  <p className="text-[13px] font-semibold text-slate-700">Seguimiento auto</p>
+                  <p className="text-[13px] text-slate-400 mt-0.5">Follow-up programado hasta cerrar la venta</p>
                 </div>
               </div>
             </div>
