@@ -6,6 +6,8 @@
  * tiene éxito. Solución: persistir en SQLite con el patrón DurableReplayCache
  * probado en el CRM (dbRateLimit con `INSERT ... ON CONFLICT DO UPDATE` atómico).
  *
+ * Soporta node:sqlite (Node >= 22.5 nativo) y better-sqlite3 indistintamente.
+ *
  * Uso:
  *   const cache = createDurableReplayCache({ dbPath: './data/security-cache.db' })
  *   if (!cache.claimJti(jti, ttlMs))  → replay: rechazar (409)
@@ -17,9 +19,25 @@
  *  - DURABLE: cierra y reabre la BD → el jti sigue quemado y el contador intacto
  *  - rateLimit: límite exacto, ventana nueva reinicia, retryAfter > 0 al exceder
  */
-import Database from 'better-sqlite3'
+import { createRequire } from 'module'
 import { mkdirSync } from 'fs'
 import { dirname } from 'path'
+
+const require = createRequire(import.meta.url)
+
+function getDatabaseConstructor() {
+  try {
+    const { DatabaseSync } = require('node:sqlite')
+    if (DatabaseSync) return DatabaseSync
+  } catch {}
+  try {
+    const b = require('better-sqlite3')
+    return b.default || b
+  } catch {}
+  throw new Error('No SQLite implementation found (neither node:sqlite nor better-sqlite3)')
+}
+
+const Database = getDatabaseConstructor()
 
 export class DurableReplayCacheError extends Error {
   constructor(message) {
@@ -38,7 +56,11 @@ export function createDurableReplayCache({ dbPath, retentionMs = 6 * 60 * 60 * 1
   }
   mkdirSync(dirname(dbPath), { recursive: true })
   const db = new Database(dbPath)
-  db.pragma('journal_mode = WAL')
+  if (typeof db.pragma === 'function') {
+    db.pragma('journal_mode = WAL')
+  } else {
+    db.exec('PRAGMA journal_mode = WAL;')
+  }
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS SsoJtiUsed (

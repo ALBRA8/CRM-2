@@ -3,7 +3,7 @@
  *
  * Problema del plan: el `/step` manual despacha sin ritmo porque no pasa
  * `durablePacing` al server. Solución: gate de pacing con lease por campaña en
- * SQLite (better-sqlite3) — el MISMO gate para el despacho automático y el
+ * SQLite (node:sqlite o better-sqlite3) — el MISMO gate para el despacho automático y el
  * manual, así el ritmo es una propiedad de la CAMPAÑA, no de quién la dispara.
  *
  * Uso:
@@ -19,9 +19,25 @@
  *  - cap diario: alcanzado el cap → allowed=false hasta el día siguiente
  *  - release limpia el lease pero conserva el contador diario
  */
-import Database from 'better-sqlite3'
+import { createRequire } from 'module'
 import { mkdirSync } from 'fs'
 import { dirname } from 'path'
+
+const require = createRequire(import.meta.url)
+
+function getDatabaseConstructor() {
+  try {
+    const { DatabaseSync } = require('node:sqlite')
+    if (DatabaseSync) return DatabaseSync
+  } catch {}
+  try {
+    const b = require('better-sqlite3')
+    return b.default || b
+  } catch {}
+  throw new Error('No SQLite implementation found (neither node:sqlite nor better-sqlite3)')
+}
+
+const Database = getDatabaseConstructor()
 
 /**
  * Fábrica del gate de pacing.
@@ -31,7 +47,11 @@ export function createDurablePacing({ dbPath, clock = () => Date.now() } = {}) {
   if (!dbPath) throw new Error('[pacing] dbPath es requerido (fail-closed: sin persistencia no hay pacing durable)')
   mkdirSync(dirname(dbPath), { recursive: true })
   const db = new Database(dbPath)
-  db.pragma('journal_mode = WAL')
+  if (typeof db.pragma === 'function') {
+    db.pragma('journal_mode = WAL')
+  } else {
+    db.exec('PRAGMA journal_mode = WAL;')
+  }
   db.exec(`
     CREATE TABLE IF NOT EXISTS CampaignPacing (
       campaignId TEXT PRIMARY KEY,
