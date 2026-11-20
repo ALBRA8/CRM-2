@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2026-11-20 — Sesión 5: U6 (semillas sectoriales para demos reproducibles)
+
+- **U6 (F7-T06) — ejecutada** (estaba pospuesta; última tarea construible del plan): definiciones puras por sector en `scripts/demo-sectors.mjs` (restaurante, salud-estética, inmobiliaria) con validador integrado, y seeder idempotente `scripts/seed-demo-sector.mjs` que materializa la organización `demo-<sector>` con usuarios demo, pipeline sectorial, clientes, oportunidades, reservas, tareas, cotizaciones (+ítems, IVA 19 %) y conversaciones WhatsApp.
+- **Seguridad**: el seeder aborta en entorno productivo (NODE_ENV/CRM_ENV/DATABASE_URL con «prod») y jamás toca organizaciones que no sean `demo-<slug>`; todo dato marcado «(Demo)/[demo]»; contraseñas de demostración impresas al terminar.
+- **Reproducibilidad probada en BD desechable**: doble corrida produce los mismos conteos (6 clientes / 5 opps / 4 reservas / 5 tareas / 3 cotizaciones / 2 conversaciones — sin duplicados), totales de cotización conciliados contra sus ítems, y el resultado alimenta el dashboard real (1 tarea vencida, citas próximas, conversación sin contestar).
+- **Tests**: +16 unitarios — invariantes de las definiciones (unicidad de claves, referencias internas, marcas demo, aislamiento cross-sector) y 8 casos negativos que demuestran que el validador detecta datos corruptos antes de tocar la BD. Suite: **1024/1024 en 115 archivos**; cifras canónicas reconciliadas (115).
+- **Runbook**: nueva subsección «Demos reproducibles (U6)» en `docs/RUNBOOK-CRM.md` §2.
+
 ## 2026-11-20 — Sesión 4: D1 (integración PR #4 + tests multiproceso) + D2 (consolidación de ramas) + O1 (verificación estática)
 
 - **D1 (F2-T04) — terminada**: tests del PR #4 (`workflow-outbox-ambiguous-ack.test.ts` — cuarentena del ACK ambiguo de WhatsApp vía trigger SQLite; el envío aceptado nunca se reenvía) y del scheduler multiproceso con lease (`scheduler-multiprocess.test.ts` + fixture + `vitest.worker.config.mts` — 2 procesos independientes compiten y se crea exactamente 1 run durable) portados a la maestra (`dde4207`). Bloque canónico reconciliado (112→114 archivos de prueba). Decisión escrita de cierre de PR #4/#6 en `docs/actas/CIERRE-D1-D2-O1-2026-11-20.md`.

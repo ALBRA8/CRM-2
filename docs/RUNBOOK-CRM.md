@@ -62,6 +62,19 @@ curl -fsS http://localhost:3000/api/health    # estado de la app
 curl -fsS http://localhost:3002/status -H "Authorization: Bearer $INTERNAL_API_SECRET"
 ```
 
+**Demos reproducibles (U6)** — para ventas/demostraciones, jamás en producción
+(el seeder aborta si detecta entorno productivo):
+
+```bash
+node scripts/seed-demo-sector.mjs --list                # ver sectores
+node scripts/seed-demo-sector.mjs --sector restaurante  # | salud-estetica | inmobiliaria
+```
+
+Crea la organización `demo-<sector>` con usuarios, pipeline, clientes, pipeline
+comercial, agenda, tareas, cotizaciones y conversaciones de ejemplo. Es
+idempotente (correr dos veces no duplica nada) y todo queda marcado como
+«(Demo)». Credenciales demo impresas al terminar.
+
 ---
 
 ## 3. Diagnóstico: la pantalla de Salud

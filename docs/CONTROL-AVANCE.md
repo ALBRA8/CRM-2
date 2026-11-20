@@ -1,21 +1,21 @@
 # CONTROL DE AVANCE — PLAN DEFINITIVO CRM-ALBRA v2.0
 
-**Fecha de actualización**: 2026-11-20 · **Sesión 4**: D1 (integración PR #4 + tests multiproceso) + D2 (consolidación de ramas con etiquetas) + O1 (verificación estática)
+**Fecha de actualización**: 2026-11-20 · **Sesión 5**: U6 (semillas sectoriales para demos reproducibles) — última tarea construible del plan ejecutada
 **Documento rector**: `docs/plan-definitivo-2026-11-19/PLAN-DEFINITIVO-CRM-ALBRA.md` (48 tareas, 7 fases)
-**Línea maestra**: `impl/integracion-maestra-20261120` — cadena sesiones 1+2+3 + D1 de la sesión 4 · Suite **1008/1008** en 114 archivos
+**Línea maestra**: `impl/integracion-maestra-20261120` — cadena sesiones 1+2+3+4 · Suite **1024/1024** en 115 archivos
 **Matriz de trazabilidad**: `docs/MATRIZ-TRAZABILIDAD.md` (D4, con check en CI)
 
-## Resumen por estado (48 tareas) — tras la sesión 4
+## Resumen por estado (48 tareas) — tras la sesión 5
 
 | Estado | Cantidad | Tareas |
 | --- | --- | --- |
-| ✅ Terminadas | **29** | M1, S5, E1, E2 · F2, M7, F3, M8, E7 · F4, F5, U1, U2, U3, U4, I3, O3, S6, O2, E4, D4, E3, I2 · F1, U5, O4 (sesión 3) · **D1, D2** (sesión 4) |
+| ✅ Terminadas | **30** | M1, S5, E1, E2 · F2, M7, F3, M8, E7 · F4, F5, U1, U2, U3, U4, I3, O3, S6, O2, E4, D4, E3, I2 · F1, U5, O4 (sesión 3) · D1, D2 (sesión 4) · **U6** (sesión 5) |
 | 🔧 Parciales (construidas; falta decisión/ejecución del propietario) | 5 | **S1** (acta lista; revocación de PAT = propietario), **S2** (runbook+generador validados; ventana gated a S1), I1 (workflow E2E listo; corrida real requiere A7), E7 (test listo; drill con acta requiere A8), **O1** (verificación estática completa; build+healthchecks reales en la máquina del propietario) |
 | ⏳ Pendientes | 0 | (ninguna del lado construible) |
 | 🔐 Requieren autorización específica | 0 | (D1, O1, D2 autorizadas y ejecutadas/archivadas en la sesión 4) |
 | 🌐 Dependencia externa | 13 | S3, S4, S7, M2, M3, M4, M6, I4, I5, I6, E5, E6, F6 |
 | ❌ Descartadas | 2 | M5 (obsoleta), D3 (duplicada en E4) |
-| ⏸ Pospuesta | 1 | U6 (semillas sectoriales, ~1 d al activarla) |
+| ⏸ Pospuesta | 0 | (U6 ejecutada en la sesión 5) |
 
 ## Detalle de la SESIÓN 3 (2026-11-20) — sobre la línea maestra
 
@@ -29,19 +29,25 @@
 | **O4** | Observabilidad + unidades systemd (F6-T06, OPCIONAL) | maestra | `scripts/outbox-worker.mjs` (+11 pruebas), `deploy/systemd/` (4 unidades + timer + README) | 1006/1006 · build OK | Worker pull con backoff y cierre limpio; daemon `Restart=always`; kill test = pendiente del dueño (sin systemd en sandbox) |
 | **Consol.** | Línea maestra única (base para D1/A3) | `impl/integracion-maestra-20261120` | CHANGELOG, PRODUCTION_READINESS (bloque canónico 128/110/47/18/105), CONTRATOS-ECOSISTEMA (128 rutas), MATRIZ-TRAZABILIDAD | 986/986 · verify-doc-figures verde · build OK | Las dos líneas paralelas de las sesiones 1+2 quedan fusionadas por MERGE (sin reescritura); cifras canónicas recalculadas y re-verificadas |
 
-## Camino al piloto (recalculado tras la sesión 4)
+## Camino al piloto (recalculado tras la sesión 5)
 
 ```
-Terminadas 29/48 (todo el producto construible del lado CRM) ────────────
+Terminadas 30/48 (todo el producto construible del lado CRM, incluida la opcional U6) ─
 Sesión 1: F2 → M7 → F3 → M8 → E7
 Sesión 2: F4 → F5 → U1 → U2 → U3 → U4 → I3 → O3 → S6 → O2 → E4 → D4 → E3 → I2(+I1 parcial)
 Sesión 3: S1 (acta) · S2 (runbook GATED) · F1 (PR #6) · F2 endpoint · U5 · O4 · LÍNEA MAESTRA
 Sesión 4: D1 (PR #4 + tests multiproceso en la maestra) · D2 (32→11 ramas, 22 etiquetas) · O1 (estática)
+Sesión 5: U6 (semillas sectoriales: 3 sectores, seeder idempotente + guard de producción)
 
-Resta construible: nada · U6 (pospuesta, opcional)
-Resto: propietario (revocar PAT→S1, ventana S2, docker compose O1, A1/A3/A7/A8, SMTP)
-       o dependencia externa (13 tareas en repos/máquinas externas)
+Resta: solo el propietario (revocar PAT→S1, ventana S2, docker compose O1, A1/A3/A7/A8, SMTP)
+       o dependencia externa (13 tareas en repos/máquinas WP/ULTRA — fuera de alcance)
 ```
+
+## Detalle de la SESIÓN 5 (2026-11-20) — sobre la línea maestra
+
+| ID | Tarea | Rama / commit | Archivos clave | Pruebas | Evidencia |
+| --- | --- | --- | --- | --- | --- |
+| **U6** | Semillas sectoriales para demos reproducibles (OPCIONAL del plan, ejecutada) | maestra | `scripts/demo-sectors.mjs` (definiciones puras + validador), `scripts/seed-demo-sector.mjs` (seeder idempotente con guard de producción), `docs/RUNBOOK-CRM.md` §2 | +16 unitarios (invariantes + 8 casos negativos del validador) · **1024/1024** · tsc 0 | 3 sectores (restaurante, salud-estética, inmobiliaria) → org `demo-<sector>` con usuarios/pipeline/clientes/opps/reservas/tareas/cotizaciones+ítems/conversaciones WhatsApp; doble corrida real en BD desechable = idempotente (mismos conteos); IVA 19 % verificado; guard `CRM_ENV=production` → abort exit 1; tarea vencida + cita próxima + conversación sin contestar = dashboard «Requiere atención» con datos reales |
 
 ## Detalle de la SESIÓN 4 (2026-11-20) — sobre la línea maestra
 
