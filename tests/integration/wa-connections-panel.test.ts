@@ -90,7 +90,7 @@ describe('GET /api/whatsapp/connections-panel', () => {
     const created = await createConnection({
       orgId: 'org-a',
       phoneNumberId: '555000111',
-      accessToken: 'EAAG-token-panel-test-0123456789',
+      accessToken: 'EAAG-token-panel-test-0123456789', // scan-secrets:allow
       verifyAgainstGraph: false,
       source: 'manual',
     })
