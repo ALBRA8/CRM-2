@@ -27,6 +27,8 @@ const NON_SECRET_ALLOWED = new Set([
   // URLs de Studio del ecosistema (SSO): puertos locales, NO secretos
   'http://127.0.0.1:3003', // WHATSPOWER_STUDIO_URL
   'http://127.0.0.1:3004', // ULTRA_STUDIO_URL
+  'https://api.openai.com/v1', // ASR_BASE_URL (endpoint público, NO es secreto)
+  'whisper-1', // ASR_MODEL (nombre de modelo, NO es secreto)
   'true',
   'false',
   '1', // TRUST_PROXY_HOPS (config no-secreta, segunda reparación §2.C)
