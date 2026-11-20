@@ -1,18 +1,18 @@
 # CONTROL DE AVANCE — PLAN DEFINITIVO CRM-ALBRA v2.0
 
-**Fecha de actualización**: 2026-11-20 · **Sesión 3**: S1 (acta) + S2 (runbook GATED) + F1 (PR #6) + F2 endpoint agregado + **consolidación en línea maestra**
+**Fecha de actualización**: 2026-11-20 · **Sesión 4**: D1 (integración PR #4 + tests multiproceso) + D2 (consolidación de ramas con etiquetas) + O1 (verificación estática)
 **Documento rector**: `docs/plan-definitivo-2026-11-19/PLAN-DEFINITIVO-CRM-ALBRA.md` (48 tareas, 7 fases)
-**Línea maestra**: `impl/integracion-maestra-20261120` — cadena sesiones 1+2 (22 commits) + aportes de la sesión 3 · Suite **1006/1006** en 112 archivos
+**Línea maestra**: `impl/integracion-maestra-20261120` — cadena sesiones 1+2+3 + D1 de la sesión 4 · Suite **1008/1008** en 114 archivos
 **Matriz de trazabilidad**: `docs/MATRIZ-TRAZABILIDAD.md` (D4, con check en CI)
 
-## Resumen por estado (48 tareas) — tras la sesión 3
+## Resumen por estado (48 tareas) — tras la sesión 4
 
 | Estado | Cantidad | Tareas |
 | --- | --- | --- |
-| ✅ Terminadas | **27** | M1, S5, E1, E2 · F2, M7, F3, M8, E7 · F4, F5, U1, U2, U3, U4, I3, O3, S6, O2, E4, D4, E3, I2 · **F1, U5, O4** (sesión 3) |
-| 🔧 Parciales (construidas; falta decisión/ejecución del propietario) | 3 | **S1** (acta lista; revocación de PAT = propietario), **S2** (runbook+generador validados; ventana gated a S1), I1 (workflow E2E listo; corrida real requiere A7) · E7 (test listo; drill con acta requiere A8) |
-| ⏳ Pendientes | 0 | (ninguna del lado construible: U5 y O4 ejecutadas en la sesión 3) |
-| 🔐 Requieren autorización específica | 2 | D1, O1 |
+| ✅ Terminadas | **29** | M1, S5, E1, E2 · F2, M7, F3, M8, E7 · F4, F5, U1, U2, U3, U4, I3, O3, S6, O2, E4, D4, E3, I2 · F1, U5, O4 (sesión 3) · **D1, D2** (sesión 4) |
+| 🔧 Parciales (construidas; falta decisión/ejecución del propietario) | 5 | **S1** (acta lista; revocación de PAT = propietario), **S2** (runbook+generador validados; ventana gated a S1), I1 (workflow E2E listo; corrida real requiere A7), E7 (test listo; drill con acta requiere A8), **O1** (verificación estática completa; build+healthchecks reales en la máquina del propietario) |
+| ⏳ Pendientes | 0 | (ninguna del lado construible) |
+| 🔐 Requieren autorización específica | 0 | (D1, O1, D2 autorizadas y ejecutadas/archivadas en la sesión 4) |
 | 🌐 Dependencia externa | 13 | S3, S4, S7, M2, M3, M4, M6, I4, I5, I6, E5, E6, F6 |
 | ❌ Descartadas | 2 | M5 (obsoleta), D3 (duplicada en E4) |
 | ⏸ Pospuesta | 1 | U6 (semillas sectoriales, ~1 d al activarla) |
@@ -29,18 +29,27 @@
 | **O4** | Observabilidad + unidades systemd (F6-T06, OPCIONAL) | maestra | `scripts/outbox-worker.mjs` (+11 pruebas), `deploy/systemd/` (4 unidades + timer + README) | 1006/1006 · build OK | Worker pull con backoff y cierre limpio; daemon `Restart=always`; kill test = pendiente del dueño (sin systemd en sandbox) |
 | **Consol.** | Línea maestra única (base para D1/A3) | `impl/integracion-maestra-20261120` | CHANGELOG, PRODUCTION_READINESS (bloque canónico 128/110/47/18/105), CONTRATOS-ECOSISTEMA (128 rutas), MATRIZ-TRAZABILIDAD | 986/986 · verify-doc-figures verde · build OK | Las dos líneas paralelas de las sesiones 1+2 quedan fusionadas por MERGE (sin reescritura); cifras canónicas recalculadas y re-verificadas |
 
-## Camino al piloto (recalculado tras la sesión 3)
+## Camino al piloto (recalculado tras la sesión 4)
 
 ```
-Terminadas 25/48 (todo el producto construible del lado CRM) ────────────
+Terminadas 29/48 (todo el producto construible del lado CRM) ────────────
 Sesión 1: F2 → M7 → F3 → M8 → E7
 Sesión 2: F4 → F5 → U1 → U2 → U3 → U4 → I3 → O3 → S6 → O2 → E4 → D4 → E3 → I2(+I1 parcial)
 Sesión 3: S1 (acta) · S2 (runbook GATED) · F1 (PR #6) · F2 endpoint · U5 · O4 · LÍNEA MAESTRA
+Sesión 4: D1 (PR #4 + tests multiproceso en la maestra) · D2 (32→11 ramas, 22 etiquetas) · O1 (estática)
 
-Resta construible: nada (U5 y O4 ejecutadas) · U6 (pospuesta, opcional)
-Resto: propietario (revocar PAT→S1, ventana S2, D1, O1, A1/A3/A7/A8, SMTP)
+Resta construible: nada · U6 (pospuesta, opcional)
+Resto: propietario (revocar PAT→S1, ventana S2, docker compose O1, A1/A3/A7/A8, SMTP)
        o dependencia externa (13 tareas en repos/máquinas externas)
 ```
+
+## Detalle de la SESIÓN 4 (2026-11-20) — sobre la línea maestra
+
+| ID | Tarea | Rama / commit | Archivos clave | Pruebas | Evidencia |
+| --- | --- | --- | --- | --- | --- |
+| **D1** | Resolver integración pendiente (F2-T04) | `impl/d1-integracion-final` · `dde4207` | `tests/integration/workflow-outbox-ambiguous-ack.test.ts` (PR #4), `tests/integration/scheduler-multiprocess.test.ts` + `tests/fixtures/scheduler-worker.spec.mts` + `vitest.worker.config.mts` (de `fix/migration-safety-audit`), `PRODUCTION_READINESS.md` (bloque canónico 112→114) | +2 · **1008/1008** · verify-doc-figures verde | ACK ambiguo: envío aceptado queda en cuarentena y NUNCA se reenvía (trigger SQLite). Scheduler: 2 procesos compiten → exactamente 1 run durable. Decisión escrita PR #4/#6 en `docs/actas/CIERRE-D1-D2-O1-2026-11-20.md` |
+| **D2** | Consolidación de ramas remotas (F7-T05) | etiquetas `archive/20261120-*` en CRM-ALBRA | 22 etiquetas de archivo (SHAs verificados en servidor) | verificación recuperabilidad 22/22 | Repo canónico: 32 → **11 ramas**; CRM-2 queda como espejo completo de respaldo. Detalle en el acta de cierre |
+| **O1** | Docker compose + healthchecks (F6-T01) — PARCIAL | verificación estática en el acta | `docker-compose.yml` (YAML válido, 2 servicios con healthcheck), `Dockerfile` (3 etapas), `scripts/docker-entrypoint.sh` (wait-db + migrate deploy con guardarrails) | estática completa | Runbook exacto para la máquina del propietario en `docs/actas/CIERRE-D1-D2-O1-2026-11-20.md` §O1; Docker no existe en el sandbox (limitación declarada) |
 
 ## Detalle de las tareas terminadas EN LA SESIÓN 1 (2026-11-20)
 
@@ -83,7 +92,7 @@ Cada tarea: rama de construcción → pruebas en verde (Vitest completo, tsc, es
 1. **URGENTE — revocar el token `ghp_w2tw…`** (re-expuesto en el chat de la sesión 3) y el de la sesión 2026-11-17 (`ghp_M9w5…`): procedimiento exacto en `docs/actas/ROTACION-CREDENCIALES-2026-11-20.md` (S1). Entregar el token nuevo por variable de entorno, jamás por el chat.
 2. **A1**: PAT + `PII_PEPPER` como secretos de GitHub Actions.
 3. **A2 (S2)**: acordar la ventana y crear el bundle de respaldo; luego ejecutar `docs/actas/VENTANA-PURGA-HISTORIAL-S2.md` (GATED: solo tras revocar los PAT).
-4. **A3/D1**: revisar y fusionar la línea maestra `impl/integracion-maestra-20261120` hacia la base de integración / `main`; recrear PR #5 (E1) y dar destino a `fix/migration-safety-audit`.
+4. **A3**: revisar y fusionar la línea maestra `impl/integracion-maestra-20261120` hacia `main` (D1 y D2 ya ejecutadas: PR #4/#6 integrados con decisión escrita; 22 ramas archivadas con etiquetas; destino de `fix/migration-safety-audit` y `fix/whatsapp-production-media` documentado en el acta — revisión del propietario pendiente).
 5. **A7/A8**: worker de outbox en el despliegue real y drill de backup con acta firmada (E7).
 6. Credenciales SMTP reales (notificaciones) — opcional para el piloto.
 

@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 2026-11-20 — Sesión 4: D1 (integración PR #4 + tests multiproceso) + D2 (consolidación de ramas) + O1 (verificación estática)
+
+- **D1 (F2-T04) — terminada**: tests del PR #4 (`workflow-outbox-ambiguous-ack.test.ts` — cuarentena del ACK ambiguo de WhatsApp vía trigger SQLite; el envío aceptado nunca se reenvía) y del scheduler multiproceso con lease (`scheduler-multiprocess.test.ts` + fixture + `vitest.worker.config.mts` — 2 procesos independientes compiten y se crea exactamente 1 run durable) portados a la maestra (`dde4207`). Bloque canónico reconciliado (112→114 archivos de prueba). Decisión escrita de cierre de PR #4/#6 en `docs/actas/CIERRE-D1-D2-O1-2026-11-20.md`.
+- **D2 (F7-T05) — terminada (borrado con etiqueta)**: inventario ahead/behind de las 32 ramas de CRM-ALBRA → 22 ramas archivadas con etiquetas `archive/20261120-*` (SHAs verificados en servidor) y eliminadas; quedan 11 ramas vivas. **CRM-2 no se toca** (espejo de respaldo completo). Ramas con contenido único no consolidado (`fix/migration-safety-audit`, `fix/whatsapp-production-media`, `docs/context-crm-reorganization-20261107`, etc.) permanecen vivas para decisión del propietario.
+- **O1 (F6-T01) — verificación estática completa**: YAML de compose válido (app + wa-daemon, ambos con healthcheck), Dockerfile 3 etapas, entrypoint con wait-db + `migrate deploy` con guardarrails, `/api/health` existente, volúmenes persistentes, `app` enlazado a 127.0.0.1. Runbook exacto para la máquina del propietario en el acta §O1 (Docker no existe en el sandbox).
+- **Suite**: 1008/1008 en 114 archivos.
+
 ## 2026-11-20 — Sesión 3: consolidación en línea maestra + S1 + S2 (runbook) + F1 (PR #6) + F2 endpoint agregado + U5
 
 - **Línea maestra `impl/integracion-maestra-20261120`**: consolida en UNA rama la cadena acumulativa sesiones 1+2 (F2 UI → M7 → F3 → M8 → E7 → F4 → F5 → U1 → U2 → U3 → U4 → I3 → O3 → S6 → O2 → E4 → D4 → E3 → I2+I1) más los aportes de esta sesión. Merge-only (sin reescritura de historia). Base para la decisión A3/D1 del propietario.
