@@ -326,6 +326,25 @@ Sincronizados los repositorios con origin tras las correcciones aplicadas por el
 - **Auditoría Futura**: Incorporado el documento rector `AUDITORIA_REDUNDANCIAS_Y_SIMPLIFICACION_FASE_POSTERIOR.md` para la simplificación de modelos post-cierre.
 - **Verificación**: TypeScript `tsc --noEmit` completado con 0 errores; suite en 1,104 pruebas en 128 archivos.
 
+## 2026-11-20 — Despliegue de los 9 Kits Portables en WHATSPOWER y WHATSPOWER-ULTRA
+
+- **Objetivo**: Aplicar los 9 paquetes portables diseñados en `CRM-ALBRA/integration-kits/wp-ultra/` a los repositorios satélite `WHATSPOWER` (Capa 2A) y `WHATSPOWER-ULTRA` (Capa 2B), adaptando su persistencia a `node:sqlite` nativo y creando sus respectivas suites de prueba nativas.
+- **CRM-ALBRA (`0dbc31a`)**:
+  - Kits persistentes `s4-durable-replay-cache` y `m4-durable-pacing` actualizados con soporte dual dinámico (`node:sqlite.DatabaseSync` prioritario + fallback `better-sqlite3`).
+  - Suite de kits (`tests/kits/`): 9 suites, **51 passed, 0 failed**.
+- **WHATSPOWER (`66f36a3`)**:
+  - Kits instalados: S3 (Org Bearer Auth), S4 (Durable Replay Cache), S7 (Org Credentials Crypto), M3 (Meta Dispatch Guard), I6 (Transport Policy), F6 (Payment Gateway Adapter).
+  - 6 suites de prueba nativas Node 24 creadas en `tests/`.
+  - Resultado test suite: **41 archivos de prueba, 358 passed, 0 failed, 0 errors**.
+- **WHATSPOWER-ULTRA (`eb5f89f`)**:
+  - Kits instalados: S4 (Durable Replay Cache), S7 (Org Credentials Crypto), M2 (Bulk Consent Ley 1581), M3 (Meta Dispatch Guard), M4 (Durable Pacing & Leases), M6 (Destructive Guard), I6 (Transport Policy).
+  - 7 suites de prueba nativas Node 24 creadas en `tests/`.
+  - Corrección de colisión de puerto en `tests/dashboard-parity.test.ts` (DP-19).
+  - Resultado test suite: **35 archivos de prueba, 324 passed, 0 failed, 0 errors**.
+- **Higiene de Seguridad CI en CRM-ALBRA (`ad09b99`)**:
+  - Whitelist de números ficticios de demo colombianos en `scripts/check-pii.mjs`: `npm run check:pii` exit 0 (árbol limpio).
+  - Marcador `// scan-secrets:allow` en fixture de Meta en `tests/integration/wa-connections-panel.test.ts`: `npm run security:scan` exit 0 (0 secretos en el árbol).
+
 
 
 

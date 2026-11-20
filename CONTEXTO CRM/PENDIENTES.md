@@ -411,15 +411,19 @@ Correcciones entregadas por el constructor (z.ai) y verificadas por Antigravity 
 - [ ] **E7 — Drill Operativo Formal de Backup/Restore**: Ejecutar ensayo de respaldo y restauración con acta formal en staging.
 - [ ] **A7 — PAT de lectura para CI**: Suministrar credencial para pipelines automatizados.
 
-### Pendientes en Repositorios Hermanos (WhatsPower / WhatsPower-Ultra)
-- [ ] Aplicar los kits de integración de `integration-kits/wp-ultra/` en clones independientes de WP y Ultra con sus respectivas suites en verde (tareas S3, S4, S7, M2, M3, M4, M6, I6, F6).
+### Pendientes en Repositorios Hermanos (WhatsPower / WhatsPower-Ultra) — CERRADO 2026-11-20
+- [x] **Aplicación de los 9 kits portables en WHATSPOWER y WHATSPOWER-ULTRA**:
+  - Kits adaptados a `node:sqlite` nativo (`DatabaseSync`) y `better-sqlite3`.
+  - WHATSPOWER (Capa 2A): kits S3, S4, S7, M3, I6, F6 + 6 suites nativas (`66f36a3`). Suite completa en verde: **358 passed, 0 failed**.
+  - WHATSPOWER-ULTRA (Capa 2B): kits S4, S7, M2, M3, M4, M6, I6 + 7 suites nativas + fix de colisión de puerto en DP-19 (`eb5f89f`). Suite completa en verde: **324 passed, 0 failed**.
+  - CRM-ALBRA: suites canónicas de los 9 kits (`tests/kits/`): **51 passed, 0 failed**.
 
 ### Fase Posterior: Auditoría de Redundancias y Simplificación
 - [ ] **Auditoría de Redundancias (`AUDITORIA_REDUNDANCIAS_Y_SIMPLIFICACION_FASE_POSTERIOR.md`)**:
-  - Planificada para ejecutarse una vez aceptado el plan actual.
+  - Planificada para ejecutarse una vez aceptado el plan actual y probado en operación.
   - Objetivo: evaluar y unificar modelos legados (`WhatsAppConversation` vs `ChannelConversation`, `WhatsAppMessage` vs `ChannelMessage`, `Integration` vs `WhatsAppConnection`) para reducir complejidad sin perder datos ni compatibilidad.
 
-### Hallazgos de Higiene Inmediatos en CI
-- [ ] **check:pii**: Incorporar a `FICTITIOUS_EXACT` en `scripts/check-pii.mjs` los números ficticios colombianos añadidos en `scripts/demo-sectors.mjs` y pruebas de integración.
-- [ ] **security:scan**: Añadir marcador `// scan-secrets:allow` en el token falso de Meta en `tests/integration/wa-connections-panel.test.ts:93`.
+### Hallazgos de Higiene Inmediatos en CI — CERRADO 2026-11-20
+- [x] **check:pii**: Incorporados a `FICTITIOUS_EXACT` en `scripts/check-pii.mjs` los números ficticios colombianos añadidos en `scripts/demo-sectors.mjs` y pruebas de integración (`ad09b99`). `npm run check:pii` exit 0 (árbol limpio).
+- [x] **security:scan**: Añadido marcador `// scan-secrets:allow` en el token falso de Meta en `tests/integration/wa-connections-panel.test.ts:93` (`ad09b99`). `npm run security:scan` exit 0 (0 secretos en el árbol).
 

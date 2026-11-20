@@ -365,4 +365,26 @@ Re-emparejamiento con el remoto (PAT nuevo verificado en git y REST), línea bas
   - Documento rector incorporado: `CONTEXTO CRM/AUDITORIA_REDUNDANCIAS_Y_SIMPLIFICACION_FASE_POSTERIOR.md`.
   - Alcance: fase de refactorización posterior a la aceptación del plan actual; se enfoca en auditar la duplicación de modelos (`WhatsAppConversation` vs `ChannelConversation`, `WhatsAppMessage` vs `ChannelMessage`) sin tocar capacidades funcionales.
 
+## Sesión 2026-11-20 (Continuación) — Despliegue Exitoso de los 9 Kits Portables en el Ecosistema
+
+- **Despliegue Multi-Repositorio**:
+  - **WHATSPOWER (Capa 2A - commit `66f36a3`)**:
+    - Kits portables aplicados: `s3-org-bearer-auth`, `s4-durable-replay-cache`, `s7-org-credentials-crypto`, `m3-meta-dispatch-guard`, `i6-transport-policy`, `f6-payment-adapter`.
+    - Adaptación nativa `node:sqlite` (`DatabaseSync`).
+    - 6 nuevas suites de pruebas nativas Node 24 creadas.
+    - **Resultado**: 41 suites de prueba, **358 passed, 0 failed, 0 errors**.
+  - **WHATSPOWER-ULTRA (Capa 2B - commit `eb5f89f`)**:
+    - Kits portables aplicados: `s4-durable-replay-cache`, `s7-org-credentials-crypto`, `m2-bulk-consent`, `m3-meta-dispatch-guard`, `m4-durable-pacing`, `m6-destructive-guard`, `i6-transport-policy`.
+    - Fix en `tests/dashboard-parity.test.ts` (DP-19: eliminación de colisión con puerto 59999).
+    - 7 nuevas suites de pruebas nativas Node 24 creadas.
+    - **Resultado**: 35 suites de prueba, **324 passed, 0 failed, 0 errors**.
+  - **CRM-ALBRA (Capa 1 - commit `0dbc31a` y `ad09b99`)**:
+    - Kits `s4` y `m4` en `integration-kits/` dotados de soporte dual dinámico `node:sqlite` / `better-sqlite3`.
+    - Suites canónicas de kits: **51 passed, 0 failed**.
+    - `npm run check:pii`: **0 violaciones, árbol limpio** (exit code 0).
+    - `npm run security:scan`: **0 secretos detectados** (exit code 0).
+- **Conclusión de Integración**:
+  - Todas las tareas externas de WhatsPower y Ultra (S3, S4, S7, M2, M3, M4, M6, I6, F6) quedan **100% cerradas y verificadas con suites verdes** en los tres repositorios.
+  - El árbol queda completamente limpio de secretos y de violaciones de PII.
+
 

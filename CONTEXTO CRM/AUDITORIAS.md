@@ -191,19 +191,41 @@ Pruebas reportadas: 434/434 con .env de producción simulado, 434/434 sin .env y
 | **Prisma Generate** | **OK** | Prisma Client v6.12.0 generado con nuevas migraciones (`zzzzzz_tareas`, `zzzzzzz_quoteitem_org_backfill`). |
 | **TypeScript (`npx tsc --noEmit`)** | **OK** | **0 errores de compilación** (Exit code 0). 100% tipado estricto. |
 | **Volumen de Suites** | **OK** | Expandido de 96 a **128 archivos de prueba** (1,104 pruebas unitarias, de integración y de kits). |
-| **Guardián PII (`npm run check:pii`)** | **OBSERVACIÓN** | 22 coincidencias detectadas en scripts de demo sectorial (`scripts/demo-sectors.mjs`) y tests. Requiere incorporar números a `FICTITIOUS_EXACT` en `scripts/check-pii.mjs`. |
-| **Escáner de Secretos (`npm run security:scan`)** | **OBSERVACIÓN** | 1 hallazgo falso positivo en `tests/integration/wa-connections-panel.test.ts:93` (token Meta dummy `EAAG...` sin marca `// scan-secrets:allow`). |
+| **Guardián PII (`npm run check:pii`)** | **OK** | 138 números ficticios de demo sectorial e integración en whitelist exacta (`FICTITIOUS_EXACT`). **0 violaciones, árbol limpio** (Exit code 0). |
+| **Escáner de Secretos (`npm run security:scan`)** | **OK** | Marcador `// scan-secrets:allow` aplicado en fixture dummy de Meta en `wa-connections-panel.test.ts`. **0 secretos detectados** (Exit code 0). |
+
+### Despliegue y Verificación de los 9 Kits Portables (2026-11-20)
+Los 9 kits de integración preparados en `CRM-ALBRA/integration-kits/wp-ultra/` se trasladaron, adaptaron y verificaron en los 3 repositorios con 100% de éxito:
+
+1. **CRM-ALBRA (Canónico)**:
+   - Compatibilidad dual `node:sqlite` (`DatabaseSync`) y `better-sqlite3` en kits persistentes S4 y M4 (`0dbc31a`).
+   - Suite canónica de kits (`tests/kits/`): **9 archivos, 51 passed, 0 failed**.
+   - Higiene de seguridad CI (`ad09b99`): PII limpio y escáner de secretos limpio.
+
+2. **WHATSPOWER (Capa 2A)**:
+   - Kits aplicados: S3 (Org Bearer Auth), S4 (Durable Replay Cache), S7 (Org Credentials Crypto), M3 (Meta Dispatch Guard), I6 (Transport Policy), F6 (Payment Gateway Adapter).
+   - 6 suites de prueba nativas Node 24 implementadas en `tests/`.
+   - Commit: `66f36a3`.
+   - Resultado de test suite: **41 archivos, 358 passed, 0 failed, 0 errors**.
+
+3. **WHATSPOWER-ULTRA (Capa 2B)**:
+   - Kits aplicados: S4 (Durable Replay Cache), S7 (Org Credentials Crypto), M2 (Bulk Consent Ley 1581), M3 (Meta Dispatch Guard), M4 (Durable Pacing & Leases), M6 (Destructive Guard), I6 (Transport Policy).
+   - 7 suites de prueba nativas Node 24 implementadas en `tests/`.
+   - Corrección de colisión de puerto en `tests/dashboard-parity.test.ts` (DP-19).
+   - Commit: `eb5f89f`.
+   - Resultado de test suite: **35 archivos, 324 passed, 0 failed, 0 errors**.
 
 ### Estado del Plan de 48 Tareas y Pendientes Restantes
 - **Tareas construibles en CRM-ALBRA:** 100% completadas (30 construibles + D2 consolidada).
+- **Kits externos en repositorios hermanos (WP / ULTRA):** 100% aplicados y verificados en verde (tareas S3, S4, S7, M2, M3, M4, M6, I6, F6 cerradas).
 - **Acciones pendientes del propietario:**
   1. **S1:** Revocar PAT expuesto en historial de chat y rotar credenciales externas.
   2. **S2:** Autorizar y ejecutar ventana de purga de historial git (`git filter-repo`) según runbook `docs/actas/VENTANA-PURGA-HISTORIAL-S2.md`.
   3. **O1:** Validar despliegue con `docker compose` en máquina Windows o servidor.
   4. **E7:** Completar drill operativo formal con acta de backup/restore en staging.
-- **Acciones en repositorios externos (WP / ULTRA):**
-  - Aplicar los kits de integración preparados en `integration-kits/wp-ultra/` directamente en los repositorios WhatsPower y WhatsPower-Ultra.
-- **Auditoría futura de simplificación:**
-  - Registrada en `CONTEXTO CRM/AUDITORIA_REDUNDANCIAS_Y_SIMPLIFICACION_FASE_POSTERIOR.md`. Se ejecutará tras la aceptación del plan actual para limpiar duplicaciones de modelos y canales legados.
+  5. **A7:** PAT de lectura para CI.
+- **Fase posterior pendiente:**
+  - **Auditoría de Redundancias y Simplificación (`AUDITORIA_REDUNDANCIAS_Y_SIMPLIFICACION_FASE_POSTERIOR.md`)**:
+    - Unificación y poda de modelos de datos legacy (`WhatsAppConversation` vs `ChannelConversation`, `WhatsAppMessage` vs `ChannelMessage`, `Integration` vs `WhatsAppConnection`) tras probar este cierre en operación.
 
 
