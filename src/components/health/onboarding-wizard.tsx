@@ -80,11 +80,11 @@ export function OnboardingWizard({
                   {idx + 1}. {step.title}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 mt-1 leading-snug">{step.description}</p>
+              <p className="text-[13px] text-slate-500 mt-1 leading-snug">{step.description}</p>
               {!step.done && step.action && (
                 <button
                   onClick={() => go(step.action?.href)}
-                  className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-800 transition-colors"
+                  className="mt-1.5 inline-flex items-center gap-1 text-[13px] font-semibold text-emerald-600 hover:text-emerald-800 transition-colors"
                 >
                   {step.action.label}
                   <ArrowRight className="w-3 h-3" />

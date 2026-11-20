@@ -182,7 +182,7 @@ export function SavedViewsBar({ entity, activeViewId, activeFilters, onApply, on
   return (
     <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Vistas y filtros guardados">
       {!compact && (
-        <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1 mr-0.5">
+        <span className="text-[13px] font-medium text-slate-500 flex items-center gap-1 mr-0.5">
           <Bookmark className="w-3 h-3" aria-hidden="true" /> Vistas:
         </span>
       )}
@@ -193,7 +193,7 @@ export function SavedViewsBar({ entity, activeViewId, activeFilters, onApply, on
         onClick={() => onApply(null)}
         aria-pressed={activeFilters.length === 0}
         title="Mostrar todo"
-        className={`inline-flex items-center h-6 px-2.5 rounded-full text-[11px] border transition-colors ${
+        className={`inline-flex items-center h-6 px-2.5 rounded-full text-[13px] border transition-colors ${
           activeFilters.length === 0
             ? 'bg-emerald-600 text-white border-emerald-600 font-medium'
             : 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300 hover:text-emerald-700'
@@ -218,7 +218,7 @@ export function SavedViewsBar({ entity, activeViewId, activeFilters, onApply, on
               aria-pressed={isActive}
               onClick={() => onApply(view)}
               onKeyDown={(e) => handleKeyDownChip(e, view)}
-              className={`group inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[11px] border cursor-pointer transition-colors select-none ${
+              className={`group inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[13px] border cursor-pointer transition-colors select-none ${
                 isActive
                   ? 'bg-emerald-600 text-white border-emerald-600 font-medium'
                   : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-700'
@@ -258,7 +258,7 @@ export function SavedViewsBar({ entity, activeViewId, activeFilters, onApply, on
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 px-2 text-[11px] text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 gap-1"
+            className="h-6 px-2 text-[13px] text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 gap-1"
             aria-label="Añadir filtro"
           >
             <Plus className="w-3 h-3" /> Filtro
@@ -345,7 +345,7 @@ export function SavedViewsBar({ entity, activeViewId, activeFilters, onApply, on
         onClick={() => setShowSaveDialog(true)}
         title="Guardar vista actual"
         aria-label="Guardar vista actual"
-        className="h-6 px-2 text-[11px] text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 gap-1"
+        className="h-6 px-2 text-[13px] text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 gap-1"
       >
         <BookmarkPlus className="w-3 h-3" />
         {!compact && 'Guardar vista actual'}
@@ -359,7 +359,7 @@ export function SavedViewsBar({ entity, activeViewId, activeFilters, onApply, on
             <Badge
               key={`${f.field}-${f.operator}-${i}`}
               variant="outline"
-              className="text-[11px] font-normal bg-emerald-50/50 text-emerald-800 border-emerald-200 gap-1 py-0.5"
+              className="text-[13px] font-normal bg-emerald-50/50 text-emerald-800 border-emerald-200 gap-1 py-0.5"
             >
               {describeFilter(f, entity)}
               <button
@@ -375,7 +375,7 @@ export function SavedViewsBar({ entity, activeViewId, activeFilters, onApply, on
           <button
             type="button"
             onClick={() => onFiltersChange([])}
-            className="text-[11px] text-slate-400 hover:text-red-500 transition-colors underline underline-offset-2"
+            className="text-[13px] text-slate-400 hover:text-red-500 transition-colors underline underline-offset-2"
           >
             Limpiar
           </button>
@@ -410,7 +410,7 @@ export function SavedViewsBar({ entity, activeViewId, activeFilters, onApply, on
               {filtersToSave().length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
                   {filtersToSave().map((f, i) => (
-                    <Badge key={i} variant="outline" className="text-[10px] font-normal bg-white">
+                    <Badge key={i} variant="outline" className="text-[13px] font-normal bg-white">
                       {describeFilter(f, entity)}
                     </Badge>
                   ))}
@@ -423,7 +423,7 @@ export function SavedViewsBar({ entity, activeViewId, activeFilters, onApply, on
             <div className="flex items-center justify-between">
               <div>
                 <Label htmlFor="share-view" className="cursor-pointer">Compartir con el equipo</Label>
-                <p className="text-[11px] text-slate-400 mt-0.5">Los demás miembros podrán usar esta vista</p>
+                <p className="text-[13px] text-slate-400 mt-0.5">Los demás miembros podrán usar esta vista</p>
               </div>
               <Switch id="share-view" checked={shareWithTeam} onCheckedChange={setShareWithTeam} disabled={saving} />
             </div>

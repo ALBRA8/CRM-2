@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import {
   Dialog,
   DialogContent,
@@ -320,26 +321,21 @@ export function ProductsPage() {
       {/* Content */}
       {filtered.length === 0 ? (
         <Card className="border-0 shadow-sm bg-white">
-          <CardContent className="p-12 text-center">
-            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Package className="w-8 h-8 text-slate-300" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-700">
-              {services.length === 0 ? 'Sin productos aún' : 'Sin resultados'}
-            </h3>
-            <p className="text-sm text-slate-400 mt-1 max-w-sm mx-auto">
-              {services.length === 0
-                ? 'Agrega tu primer producto o servicio para comenzar a gestionar tu catálogo.'
-                : 'No se encontraron productos con los filtros actuales.'}
-            </p>
-            {services.length === 0 && (
-              <Button
-                onClick={() => { setEditingService(null); setShowForm(true) }}
-                className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
-              >
-                <Plus className="w-4 h-4" /> Crear Primer Producto
-              </Button>
-            )}
+          <CardContent className="p-0">
+            <EmptyState
+              icon={Package}
+              title={services.length === 0 ? 'Sin productos aún' : 'Sin resultados'}
+              description={
+                services.length === 0
+                  ? 'Agrega tu primer producto o servicio para comenzar a gestionar tu catálogo.'
+                  : 'No se encontraron productos con los filtros actuales.'
+              }
+              action={
+                services.length === 0
+                  ? { label: 'Crear Primer Producto', icon: Plus, onClick: () => { setEditingService(null); setShowForm(true) } }
+                  : undefined
+              }
+            />
           </CardContent>
         </Card>
       ) : viewMode === 'grid' ? (
@@ -362,11 +358,11 @@ export function ProductsPage() {
                       {/* Top Row: Category + Menu */}
                       <div className="flex items-center justify-between mb-3">
                         {service.category ? (
-                          <Badge className={`text-[10px] h-5 px-2 border ${catStyle.bg} ${catStyle.text} ${catStyle.border} font-medium`}>
+                          <Badge className={`text-[13px] h-5 px-2 border ${catStyle.bg} ${catStyle.text} ${catStyle.border} font-medium`}>
                             {service.category}
                           </Badge>
                         ) : (
-                          <span className="text-[10px] text-slate-300">Sin categoría</span>
+                          <span className="text-[13px] text-slate-300">Sin categoría</span>
                         )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -423,7 +419,7 @@ export function ProductsPage() {
                       {/* Inactive badge */}
                       {!service.isActive && (
                         <div className="absolute top-2 left-2">
-                          <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-slate-100 text-slate-500">
+                          <Badge variant="secondary" className="text-[13px] h-4 px-1.5 bg-slate-100 text-slate-500">
                             Inactivo
                           </Badge>
                         </div>
@@ -481,7 +477,7 @@ export function ProductsPage() {
                         </td>
                         <td className="px-5 py-3.5">
                           {service.category ? (
-                            <Badge className={`text-[10px] h-5 px-2 border ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}>
+                            <Badge className={`text-[13px] h-5 px-2 border ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}>
                               {service.category}
                             </Badge>
                           ) : (
@@ -491,7 +487,7 @@ export function ProductsPage() {
                         <td className="px-5 py-3.5 text-right font-bold text-emerald-700">{formatCurrency(service.price)}</td>
                         <td className="px-5 py-3.5 text-center text-xs text-slate-500">{service.duration} min</td>
                         <td className="px-5 py-3.5 text-center">
-                          <Badge className={`text-[10px] h-5 px-2 border-0 ${service.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                          <Badge className={`text-[13px] h-5 px-2 border-0 ${service.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                             {service.isActive ? 'Activo' : 'Inactivo'}
                           </Badge>
                         </td>

@@ -49,15 +49,15 @@ sigue se escribe a mano:
 
 <!-- FIGURAS-CANONICAS-INICIO (verificado por scripts/verify-doc-figures.mjs — no editar a mano) -->
 rutas_api: 128
-archivos_prueba: 110
+archivos_prueba: 111
 modelos_prisma: 47
 migraciones: 18
-componentes_ui: 105
+componentes_ui: 106
 <!-- FIGURAS-CANONICAS-FIN -->
 
 Estado verificado en esta fecha (repositorio CRM-ALBRA, rama de construcción):
 
-- Suite completa en verde: **986/986 pruebas en 110 archivos**; `tsc --noEmit` 0 errores; eslint limpio; `next build` OK.
+- Suite completa en verde: **995/995 pruebas en 111 archivos**; `tsc --noEmit` 0 errores; eslint limpio; `next build` OK.
 - Las cifras históricas de entradas anteriores (475, 569, 781… 920) son el registro de SU fecha y no se reescriben: la historia no se miente, se ancla.
 - Las secciones de WP/ULTRA de este documento corresponden a sus propios repos (dependencia externa); sus suites no se cuentan aquí.
 - Re-ejecutar en cada release: `node scripts/verify-doc-figures.mjs` (o `--print` para actualizar el bloque).

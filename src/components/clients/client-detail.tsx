@@ -1399,8 +1399,8 @@ export function ClientDetail() {
                             <div className="flex-1 min-w-0">
                               <p className="text-sm text-slate-700">{log.description}</p>
                               <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-[10px]">{log.action}</Badge>
-                                <Badge variant="outline" className="text-[10px]">{log.entity}</Badge>
+                                <Badge variant="outline" className="text-[13px]">{log.action}</Badge>
+                                <Badge variant="outline" className="text-[13px]">{log.entity}</Badge>
                                 <span className="text-xs text-slate-400">
                                   {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true, locale: es })}
                                 </span>

@@ -180,7 +180,7 @@ export function GlobalSearch() {
             placeholder="Buscar clientes, oportunidades, productos..."
             className="pl-8 pr-12 h-8 text-xs bg-slate-50 border-slate-200 focus:bg-white"
           />
-          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-slate-400 font-mono bg-slate-100 border border-slate-200 rounded px-1 py-0.5 pointer-events-none">
+          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[13px] text-slate-400 font-mono bg-slate-100 border border-slate-200 rounded px-1 py-0.5 pointer-events-none">
             ⌘K
           </kbd>
         </div>
@@ -221,9 +221,9 @@ export function GlobalSearch() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-slate-900 truncate">{result.title}</p>
-                    <p className="text-[10px] text-slate-400 truncate">{result.subtitle}</p>
+                    <p className="text-[13px] text-slate-400 truncate">{result.subtitle}</p>
                   </div>
-                  <span className="text-[9px] uppercase tracking-wider text-slate-400 font-medium">
+                  <span className="text-[13px] uppercase tracking-wider text-slate-400 font-medium">
                     {typeLabel[result.type]}
                   </span>
                   <ChevronRight className="w-3 h-3 text-slate-300 group-hover:text-slate-500 transition-colors flex-shrink-0" />

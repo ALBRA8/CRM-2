@@ -453,7 +453,7 @@ export function AutomationFormDialog({ open, onClose, editAutomation }: Automati
                 <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-bold flex-shrink-0">2</div>
                 <Filter className="w-4 h-4 text-amber-600" aria-hidden="true" />
                 <h3 className="text-sm font-semibold text-slate-900">Y se cumple…</h3>
-                <span className="text-[11px] text-slate-400 hidden sm:inline">(opcional — todas deben cumplirse)</span>
+                <span className="text-[13px] text-slate-400 hidden sm:inline">(opcional — todas deben cumplirse)</span>
               </div>
               <Button
                 type="button"
@@ -544,7 +544,7 @@ export function AutomationFormDialog({ open, onClose, editAutomation }: Automati
                       <span className="text-slate-400">{actionIcon(t)}</span>
                       <div className="flex flex-col">
                         <span className="text-xs font-medium">{actionTypeLabels[t]}</span>
-                        <span className="text-[10px] text-slate-400">{actionTypeDescriptions[t]}</span>
+                        <span className="text-[13px] text-slate-400">{actionTypeDescriptions[t]}</span>
                       </div>
                     </DropdownMenuItem>
                   ))}
@@ -639,7 +639,7 @@ export function AutomationFormDialog({ open, onClose, editAutomation }: Automati
                           className="text-xs"
                           disabled={loading}
                         />
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-[13px] text-slate-400">
                           Usa variables como <code className="bg-slate-100 rounded px-1">{'{{nombre}}'}</code>,{' '}
                           <code className="bg-slate-100 rounded px-1">{'{{empresa}}'}</code> o{' '}
                           <code className="bg-slate-100 rounded px-1">{'{{etapa}}'}</code>
@@ -692,7 +692,7 @@ export function AutomationFormDialog({ open, onClose, editAutomation }: Automati
                           className="text-xs"
                           disabled={loading}
                         />
-                        <p className="text-[10px] text-violet-500 flex items-center gap-1">
+                        <p className="text-[13px] text-violet-500 flex items-center gap-1">
                           <Bot className="w-3 h-3" /> El agente IA redacta el seguimiento con el contexto del cliente
                         </p>
                       </div>
@@ -702,7 +702,7 @@ export function AutomationFormDialog({ open, onClose, editAutomation }: Automati
                       <div className="space-y-1.5">
                         <div className="grid grid-cols-3 gap-2">
                           <div>
-                            <Label className="text-[10px] text-slate-400">Días</Label>
+                            <Label className="text-[13px] text-slate-400">Días</Label>
                             <Input
                               aria-label={`Días de espera de la acción ${index + 1}`}
                               type="number"
@@ -716,7 +716,7 @@ export function AutomationFormDialog({ open, onClose, editAutomation }: Automati
                             />
                           </div>
                           <div>
-                            <Label className="text-[10px] text-slate-400">Horas</Label>
+                            <Label className="text-[13px] text-slate-400">Horas</Label>
                             <Input
                               aria-label={`Horas de espera de la acción ${index + 1}`}
                               type="number"
@@ -730,7 +730,7 @@ export function AutomationFormDialog({ open, onClose, editAutomation }: Automati
                             />
                           </div>
                           <div>
-                            <Label className="text-[10px] text-slate-400">Minutos</Label>
+                            <Label className="text-[13px] text-slate-400">Minutos</Label>
                             <Input
                               aria-label={`Minutos de espera de la acción ${index + 1}`}
                               type="number"
@@ -744,7 +744,7 @@ export function AutomationFormDialog({ open, onClose, editAutomation }: Automati
                             />
                           </div>
                         </div>
-                        <p className="text-[10px] text-amber-600 flex items-center gap-1">
+                        <p className="text-[13px] text-amber-600 flex items-center gap-1">
                           <CalendarClock className="w-3 h-3" /> El flujo queda en espera y continúa solo (ideal: mensaje → esperar 3 días → seguimiento IA)
                         </p>
                       </div>

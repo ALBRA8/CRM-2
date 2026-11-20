@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AutomationFormDialog, triggerTypeLabels } from './automation-form-dialog'
 import { SuggestionsPanel } from './suggestions-panel'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Plus, Play, Zap, Clock, RefreshCw, CheckCircle2, XCircle, Hourglass, ChevronDown, ChevronRight, Bot } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -106,21 +107,21 @@ function LastRunBadge({ lastRun }: { lastRun?: LastRun | null }) {
       ? `reanuda ${format(new Date(lastRun.resumeAt), "d MMM HH:mm", { locale: es })}`
       : 'en espera'
     return (
-      <Badge variant="outline" className="text-[10px] bg-amber-50/60 text-amber-700 border-amber-200 gap-1">
+      <Badge variant="outline" className="text-[13px] bg-amber-50/60 text-amber-700 border-amber-200 gap-1">
         <Hourglass className="w-2.5 h-2.5" /> En espera ({resume})
       </Badge>
     )
   }
   if (lastRun.status === 'failed') {
     return (
-      <Badge variant="outline" className="text-[10px] bg-red-50/60 text-red-700 border-red-200 gap-1">
+      <Badge variant="outline" className="text-[13px] bg-red-50/60 text-red-700 border-red-200 gap-1">
         <XCircle className="w-2.5 h-2.5" /> Falló
       </Badge>
     )
   }
   if (lastRun.status === 'success') {
     return (
-      <Badge variant="outline" className="text-[10px] bg-emerald-50/60 text-emerald-700 border-emerald-200 gap-1">
+      <Badge variant="outline" className="text-[13px] bg-emerald-50/60 text-emerald-700 border-emerald-200 gap-1">
         <CheckCircle2 className="w-2.5 h-2.5" /> Exitosa
       </Badge>
     )
@@ -138,7 +139,7 @@ function LastRunSteps({ lastRun }: { lastRun: LastRun }) {
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="text-[11px] text-slate-400 hover:text-emerald-700 flex items-center gap-1 transition-colors"
+        className="text-[13px] text-slate-400 hover:text-emerald-700 flex items-center gap-1 transition-colors"
       >
         {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
         Detalle de la última ejecución
@@ -146,7 +147,7 @@ function LastRunSteps({ lastRun }: { lastRun: LastRun }) {
       {open && (
         <div className="mt-1.5 bg-slate-50 border border-slate-100 rounded-lg p-2.5 space-y-1.5">
           {lastRun.steps.map((s, i) => (
-            <div key={i} className="flex items-start gap-1.5 text-[11px]">
+            <div key={i} className="flex items-start gap-1.5 text-[13px]">
               {s.status === 'success' ? (
                 <CheckCircle2 className="w-3 h-3 text-emerald-500 mt-0.5 flex-shrink-0" />
               ) : s.status === 'waiting' ? (
@@ -162,13 +163,13 @@ function LastRunSteps({ lastRun }: { lastRun: LastRun }) {
             </div>
           ))}
           {lastRun.steps.length === 0 && (
-            <p className="text-[11px] text-slate-400">Sin detalle de pasos (ejecución antigua)</p>
+            <p className="text-[13px] text-slate-400">Sin detalle de pasos (ejecución antigua)</p>
           )}
           {lastRun.error && (
-            <p className="text-[11px] text-red-600 border-t border-slate-200 pt-1.5">Error: {lastRun.error}</p>
+            <p className="text-[13px] text-red-600 border-t border-slate-200 pt-1.5">Error: {lastRun.error}</p>
           )}
           {lastRun.status === 'success' && lastRun.steps.some((s) => s.type === 'ai_followup') && (
-            <p className="text-[10px] text-violet-500 flex items-center gap-1 border-t border-slate-200 pt-1.5">
+            <p className="text-[13px] text-violet-500 flex items-center gap-1 border-t border-slate-200 pt-1.5">
               <Bot className="w-3 h-3" /> El seguimiento redactado por IA quedó en tus notificaciones
             </p>
           )}
@@ -312,17 +313,17 @@ export function AutomationsPage() {
                       </p>
                       {/* Métricas del workflow */}
                       <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                        <Badge variant="outline" className="text-[10px] bg-emerald-50/60 text-emerald-700 border-emerald-200">
+                        <Badge variant="outline" className="text-[13px] bg-emerald-50/60 text-emerald-700 border-emerald-200">
                           Ejecutada {auto.runCount} {auto.runCount === 1 ? 'vez' : 'veces'}
                         </Badge>
                         <LastRunBadge lastRun={auto.lastRun} />
                         {countJsonArray(auto.conditions) > 0 && (
-                          <Badge variant="outline" className="text-[10px] bg-amber-50/60 text-amber-700 border-amber-200">
+                          <Badge variant="outline" className="text-[13px] bg-amber-50/60 text-amber-700 border-amber-200">
                             {countJsonArray(auto.conditions)} condición(es)
                           </Badge>
                         )}
                         {countJsonArray(auto.actions) > 0 && (
-                          <Badge variant="outline" className="text-[10px] bg-violet-50/60 text-violet-700 border-violet-200">
+                          <Badge variant="outline" className="text-[13px] bg-violet-50/60 text-violet-700 border-violet-200">
                             {countJsonArray(auto.actions)} acción(es)
                           </Badge>
                         )}
@@ -367,19 +368,12 @@ export function AutomationsPage() {
               </Card>
             ))
           ) : (
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-12 text-center">
-                <Zap className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <h3 className="text-lg font-medium text-slate-600">No hay automatizaciones</h3>
-                <p className="text-sm text-slate-400 mt-1">Crea tu primera automatización para ahorrar tiempo</p>
-                <Button
-                  onClick={() => setShowForm(true)}
-                  className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  <Plus className="w-4 h-4 mr-2" /> Crear Automatización
-                </Button>
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={Zap}
+              title="No hay automatizaciones"
+              description="Crea tu primera automatización para ahorrar tiempo en cada mensaje y seguimiento"
+              action={{ label: 'Crear Automatización', icon: Plus, onClick: () => setShowForm(true) }}
+            />
           )}
         </div>
 

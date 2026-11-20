@@ -88,7 +88,7 @@ export function SuggestionsPanel() {
                     <span className="text-xs font-bold text-emerald-600 w-5">#{index + 1}</span>
                     <p className="text-sm font-medium text-slate-900">{sug.client.name}</p>
                   </div>
-                  <Badge className={`text-[10px] ${tempColors[sug.client.temperature] ?? ''}`}>
+                  <Badge className={`text-[13px] ${tempColors[sug.client.temperature] ?? ''}`}>
                     {sug.client.temperature}
                   </Badge>
                 </div>
@@ -100,10 +100,10 @@ export function SuggestionsPanel() {
                     </p>
                   ))}
                   <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="outline" className="text-[13px]">
                       Score: {sug.priorityScore}
                     </Badge>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[13px] text-slate-400">
                       {sug.client.daysSinceContact}d sin contacto
                     </span>
                   </div>

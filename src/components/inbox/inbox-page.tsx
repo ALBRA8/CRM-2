@@ -1,12 +1,14 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Inbox as InboxIcon, MessageCircle, Send as SendIcon, Instagram, RefreshCw, Loader2, Mic, Music2, Search, Building2, X } from 'lucide-react'
+import { Inbox as InboxIcon, MessageCircle, Send as SendIcon, Instagram, RefreshCw, Loader2, Mic, Music2, Search, Building2, X, QrCode } from 'lucide-react'
 import { toast } from 'sonner'
 import { notifyError } from '@/components/ui/error-alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { EmptyState } from '@/components/ui/empty-state'
+import { useAppStore } from '@/lib/store'
 import {
   Select,
   SelectContent,
@@ -317,7 +319,7 @@ export function InboxPage() {
                   key={f.id}
                   onClick={() => setFilter(f.id)}
                   className={cn(
-                    'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors',
+                    'px-2.5 py-1 rounded-full text-[13px] font-medium transition-colors',
                     filter === f.id ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   )}
                 >
@@ -327,7 +329,7 @@ export function InboxPage() {
               {hasActiveFilters && (
                 <button
                   onClick={resetFilters}
-                  className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-800 text-white hover:bg-slate-700 transition-colors"
+                  className="px-2.5 py-1 rounded-full text-[13px] font-medium bg-slate-800 text-white hover:bg-slate-700 transition-colors"
                   title="Quitar todos los filtros"
                 >
                   Limpiar
@@ -342,11 +344,20 @@ export function InboxPage() {
                 <p className="text-xs text-slate-400 mt-2">Cargando conversaciones…</p>
               </div>
             ) : filtered.length === 0 ? (
-              <div className="p-6 text-center">
-                <InboxIcon className="w-8 h-8 text-slate-200 mx-auto mb-2" />
-                <p className="text-xs text-slate-400">Sin conversaciones aún</p>
-                <p className="text-[10px] text-slate-300 mt-1">Los mensajes de WhatsApp, Telegram, Instagram, Messenger y TikTok aparecerán aquí</p>
-              </div>
+              <EmptyState
+                size="sm"
+                icon={InboxIcon}
+                title="Sin conversaciones aún"
+                description="Los mensajes de WhatsApp, Telegram, Instagram, Messenger y TikTok aparecerán aquí"
+                action={{
+                  label: 'Conectar un número',
+                  icon: QrCode,
+                  onClick: () => {
+                    window.history.replaceState(null, '', '/settings?tab=whatsapp')
+                    useAppStore.getState().setView('settings')
+                  },
+                }}
+              />
             ) : (
               filtered.map((conv) => {
                 const Icon = CHANNEL_ICON[conv.channel]
@@ -371,8 +382,8 @@ export function InboxPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <span className="text-[13px] font-medium text-slate-900 truncate">{conv.contactName}</span>
-                          {conv.connectionName && <span className="text-[9px] text-slate-400 truncate max-w-[90px] ml-1">{conv.connectionName}</span>}
-                          <span className="text-[10px] text-slate-400 flex-shrink-0 ml-1">{timeAgo(conv.lastMessageAt)}</span>
+                          {conv.connectionName && <span className="text-[13px] text-slate-400 truncate max-w-[90px] ml-1">{conv.connectionName}</span>}
+                          <span className="text-[13px] text-slate-400 flex-shrink-0 ml-1">{timeAgo(conv.lastMessageAt)}</span>
                         </div>
                         <div className="flex items-center justify-between mt-0.5">
                           <span className={cn('text-xs truncate', conv.lastMessageFrom === 'in' ? 'text-slate-600' : 'text-slate-400')}>
@@ -380,7 +391,7 @@ export function InboxPage() {
                             {conv.lastMessage || 'Sin mensajes'}
                           </span>
                           {conv.unreadCount > 0 && (
-                            <span className="ml-1 flex-shrink-0 w-4 h-4 rounded-full bg-emerald-600 text-white text-[9px] font-bold flex items-center justify-center">
+                            <span className="ml-1 flex-shrink-0 w-4 h-4 rounded-full bg-emerald-600 text-white text-[13px] font-bold flex items-center justify-center">
                               {conv.unreadCount > 9 ? '9+' : conv.unreadCount}
                             </span>
                           )}
@@ -418,12 +429,12 @@ export function InboxPage() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-slate-900 truncate">{selected.contactName}</p>
-                  <p className="text-[11px] text-slate-400 truncate">
+                  <p className="text-[13px] text-slate-400 truncate">
                     vía {selected.channelLabel}{selected.connectionName ? ` · ${selected.connectionName}` : ''} · {selected.contactHandle || 'sin handle'}
                   </p>
                 </div>
                 {selected.isAutoReply && (
-                  <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-medium flex-shrink-0">Agente IA activo</span>
+                  <span className="text-[13px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-medium flex-shrink-0">Agente IA activo</span>
                 )}
               </div>
 
@@ -448,14 +459,14 @@ export function InboxPage() {
                         )}
                       >
                         {m.messageType === 'voice' && (
-                          <span className="flex items-center gap-1 text-[10px] font-medium text-slate-500 mb-0.5">
+                          <span className="flex items-center gap-1 text-[13px] font-medium text-slate-500 mb-0.5">
                             <Mic className="w-3 h-3" /> Nota de voz (transcrita)
                           </span>
                         )}
                         {m.text}
                         {m.deliveryStatus && (
                           <span className={cn(
-                            'block text-[10px] mt-1 font-medium',
+                            'block text-[13px] mt-1 font-medium',
                             m.deliveryStatus === 'failed' || m.deliveryStatus === 'delivery_failed' ? 'text-red-200' : m.deliveryStatus === 'unknown' ? 'text-amber-200' : 'text-emerald-100'
                           )}>
                             {m.deliveryStatus === 'queued' ? 'En cola · aún no enviado' :
@@ -468,7 +479,7 @@ export function InboxPage() {
                               'Resultado incierto · verificar antes de reenviar'}
                           </span>
                         )}
-                        <span className={cn('block text-[9px] mt-1', m.direction === 'out' ? (m.senderType === 'agent' ? 'text-amber-600' : 'text-emerald-200') : 'text-slate-400')}>
+                        <span className={cn('block text-[13px] mt-1', m.direction === 'out' ? (m.senderType === 'agent' ? 'text-amber-600' : 'text-emerald-200') : 'text-slate-400')}>
                           {m.senderType === 'agent' ? 'Agente IA · ' : ''}
                           {new Date(m.createdAt).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
                         </span>
@@ -479,8 +490,8 @@ export function InboxPage() {
               </div>
 
               <div className="p-3 border-t border-slate-100 bg-white">
-                {!selected.key.startsWith('cc:') && <p className="text-[11px] text-amber-700 mb-2">Esta conversación todavía usa el formato legacy. El envío está deshabilitado hasta migrarla a una conexión canónica.</p>}
-                {selected.key.startsWith('cc:') && <p className="text-[11px] text-amber-700 mb-2">{selected.channel === 'whatsapp' || selected.channel === 'instagram' || selected.channel === 'tiktok' ? 'El mensaje se guardará en una cola segura y podrás ver su estado. El worker de entrega aún no está habilitado: no se enviará al proveedor ni se usará una cuenta legacy.' : 'El envío canónico de este canal todavía no está soportado; no se usará una cuenta legacy.'}</p>}
+                {!selected.key.startsWith('cc:') && <p className="text-[13px] text-amber-700 mb-2">Esta conversación todavía usa el formato legacy. El envío está deshabilitado hasta migrarla a una conexión canónica.</p>}
+                {selected.key.startsWith('cc:') && <p className="text-[13px] text-amber-700 mb-2">{selected.channel === 'whatsapp' || selected.channel === 'instagram' || selected.channel === 'tiktok' ? 'El mensaje se guardará en una cola segura y podrás ver su estado. El worker de entrega aún no está habilitado: no se enviará al proveedor ni se usará una cuenta legacy.' : 'El envío canónico de este canal todavía no está soportado; no se usará una cuenta legacy.'}</p>}
                 <div className="flex gap-2 items-end">
                   <Textarea
                     value={draft}

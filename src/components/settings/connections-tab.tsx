@@ -497,7 +497,7 @@ export function ConnectionsTab() {
                           {c.displayName || maskPhone(c.phoneNumber)}
                         </span>
                         <StatusBadge tone={meta.tone} label={meta.label} />
-                        <Badge variant="outline" className="text-[10px] text-slate-400">
+                        <Badge variant="outline" className="text-[13px] text-slate-400">
                           {sourceLabel(c.source)}
                         </Badge>
                       </div>
@@ -621,7 +621,7 @@ export function ConnectionsTab() {
                     <div className="min-w-0 flex-1">
                       <p className="text-slate-800 text-sm font-medium">{ui.label}</p>
                       {ev.detail && <p className="text-xs text-slate-500 break-words">{ev.detail}</p>}
-                      <p className="text-[10px] text-slate-400">{shortDate(ev.createdAt)}</p>
+                      <p className="text-[13px] text-slate-400">{shortDate(ev.createdAt)}</p>
                     </div>
                   </div>
                 )

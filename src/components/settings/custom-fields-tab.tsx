@@ -170,16 +170,16 @@ export function CustomFieldsTab() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium text-slate-900">{f.name}</p>
-                  <Badge className={`text-[10px] ${fieldTypeColors[f.fieldType] || 'bg-slate-100 text-slate-600'}`}>
+                  <Badge className={`text-[13px] ${fieldTypeColors[f.fieldType] || 'bg-slate-100 text-slate-600'}`}>
                     {fieldTypeLabels[f.fieldType] || f.fieldType}
                   </Badge>
-                  {f.isRequired && <Badge variant="outline" className="text-[10px] text-red-600">Requerido</Badge>}
-                  {!f.isActive && <Badge variant="outline" className="text-[10px]">Inactivo</Badge>}
+                  {f.isRequired && <Badge variant="outline" className="text-[13px] text-red-600">Requerido</Badge>}
+                  {!f.isActive && <Badge variant="outline" className="text-[13px]">Inactivo</Badge>}
                 </div>
                 {f.fieldType === 'select' && f.options && (
                   <div className="flex flex-wrap gap-1 mt-1">
                     {JSON.parse(f.options).map((opt: string, i: number) => (
-                      <Badge key={i} variant="outline" className="text-[10px]">{opt}</Badge>
+                      <Badge key={i} variant="outline" className="text-[13px]">{opt}</Badge>
                     ))}
                   </div>
                 )}

@@ -122,7 +122,7 @@ export function Sidebar() {
           const header = !sidebarCollapsed ? (
             <div
               key={`h-${section.id}`}
-              className="text-[9px] font-bold uppercase tracking-widest text-slate-500 px-2.5 pt-2.5 pb-1 select-none"
+              className="text-[13px] font-bold uppercase tracking-widest text-slate-500 px-2.5 pt-2.5 pb-1 select-none"
             >
               {section.title}
             </div>
@@ -208,7 +208,7 @@ export function Sidebar() {
           variant="ghost"
           size="sm"
           onClick={toggleSidebar}
-          className="w-full justify-center text-slate-400 hover:text-white hover:bg-slate-800 h-7 text-[11px]"
+          className="w-full justify-center text-slate-400 hover:text-white hover:bg-slate-800 h-7 text-[13px]"
         >
           {sidebarCollapsed ? (
             <ChevronRight className="w-4 h-4" />
@@ -227,7 +227,7 @@ export function Sidebar() {
           <DropdownMenuTrigger asChild>
             <button className="w-full flex items-center gap-2 px-1.5 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">
               <Avatar className="w-7 h-7 flex-shrink-0">
-                <AvatarFallback className="bg-emerald-600 text-white text-[10px] font-semibold">
+                <AvatarFallback className="bg-emerald-600 text-white text-[13px] font-semibold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -240,8 +240,8 @@ export function Sidebar() {
                     transition={{ duration: 0.15 }}
                     className="text-left min-w-0 overflow-hidden"
                   >
-                    <p className="text-[12px] font-medium text-white truncate">{user?.name ?? 'Usuario'}</p>
-                    <p className="text-[10px] text-slate-400 truncate">{user?.email ?? ''}</p>
+                    <p className="text-[13px] font-medium text-white truncate">{user?.name ?? 'Usuario'}</p>
+                    <p className="text-[13px] text-slate-400 truncate">{user?.email ?? ''}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -326,7 +326,7 @@ export function MobileSidebar({ open, onClose }: { open: boolean; onClose: () =>
             <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
               {visibleSections(user?.role).map((section) => (
                 <div key={section.id}>
-                  <div className="text-[9px] font-bold uppercase tracking-widest text-slate-500 px-3 pt-2.5 pb-1 select-none">
+                  <div className="text-[13px] font-bold uppercase tracking-widest text-slate-500 px-3 pt-2.5 pb-1 select-none">
                     {section.title}
                   </div>
                   {section.items.map((item) => {

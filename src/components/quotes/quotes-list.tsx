@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { QuoteFormDialog } from './quote-form-dialog'
 import { QuoteDetail } from './quote-detail'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Plus, FileText, Search, Download, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -178,17 +179,12 @@ export function QuotesList() {
             ))}
           </div>
         ) : filteredQuotes.length === 0 ? (
-          <div className="p-12 text-center">
-            <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-lg font-medium text-slate-600">No hay cotizaciones</h3>
-            <p className="text-sm text-slate-400 mt-1">Crea tu primera cotización</p>
-            <Button
-              onClick={() => setShowForm(true)}
-              className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white"
-            >
-              <Plus className="w-4 h-4 mr-2" /> Crear Cotización
-            </Button>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="No hay cotizaciones"
+            description="Crea tu primera cotización y envíala a tu cliente en minutos"
+            action={{ label: 'Crear Cotización', icon: Plus, onClick: () => setShowForm(true) }}
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">

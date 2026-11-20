@@ -338,9 +338,9 @@ function AgentMemoryCard() {
                 {results.map((r, i) => (
                   <div key={i} className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <Badge variant="secondary" className="text-[10px] h-4">{r.kind === 'fact' ? 'hecho' : r.channel}</Badge>
-                      <span className="text-[10px] text-slate-400">{r.createdAt.slice(0, 10)}</span>
-                      {r.score !== null && <span className="text-[10px] text-emerald-600 ml-auto">{Math.round(r.score * 100)}%</span>}
+                      <Badge variant="secondary" className="text-[13px] h-4">{r.kind === 'fact' ? 'hecho' : r.channel}</Badge>
+                      <span className="text-[13px] text-slate-400">{r.createdAt.slice(0, 10)}</span>
+                      {r.score !== null && <span className="text-[13px] text-emerald-600 ml-auto">{Math.round(r.score * 100)}%</span>}
                     </div>
                     <p className="text-xs text-slate-700 line-clamp-2">{r.text}</p>
                   </div>
@@ -1427,7 +1427,7 @@ export function SettingsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 text-[11px] gap-1.5"
+                    className="h-7 text-[13px] gap-1.5"
                     onClick={() => useAppStore.getState().setView('whatsapp')}
                   >
                     <QrCode className="w-3.5 h-3.5" />
@@ -1624,17 +1624,17 @@ export function SettingsPage() {
                   <div className="bg-emerald-50 rounded-xl p-3">
                     <MessageCircle className="w-5 h-5 text-emerald-600 mb-1.5" />
                     <p className="text-xs font-semibold text-slate-700">Auto-respuesta IA</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">El agente responde y califica prospectos 24/7</p>
+                    <p className="text-[13px] text-slate-500 mt-0.5">El agente responde y califica prospectos 24/7</p>
                   </div>
                   <div className="bg-amber-50 rounded-xl p-3">
                     <Zap className="w-5 h-5 text-amber-500 mb-1.5" />
                     <p className="text-xs font-semibold text-slate-700">Transferencia humana</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Pasa a un humano cuando el agente no pueda</p>
+                    <p className="text-[13px] text-slate-500 mt-0.5">Pasa a un humano cuando el agente no pueda</p>
                   </div>
                   <div className="bg-blue-50 rounded-xl p-3">
                     <RefreshCw className="w-5 h-5 text-blue-500 mb-1.5" />
                     <p className="text-xs font-semibold text-slate-700">Seguimiento auto</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Follow-up programado hasta cerrar la venta</p>
+                    <p className="text-[13px] text-slate-500 mt-0.5">Follow-up programado hasta cerrar la venta</p>
                   </div>
                 </div>
               </CardContent>
@@ -1662,7 +1662,7 @@ export function SettingsPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-slate-900">Distribución automática de leads</h3>
-                        <Badge variant="outline" className="border-emerald-200 text-emerald-700 bg-emerald-50 text-[10px]">Round-Robin</Badge>
+                        <Badge variant="outline" className="border-emerald-200 text-emerald-700 bg-emerald-50 text-[13px]">Round-Robin</Badge>
                       </div>
                       <p className="text-sm text-slate-500 mt-1">
                         Reparte cada lead entrante (WhatsApp, Telegram, Instagram, chat AI, importación o alta manual) entre los
@@ -1698,7 +1698,7 @@ export function SettingsPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-slate-900">IA de cierre</h3>
-                        <Badge variant="outline" className="border-violet-200 text-violet-700 bg-violet-50 text-[10px]">Pipeline</Badge>
+                        <Badge variant="outline" className="border-violet-200 text-violet-700 bg-violet-50 text-[13px]">Pipeline</Badge>
                       </div>
                       <p className="text-sm text-slate-500 mt-1">
                         Habilita el botón IA en cada oportunidad del pipeline: analiza conversaciones,
@@ -2108,17 +2108,17 @@ export function SettingsPage() {
                   <div className="bg-emerald-50 rounded-xl p-3">
                     <Send className="w-5 h-5 text-emerald-600 mb-1.5" />
                     <p className="text-xs font-semibold text-slate-700">Auto-respuesta IA</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">El agente responde mensajes 24/7</p>
+                    <p className="text-[13px] text-slate-500 mt-0.5">El agente responde mensajes 24/7</p>
                   </div>
                   <div className="bg-amber-50 rounded-xl p-3">
                     <Zap className="w-5 h-5 text-amber-500 mb-1.5" />
                     <p className="text-xs font-semibold text-slate-700">Creación de contactos</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Crea clientes automáticamente desde chats</p>
+                    <p className="text-[13px] text-slate-500 mt-0.5">Crea clientes automáticamente desde chats</p>
                   </div>
                   <div className="bg-violet-50 rounded-xl p-3">
                     <RefreshCw className="w-5 h-5 text-violet-500 mb-1.5" />
                     <p className="text-xs font-semibold text-slate-700">Historial integrado</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Conversaciones vinculadas al CRM</p>
+                    <p className="text-[13px] text-slate-500 mt-0.5">Conversaciones vinculadas al CRM</p>
                   </div>
                 </div>
               </CardContent>
@@ -2175,10 +2175,10 @@ export function SettingsPage() {
                     </p>
                     {googleScopes.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {googleScopes.some(s => s.includes('gmail')) && <Badge variant="outline" className="text-[10px] border-emerald-200 text-emerald-700">Gmail</Badge>}
-                        {googleScopes.some(s => s.includes('calendar')) && <Badge variant="outline" className="text-[10px] border-emerald-200 text-emerald-700">Calendar</Badge>}
-                        {googleScopes.some(s => s.includes('sheets')) && <Badge variant="outline" className="text-[10px] border-emerald-200 text-emerald-700">Sheets</Badge>}
-                        {googleScopes.some(s => s.includes('drive')) && <Badge variant="outline" className="text-[10px] border-emerald-200 text-emerald-700">Drive</Badge>}
+                        {googleScopes.some(s => s.includes('gmail')) && <Badge variant="outline" className="text-[13px] border-emerald-200 text-emerald-700">Gmail</Badge>}
+                        {googleScopes.some(s => s.includes('calendar')) && <Badge variant="outline" className="text-[13px] border-emerald-200 text-emerald-700">Calendar</Badge>}
+                        {googleScopes.some(s => s.includes('sheets')) && <Badge variant="outline" className="text-[13px] border-emerald-200 text-emerald-700">Sheets</Badge>}
+                        {googleScopes.some(s => s.includes('drive')) && <Badge variant="outline" className="text-[13px] border-emerald-200 text-emerald-700">Drive</Badge>}
                       </div>
                     )}
                   </div>
@@ -2285,22 +2285,22 @@ export function SettingsPage() {
                   <div className="bg-emerald-50 rounded-xl p-3">
                     <Mail className="w-5 h-5 text-emerald-600 mb-1.5" />
                     <p className="text-xs font-semibold text-slate-700">Gmail</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Envía emails desde el CRM</p>
+                    <p className="text-[13px] text-slate-500 mt-0.5">Envía emails desde el CRM</p>
                   </div>
                   <div className="bg-amber-50 rounded-xl p-3">
                     <Calendar className="w-5 h-5 text-amber-500 mb-1.5" />
                     <p className="text-xs font-semibold text-slate-700">Calendar</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Crea y consulta eventos</p>
+                    <p className="text-[13px] text-slate-500 mt-0.5">Crea y consulta eventos</p>
                   </div>
                   <div className="bg-violet-50 rounded-xl p-3">
                     <Table className="w-5 h-5 text-violet-500 mb-1.5" />
                     <p className="text-xs font-semibold text-slate-700">Sheets</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Sincroniza inventario desde hojas</p>
+                    <p className="text-[13px] text-slate-500 mt-0.5">Sincroniza inventario desde hojas</p>
                   </div>
                   <div className="bg-blue-50 rounded-xl p-3">
                     <Cloud className="w-5 h-5 text-blue-500 mb-1.5" />
                     <p className="text-xs font-semibold text-slate-700">Drive</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Guarda cotizaciones y archivos</p>
+                    <p className="text-[13px] text-slate-500 mt-0.5">Guarda cotizaciones y archivos</p>
                   </div>
                 </div>
               </CardContent>

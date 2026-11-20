@@ -276,7 +276,7 @@ export function ActivityPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-sm text-slate-900">{entry.description}</span>
-                              <Badge variant="outline" className={`text-[10px] h-5 ${actionColor}`}>
+                              <Badge variant="outline" className={`text-[13px] h-5 ${actionColor}`}>
                                 {entry.action}
                               </Badge>
                             </div>

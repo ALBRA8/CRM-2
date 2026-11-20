@@ -282,8 +282,8 @@ function AuditTrailSection() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-slate-700 line-clamp-2">{log.description}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <Badge variant="outline" className="text-[10px]">{log.action}</Badge>
-                      <Badge variant="outline" className="text-[10px]">{log.entity}</Badge>
+                      <Badge variant="outline" className="text-[13px]">{log.action}</Badge>
+                      <Badge variant="outline" className="text-[13px]">{log.entity}</Badge>
                       <span className="text-xs text-slate-400">
                         {formatDistanceToNow(new Date(log.createdAt), { locale: es, addSuffix: true })}
                       </span>
@@ -827,7 +827,7 @@ function AttentionBlock({ motivos }: { motivos: AttentionMotivo[] }) {
     <div>
       <div className="flex items-center gap-2 mb-3">
         <h2 className="text-sm font-bold text-slate-900">Requiere atención</h2>
-        <Badge className="bg-red-50 text-red-700 border border-red-200 text-[10px] h-5">
+        <Badge className="bg-red-50 text-red-700 border border-red-200 text-[13px] h-5">
           {total} {total === 1 ? 'asunto' : 'asuntos'}
         </Badge>
       </div>
@@ -845,14 +845,14 @@ function AttentionBlock({ motivos }: { motivos: AttentionMotivo[] }) {
               title={m.description}
             >
               <div className="flex items-start justify-between">
-                <span className={`text-[10px] font-bold uppercase tracking-wide rounded-full px-2 py-0.5 ${st.badge}`}>
+                <span className={`text-[13px] font-bold uppercase tracking-wide rounded-full px-2 py-0.5 ${st.badge}`}>
                   {m.severity}
                 </span>
                 <ChevronRight className="w-4 h-4 text-slate-300" />
               </div>
               <p className="text-2xl font-bold text-slate-900 tracking-tight mt-2">{m.count}</p>
               <p className="text-xs font-semibold text-slate-700 mt-0.5">{m.label}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">{m.description}</p>
+              <p className="text-[13px] text-slate-400 mt-0.5 leading-snug">{m.description}</p>
             </motion.button>
           )
         })}

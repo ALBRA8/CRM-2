@@ -156,7 +156,7 @@ export function NotificationBell() {
             <motion.span
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5"
+              className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[13px] font-bold rounded-full flex items-center justify-center px-0.5"
             >
               {unreadCount > 9 ? '9+' : unreadCount}
             </motion.span>
@@ -169,7 +169,7 @@ export function NotificationBell() {
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-semibold text-slate-900">Notificaciones</h3>
             {unreadCount > 0 && (
-              <span className="text-[10px] font-medium bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">
+              <span className="text-[13px] font-medium bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">
                 {unreadCount} nueva{unreadCount > 1 ? 's' : ''}
               </span>
             )}
@@ -180,7 +180,7 @@ export function NotificationBell() {
                 variant="ghost"
                 size="sm"
                 onClick={handleMarkAllRead}
-                className="h-6 text-[11px] text-emerald-600 hover:text-emerald-700 px-2 hover:bg-emerald-50"
+                className="h-6 text-[13px] text-emerald-600 hover:text-emerald-700 px-2 hover:bg-emerald-50"
                 title="Marcar todas como leídas"
               >
                 <CheckCheck className="w-3 h-3 mr-1" /> Leer todo
@@ -223,7 +223,7 @@ export function NotificationBell() {
                           )}
                         </div>
                         <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">{n.message}</p>
-                        <p className="text-[10px] text-slate-400 mt-1">
+                        <p className="text-[13px] text-slate-400 mt-1">
                           {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: es })}
                         </p>
                       </div>
@@ -247,7 +247,7 @@ export function NotificationBell() {
         {/* Footer */}
         {notifications.length > 0 && (
           <div className="px-4 py-2 border-t bg-slate-50/50 rounded-b-lg">
-            <p className="text-[10px] text-slate-400 text-center">
+            <p className="text-[13px] text-slate-400 text-center">
               Actualización automática cada 30 segundos
             </p>
           </div>

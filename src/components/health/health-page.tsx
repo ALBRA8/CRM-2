@@ -133,18 +133,18 @@ export function HealthPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-sm font-semibold text-slate-900">{check.label}</h3>
-                    <span className={`text-[10px] font-bold rounded-full px-1.5 py-0.5 ${meta.bg} ${meta.text}`}>
+                    <span className={`text-[13px] font-bold rounded-full px-1.5 py-0.5 ${meta.bg} ${meta.text}`}>
                       {meta.label}
                     </span>
                   </div>
                   {check.detail && <p className="text-xs text-slate-500 mt-0.5 leading-snug">{check.detail}</p>}
-                  {action?.kind === 'note' && <p className="text-[11px] text-slate-400 mt-1">{action.label}</p>}
+                  {action?.kind === 'note' && <p className="text-[13px] text-slate-400 mt-1">{action.label}</p>}
                 </div>
               </div>
               {action?.kind === 'link' && (
                 <button
                   onClick={() => typeof window !== 'undefined' && window.location.assign(action.href ?? '/')}
-                  className="flex-shrink-0 inline-flex items-center rounded-lg border border-slate-200 px-2.5 h-7 text-[11px] font-semibold text-slate-600 hover:text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50 transition-colors"
+                  className="flex-shrink-0 inline-flex items-center rounded-lg border border-slate-200 px-2.5 h-7 text-[13px] font-semibold text-slate-600 hover:text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50 transition-colors"
                 >
                   {action.label}
                 </button>

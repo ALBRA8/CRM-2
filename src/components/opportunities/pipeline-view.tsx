@@ -291,7 +291,7 @@ export function PipelineView() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between mb-2">
                               <p className="text-sm font-medium text-slate-900 line-clamp-1">{opp.title}</p>
-                              <Badge className={`text-[10px] ml-1 ${tempColors[opp.client.temperature] ?? ''}`}>
+                              <Badge className={`text-[13px] ml-1 ${tempColors[opp.client.temperature] ?? ''}`}>
                                 {opp.client.temperature}
                               </Badge>
                             </div>
@@ -307,7 +307,7 @@ export function PipelineView() {
                                   disabled={aiLoadingId === opp.id}
                                   onClick={(e) => { e.stopPropagation(); handleAiSuggest(opp) }}
                                   onMouseDown={(e) => e.stopPropagation()}
-                                  className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-60 disabled:cursor-wait"
+                                  className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[13px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-60 disabled:cursor-wait"
                                 >
                                   {aiLoadingId === opp.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                                   IA
@@ -327,7 +327,7 @@ export function PipelineView() {
                     }`}>
                       {isDragOver ? 'Soltar aquí' : 'Sin oportunidades'}
                       {!isDragOver && (
-                        <div className="mt-1 text-[10px] text-slate-300">
+                        <div className="mt-1 text-[13px] text-slate-300">
                           Arrastra aquí desde otra columna
                         </div>
                       )}

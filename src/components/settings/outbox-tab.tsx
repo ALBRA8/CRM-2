@@ -194,7 +194,7 @@ export function OutboxTab() {
               ].map((c) => (
                 <div key={c.label} className="rounded-lg bg-slate-50 px-2 py-3">
                   <p className={`text-lg font-bold ${c.tone}`}>{c.value}</p>
-                  <p className="text-[11px] text-slate-500">{c.label}</p>
+                  <p className="text-[13px] text-slate-500">{c.label}</p>
                 </div>
               ))}
             </div>
@@ -229,20 +229,20 @@ export function OutboxTab() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-sm text-slate-900">{item.contactName}</span>
-                        <Badge variant="outline" className="text-[10px] text-slate-400">{item.channel}</Badge>
-                        {item.connectionName && <Badge variant="outline" className="text-[10px] text-slate-500">{item.connectionName}</Badge>}
-                        <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                        <Badge variant="outline" className="text-[13px] text-slate-400">{item.channel}</Badge>
+                        {item.connectionName && <Badge variant="outline" className="text-[13px] text-slate-500">{item.connectionName}</Badge>}
+                        <span className="text-[13px] text-slate-400 flex items-center gap-1">
                           <Clock className="w-3 h-3" /> hace {age(item.finishedAt || item.createdAt)}
                         </span>
                       </div>
                       <p className="text-xs text-slate-600 mt-1 line-clamp-2">{item.body}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
+                      <p className="text-[13px] text-slate-400 mt-0.5">
                         {item.contactHandle} · {item.providerErrorCode || 'sin código de error'}
                         {item.providerMessageId ? ` · ref proveedor: ${item.providerMessageId}` : ''}
                       </p>
                     </div>
                     {item.connectionStatus !== 'connected' && (
-                      <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 flex items-center gap-1">
+                      <span className="text-[13px] text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 flex items-center gap-1">
                         <AlertTriangle className="w-3 h-3" /> cuenta desconectada
                       </span>
                     )}
@@ -283,13 +283,13 @@ export function OutboxTab() {
                           placeholder="Identificador del mensaje en el proveedor (evidencia obligatoria para 'sent')"
                           className="h-8 text-xs font-mono"
                         />
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-[13px] text-slate-400">
                           Con esta evidencia el hilo del cliente queda actualizado sin duplicar el mensaje.
                         </p>
                       </div>
                     )}
                     {e.resolution === 'failed' && (
-                      <p className="text-[10px] text-slate-400">
+                      <p className="text-[13px] text-slate-400">
                         Se registra como no enviado (no se reintenta automáticamente). Podrás volver a escribirle desde la Bandeja.
                       </p>
                     )}
@@ -318,7 +318,7 @@ export function OutboxTab() {
 /** Estilo compartido de los botones de resolución. */
 function cnBtn(active: boolean): string {
   return [
-    'px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors flex items-center gap-1',
+    'px-2.5 py-1 rounded-full text-[13px] font-medium border transition-colors flex items-center gap-1',
     active ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100',
   ].join(' ')
 }

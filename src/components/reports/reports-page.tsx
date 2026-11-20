@@ -374,7 +374,7 @@ export function ReportsPage() {
                   <span className="text-xs font-medium text-slate-500">Calificados</span>
                 </div>
                 <p className="text-2xl font-bold text-emerald-600">{data.conversionRates.leadToQualified}%</p>
-                <p className="text-[11px] text-slate-400 mt-1">{data.conversionRates.leads} → {data.conversionRates.qualified}</p>
+                <p className="text-[13px] text-slate-400 mt-1">{data.conversionRates.leads} → {data.conversionRates.qualified}</p>
               </div>
               {/* Calificados → Propuesta */}
               <div className="text-center p-4 bg-slate-50 rounded-xl">
@@ -384,7 +384,7 @@ export function ReportsPage() {
                   <span className="text-xs font-medium text-slate-500">Propuesta</span>
                 </div>
                 <p className="text-2xl font-bold text-teal-600">{data.conversionRates.qualifiedToProposed}%</p>
-                <p className="text-[11px] text-slate-400 mt-1">{data.conversionRates.qualified} → {data.conversionRates.proposed}</p>
+                <p className="text-[13px] text-slate-400 mt-1">{data.conversionRates.qualified} → {data.conversionRates.proposed}</p>
               </div>
               {/* Propuesta → Cierre */}
               <div className="text-center p-4 bg-slate-50 rounded-xl">
@@ -394,7 +394,7 @@ export function ReportsPage() {
                   <span className="text-xs font-medium text-slate-500">Cierre</span>
                 </div>
                 <p className="text-2xl font-bold text-purple-600">{data.conversionRates.proposedToClosed}%</p>
-                <p className="text-[11px] text-slate-400 mt-1">{data.conversionRates.proposed} → {data.conversionRates.closed}</p>
+                <p className="text-[13px] text-slate-400 mt-1">{data.conversionRates.proposed} → {data.conversionRates.closed}</p>
               </div>
               {/* General */}
               <div className="text-center p-4 bg-emerald-50 rounded-xl border border-emerald-100">
@@ -402,7 +402,7 @@ export function ReportsPage() {
                   <span className="text-xs font-medium text-emerald-600">Conversión General</span>
                 </div>
                 <p className="text-2xl font-bold text-emerald-600">{data.conversionRates.overallRate}%</p>
-                <p className="text-[11px] text-emerald-400 mt-1">Pipeline → Cierre Ganado</p>
+                <p className="text-[13px] text-emerald-400 mt-1">Pipeline → Cierre Ganado</p>
               </div>
             </div>
           </CardContent>
@@ -467,7 +467,7 @@ export function ReportsPage() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-slate-900">{client.name}</p>
-                          <Badge variant="outline" className="text-[10px] h-4">{client.opportunityCount} op.</Badge>
+                          <Badge variant="outline" className="text-[13px] h-4">{client.opportunityCount} op.</Badge>
                         </div>
                       </div>
                       <span className="text-sm font-semibold text-slate-900">{formatCurrency(client.totalValue)}</span>
