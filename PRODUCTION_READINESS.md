@@ -49,9 +49,9 @@ sigue se escribe a mano:
 
 <!-- FIGURAS-CANONICAS-INICIO (verificado por scripts/verify-doc-figures.mjs — no editar a mano) -->
 rutas_api: 128
-archivos_prueba: 115
+archivos_prueba: 119
 modelos_prisma: 47
-migraciones: 18
+migraciones: 19
 componentes_ui: 106
 <!-- FIGURAS-CANONICAS-FIN -->
 
