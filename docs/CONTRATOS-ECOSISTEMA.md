@@ -130,13 +130,15 @@ daemon Baileys multi-org → `docs/CONTRATO-WHATSAPP-ORG.md`.
 | `/reports/pdf` — `src/app/api/reports/pdf/route.ts` | GET | capacidad RBAC |
 | `/saved-views/[id]` — `src/app/api/saved-views/[id]/route.ts` | PUT,DELETE | sesión (JWT) |
 
-## Agenda y transacciones (4 rutas)
+## Agenda, transacciones y tareas (6 rutas)
 
 | Ruta | Métodos | Protección |
 | --- | --- | --- |
 | `/download-ticket` — `src/app/api/download-ticket/route.ts` | POST | sesión (JWT) |
 | `/reservations` — `src/app/api/reservations/route.ts` | GET,POST | sesión (JWT) |
 | `/reservations/[id]` — `src/app/api/reservations/[id]/route.ts` | PUT,DELETE | sesión (JWT) |
+| `/tasks` — `src/app/api/tasks/route.ts` | GET,POST | sesión (JWT) |
+| `/tasks/[id]` — `src/app/api/tasks/[id]/route.ts` | GET,PATCH,DELETE | sesión (JWT) |
 | `/transactions` — `src/app/api/transactions/route.ts` | GET,POST | sesión (JWT) |
 
 ## Otros canales (Telegram, Instagram, Messenger, TikTok) (22 rutas)
@@ -187,7 +189,7 @@ daemon Baileys multi-org → `docs/CONTRATO-WHATSAPP-ORG.md`.
 | `/quotes/pdf` — `src/app/api/quotes/pdf/route.ts` | GET | sesión (JWT) |
 | `/services` — `src/app/api/services/route.ts` | GET,POST,PUT,DELETE | admin (JWT) |
 
-## WhatsApp (conexiones, envío, agente) (11 rutas)
+## WhatsApp (conexiones, envío, agente) (12 rutas)
 
 | Ruta | Métodos | Protección |
 | --- | --- | --- |
@@ -196,6 +198,7 @@ daemon Baileys multi-org → `docs/CONTRATO-WHATSAPP-ORG.md`.
 | `/whatsapp/connections` — `src/app/api/whatsapp/connections/route.ts` | GET,POST | sesión (JWT) |
 | `/whatsapp/connections/[id]` — `src/app/api/whatsapp/connections/[id]/route.ts` | GET,DELETE | sesión (JWT) |
 | `/whatsapp/connections/[id]/verify` — `src/app/api/whatsapp/connections/[id]/verify/route.ts` | POST | sesión (JWT) |
+| `/whatsapp/connections-panel` — `src/app/api/whatsapp/connections-panel/route.ts` | GET | sesión (JWT) |
 | `/whatsapp/daemon-proxy` — `src/app/api/whatsapp/daemon-proxy/route.ts` | GET,POST,PUT | sesión (JWT) + capacidad RBAC + secreto interno |
 | `/whatsapp/describe-image` — `src/app/api/whatsapp/describe-image/route.ts` | POST | secreto interno |
 | `/whatsapp/embedded-signup` — `src/app/api/whatsapp/embedded-signup/route.ts` | GET,POST | sesión (JWT) |
@@ -203,7 +206,7 @@ daemon Baileys multi-org → `docs/CONTRATO-WHATSAPP-ORG.md`.
 | `/whatsapp/transcribe` — `src/app/api/whatsapp/transcribe/route.ts` | POST | secreto interno |
 | `/whatsapp/webhook` — `src/app/api/whatsapp/webhook/route.ts` | GET,POST | firma HMAC |
 
-**Total: 125 rutas** (inventario real; verificado por `scripts/verify-doc-figures.mjs`, tarea D4).
+**Total: 128 rutas** (inventario real; verificado por `scripts/verify-doc-figures.mjs`, tarea D4).
 
 ## Contratos internos de servicio (server-to-server)
 

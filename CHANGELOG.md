@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-11-20 — Sesión 3: consolidación en línea maestra + S1 + S2 (runbook) + F1 (PR #6) + F2 endpoint agregado
+
+- **Línea maestra `impl/integracion-maestra-20261120`**: consolida en UNA rama la cadena acumulativa sesiones 1+2 (F2 UI → M7 → F3 → M8 → E7 → F4 → F5 → U1 → U2 → U3 → U4 → I3 → O3 → S6 → O2 → E4 → D4 → E3 → I2+I1) más los aportes de esta sesión. Merge-only (sin reescritura de historia). Base para la decisión A3/D1 del propietario.
+- **S1 (F1-T01)**: acta de rotación de credenciales `docs/actas/ROTACION-CREDENCIALES-2026-11-20.md` (inventario de PATs expuestos en chats + procedimiento de revocación). La revocación efectiva sigue siendo acción del propietario (el PAT clásico no puede revocarse a sí mismo vía API).
+- **S2 (F1-T02) — preparación validada, ejecución GATED**: generador `scripts/security/build-purge-replace-text.mjs` (cobertura 35/35 huellas pendientes en 1169 commits) + runbook `docs/actas/VENTANA-PURGA-HISTORIAL-S2.md` con dry-run completo en clon desechable (filter-repo 2.47.0: 0 pendientes post-purga; baseline reclasificada 310 dummy / 0 pendientes). El force-push queda bloqueado hasta completar S1 (orden del plan).
+- **F1 (F2-T03)**: PR #6 integrado (tareas y recordatorios + quick-actions de la ficha 360); migración `11_tareas` → `zzzzzz_tareas` (regla de z creciente); triggers CI `cierre/**`; `defaultTime` (F4) y `defaultClientId` (PR #6) conviven en el diálogo de reservas.
+- **F2 — endpoint agregado**: `GET /api/whatsapp/connections-panel` (una llamada: conexiones Cloud + veredicto real del daemon + plan) con modelo de vista puro `src/lib/wa-connections-view.ts` y +25 pruebas (fail-closed ante daemon caído; aislamiento cross-org; sin fuga de material sensible).
+- **Cifras conciliadas (E4/D4)**: bloque canónico recalculado — rutas_api=128, archivos_prueba=110, modelos_prisma=47, migraciones=18, componentes_ui=105; `CONTRATOS-ECOSISTEMA.md` con las 3 rutas nuevas (tasks ×2, connections-panel).
+- **Suite**: 955/955 → **986/986** pruebas en 110 archivos; `tsc --noEmit` 0 errores; eslint limpio; `next build` OK; `verify-doc-figures` en verde.
+
 ## 2026-11-20 — Construcción del plan definitivo v2.0 (oleadas F2→O2) y cifras conciliadas (E4)
 
 - **Construcción** (rama `docs/plan-definitivo-crm-2026-11-19` + ramas `impl/*`): F2 (UI de conexiones WhatsApp multi-número), M7 (criterio de unificación de bandeja), F3 (filtros y búsqueda server-side), M8 (conciliación operable UNCERTAIN), E7 (test backup/restore roundtrip), F4 (agenda semana/día), F5 (pantalla de Salud + wizard de puesta en marcha), U1 (navegación 5+1, una sola bandeja), U2 (dashboard "Requiere atención"), U3 (catálogo de errores accionables), U4 (ajustes por dominio), I3 (contratos del ecosistema), O3 (instalador idempotente), S6 (saneamiento de scripts e2e históricos), O2 (runbook único).

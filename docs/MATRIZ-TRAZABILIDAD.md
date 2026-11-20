@@ -19,8 +19,8 @@ runs de CI). El check `scripts/verify-doc-figures.mjs` corre en CI tras la suite
 
 | # | Afirmación | Evidencia | Re-verificación |
 | --- | --- | --- | --- |
-| 1 | La documentación cita cifras reales (125 rutas, 107 archivos de prueba, 46 modelos, 17 migraciones, 104 componentes) | Bloque canónico en `PRODUCTION_READINESS.md` (sección «Verificación 2026-11-20») | `node scripts/verify-doc-figures.mjs` (en CI) |
-| 2 | Las 125 rutas API están documentadas con archivo y protección reales | `docs/CONTRATOS-ECOSISTEMA.md` (tabla generada contra el código) | `scripts/gen_contratos_ecosistema.py` + fila 1 |
+| 1 | La documentación cita cifras reales (128 rutas, 110 archivos de prueba, 47 modelos, 18 migraciones, 105 componentes) | Bloque canónico en `PRODUCTION_READINESS.md` (sección «Verificación 2026-11-20») | `node scripts/verify-doc-figures.mjs` (en CI) |
+| 2 | Las 128 rutas API están documentadas con archivo y protección reales | `docs/CONTRATOS-ECOSISTEMA.md` (tabla generada contra el código) | `scripts/gen_contratos_ecosistema.py` + fila 1 |
 | 3 | Menú 5+1 con UNA sola bandeja; nada queda inaccesible | `src/lib/nav.ts` + `tests/unit/nav.test.ts` (14 pruebas) | suite |
 | 4 | Bandeja unificada sin duplicados (canónico primero, legacy respaldo) | `src/lib/inbox.ts` (`dedupeInboxConversations`) + `tests/unit/inbox.test.ts`; criterio en `docs/CRITERIO-BANDEJA-UNICA.md` | suite |
 | 5 | Bandeja filtra por canal/cuenta y busca (server-side) | `tests/unit/inbox.test.ts` + integración de `src/app/api/inbox/route.ts` | suite |
