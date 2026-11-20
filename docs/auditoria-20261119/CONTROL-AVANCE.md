@@ -1,6 +1,6 @@
 # CONTROL DE AVANCE — PLAN DEFINITIVO CRM-ALBRA v2.0
 
-**Fecha de actualización:** 2026-11-20 · **Sesión de construcción:** F2 → M7+F3 → M8 → U2 (F4-T02) → F5 → E7 → U3
+**Fecha de actualización:** 2026-11-20 · **Sesiones de construcción:** F2 → M7+F3 → M8 → U2 → F5 → E7 → U3 · **Consolidación:** F4 → U1 → U2/U3/U4 (cadena B) → I3 → O3 → S6 → O2 → E4/D4/E3 → I1+I2 → **U5**
 **Repositorio de entrega:** ALBRA8/CRM-2 (todas las ramas verificadas con `git ls-remote`)
 **Base canónica de construcción:** `docs/plan-definitivo-crm-2026-11-19` (commit `e9ad9df`)
 
@@ -10,15 +10,14 @@
 
 | Estado | Tareas |
 |---|---|
-| **Terminadas** (8 anteriores + 8 de esta sesión = 16) | M1, S5, E1, E2, **E4**, **D4** (cierre parcial) ← anteriores · **F2, M7, F3, M8, U2, F5, E7, U3** ← esta sesión |
-| **En desarrollo / análisis** | E3 (análisis de dependencias muertas), E4 (readiness/CHANGELOG), D4 (check en CI) |
-| **Pendientes construibles** | U1 (aprobada por instrucción global), U4, U5, I3, I2, S6, O2, O3, F4 (agenda, opcional) |
-| **Requieren autorización específica del propietario** | S1, S2, F1, D1, O1, D2 |
-| **Dependencia externa / bloqueadas** | 13 tareas del ecosistema WP/ULTRA |
-| **Descartadas** | M5, D3 |
-| **Pospuesta** | U6 |
+| **Terminadas (25 de las 32 construibles)** | M1, S5, E1, E2, E3, E4, D4 · F2, M7, F3, M8, U2, F5, E7, U3 (sesión 1) · **F4, U1, U4, I3, O3, S6, O2, I1, I2** (sesión de consolidación) · **U5** (pulido visual) |
+| **Requieren autorización específica del propietario (6)** | S1, S2, F1, D1, O1, D2 |
+| **Mejora opcional no construida (1)** | O4 (unidades systemd — opcional; congelada hasta decidir el stack de despliegue del propietario) |
+| **Dependencia externa / bloqueadas (13)** | tareas del ecosistema WP/ULTRA |
+| **Descartadas (2)** | M5, D3 |
+| **Pospuesta (1)** | U6 |
 
-**Tests:** 899/902 en verde (`npm test`). Los 3 fallos (`multitenant-p0`, `whatsapp-daemon-proxy-send`) son **PREEXISTENTES en la base** (verificados con `git stash` en `e9ad9df`) y pertenecen al proxy legacy del daemon — documentados para un fix posterior.
+**Tests:** 961/964 en la punta consolidada (`impl/u5-pulido-visual`, commit `285ef2f`). Los 3 fallos (`multitenant-p0` ×2, `whatsapp-daemon-proxy-send` ×1) son **PREEXISTENTES en la base** (verificados con `git stash` en `e9ad9df`) y pertenecen al proxy legacy del daemon — documentados para su arreglo posterior. Verificación triple en la punta: `tsc --noEmit` 0 · eslint 0 · `next build` OK.
 
 ---
 
@@ -41,7 +40,26 @@
 
 ---
 
-## 3. Camino restante hacia el piloto (actualizado)
+## 3. Sesión de consolidación y cierre UX (2026-11-20, segunda mitad)
+
+Se detectó en CRM-2 una **cadena acumulativa completa** (sesión paralela) que ya contenía los siguientes 10 trabajos encadenados sobre `e9ad9df` — se verificaron en la punta consolidada (`crm2/impl/i2-contratos-fixtures` = `86cc1a8`) y se completó la que faltaba:
+
+| ID | Tarea | Rama en CRM-2 | Commit | Resultado |
+|---|---|---|---|---|
+| **F4** | Agenda con vistas semana y día | `impl/f4-agenda-semana-dia` | `76564f2` | `agenda-vistas.ts` (170 líneas puras) + 205 pruebas unit; duración visible y huecos libres sobre la API de reservas existente |
+| **U1** | Navegación única 5+1, una sola bandeja | `impl/u1-nav-5mas1` | `09f7a4f` | Menú Hoy/Clientes/Bandeja/Comercial/Ajustes + Admin; `/whatsapp` queda accesible desde Ajustes → Canales; `nav.test.ts` (128 líneas) |
+| **U2/U3/U4** | (reconstruidos en la cadena consolidada) | misma cadena | `aa5ab3e` → `508a00a` | Dashboard atención, catálogo errores y ajustes por dominio (4 dominios, 2 niveles) integrados EN ORDEN |
+| **I3** | Documento único de contratos | `impl/i3-contratos-ecosistema` | `6eb82d8` | `docs/CONTRATOS-ECOSISTEMA.md` (254 líneas, 125 rutas con archivo y protección real) |
+| **O3** | Instalador/actualizador idempotente | `impl/o3-instalador` | `71110f0` | `scripts/instalar-crm.sh` (148 líneas): respalda `.env`+`db/`, build+migraciones, valida `/api/health`, log de operación |
+| **S6** | Saneamiento de scripts e2e históricos | (en cadena O2) | `5ee2784` | 25 scripts archivados en `docs/historia/scripts/`; queda el flujo oficial `scripts/e2e-3-servicios.mjs` |
+| **O2** | Runbook único del CRM | `impl/o2-runbook` | `c3b6659` | `docs/RUNBOOK-CRM.md` (198 líneas): arranque app+daemon+worker, monitor, backups con drill, actualización con O3, diagnóstico con Salud |
+| **E4/D4/E3** | Readiness, cifras y limpieza | cadena I2 | `cdc969f` → `4ef4f9f` | Bloque canónico verificado por script; dependencias muertas fuera |
+| **I1+I2** | E2E 3 servicios programado + fixtures de contratos | `impl/i2-contratos-fixtures` | `03f6e3b`→`86cc1a8` | `.github/workflows/e2e-3-servicios.yml` (cron diario 04:30 UTC + manual); `tests/contract/` con vector HMAC v2 compartido, SSO TTL 90 s / jti de un solo uso, eco de organización |
+| **U5** | **Pulido visual (la última construible)** | `impl/u5-pulido-visual` | **`285ef2f`** | **Tipografía mínima 13px**: token `@utility text-xs` = 13px/1.45 + barrido de 195 clases `text-[9|10|11|12px]` en 30 archivos. **Dark mode COMPLETADO y blindado**: invariante CI de ThemeProvider+ThemeToggle+capa `.dark` de superficies (60 reglas). **Estados vacíos**: componente `empty-state.tsx` (icono+título+descripción+CTA) adoptado en 6 pantallas (Bandeja con CTA «Conectar un número», WhatsApp, Cotizaciones, Automatizaciones, Clientes, Productos). `tests/unit/pulido-visual.test.ts` (9 invariantes) |
+
+---
+
+## 4. Camino restante hacia el piloto (estado FINAL de construcción)
 
 | # | Paso | Tareas | Estado |
 |---|---|---|---|
@@ -51,16 +69,18 @@
 | 4 | Dashboard operativo | U2 | ✅ HECHO |
 | 5 | Salud y puesta en marcha | F5 | ✅ HECHO |
 | 6 | Garantía de backup | E7 (test) | ✅ test HECHO — drill con acta = A7/A8 del propietario |
-| 7 | UX final: errores, ajustes, pulido | U3 ✅ · U4 · U5 | U3 HECHO · U4/U5 pendientes |
-| 8 | Fusiones de integración | F1 (PR #6), D1, I1/I2 | **bloqueado: A3 (propietario) o ejecutar yo con autorización** |
-| 9 | Seguridad residual | S1, S2, S6 | S1/S2 = propietario; S6 construible (26 scripts) |
-| 10 | Operación | O1, O2, O3, D2 | O2/O3 construibles; O1/D2 = autorización/externo |
+| 7 | UX final: errores, ajustes, pulido | U3 · U4 · U5 | ✅ TODO HECHO (U5 `285ef2f`) |
+| 8 | Integración y contratos | I1 · I2 · I3 | ✅ HECHO (workflow cron 04:30 UTC; fixtures; documento único) |
+| 9 | Seguridad residual | S6 | ✅ HECHO (25 scripts archivados) · S1/S2 = **autorización** |
+| 10 | Operación | O2 · O3 | ✅ HECHO (runbook + instalador) · O1/D2 = **autorización/externo** · O4 opcional |
 
-**Desbloqueos solo del propietario:** revocar token `ghp_w2tw…` expuesto en chat (URGENTE), A1 (PAT+PII_PEPPER en Actions), A3 (fusiones PR #6/#5), A7/A8 (worker en despliegue + drill con acta), credenciales SMTP, A10 ya aplicado con criterio M7 aprobado.
+**La construcción de las 32 tareas ejecutables del plan está COMPLETA salvo las 6 que requieren autorización específica (S1, S2, F1, D1, O1, D2) y la opcional O4.**
+
+**Desbloqueos solo del propietario:** revocar token `ghp_w2tw…` expuesto en chat (URGENTE), A1 (PAT+PII_PEPPER en Actions), A3 (fusiones PR #6/#5 — desbloquea F1/D1), A7/A8 (worker en despliegue + drill de backup con acta), credenciales SMTP, decidir O1 (compose) y O4 (systemd) sobre el stack de despliegue.
 
 ---
 
-## 4. Evidencia
+## 5. Evidencia
 
 - Cada tarea: commit con detalle, pruebas nuevas y verificación triple (tsc + eslint + next build).
 - Matriz XLSX original intacta en esta rama (`MATRIZ-TRAZABILIDAD-CRM-ALBRA-2026-11-19.xlsx`).
