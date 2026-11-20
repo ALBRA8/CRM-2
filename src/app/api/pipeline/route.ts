@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
 import { handle, json } from '../_lib/shared'
-import { loadClientAttrs } from '../_lib/clients'
+import { loadClientAttrs, stripForeignClients } from '../_lib/clients'
 import { serializeOpportunity } from '../_lib/opportunities'
 
 /**
@@ -25,6 +25,9 @@ export async function GET(req: NextRequest) {
       }),
     ])
 
+    // B1/fase correctiva: referencias históricas inconsistentes no filtran PII
+    // de otra org en el kanban ni en la lista plana.
+    await stripForeignClients(auth.orgId, opportunities)
     const clientIds = opportunities.map((o) => o.client?.id).filter((x): x is string => Boolean(x))
     const attrsMap = await loadClientAttrs(auth.orgId, clientIds)
 

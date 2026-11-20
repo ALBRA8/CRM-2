@@ -5,7 +5,7 @@ import { auditAndTimeline } from '@/lib/api-helpers'
 import { recordTimelineEvent } from '@/lib/timeline'
 import { runWorkflowsForTrigger } from '@/lib/workflow-engine'
 import { handle, json, readBody, str, dateOrNull, numOrNull, clamp } from '../../_lib/shared'
-import { loadClientAttrs } from '../../_lib/clients'
+import { loadClientAttrs, stripForeignClients } from '../../_lib/clients'
 import { computeQuoteTotals, itemsFromBody, quoteItemRows, quoteDiscountAmount, serializeQuote } from '../../_lib/quotes'
 
 const QUOTE_STATUS_LABELS: Record<string, string> = {
@@ -31,6 +31,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     })
     if (!quote) throw new HttpError(404, 'Cotización no encontrada')
 
+    // B1/fase correctiva: referencia histórica cross-org no filtra PII ajena.
+    await stripForeignClients(auth.orgId, [quote])
     const attrs = quote.client ? (await loadClientAttrs(auth.orgId, [quote.client.id])).get(quote.client.id) : undefined
     return json({ quote: serializeQuote(quote, { clientAttrs: attrs }) })
   })
@@ -189,6 +191,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       })
     }
 
+    // B1/fase correctiva: referencia histórica cross-org no filtra PII ajena.
+    await stripForeignClients(auth.orgId, [updated])
     const attrs = updated.client ? (await loadClientAttrs(auth.orgId, [updated.client.id])).get(updated.client.id) : undefined
     return json({ quote: serializeQuote(updated, { clientAttrs: attrs }) })
   })

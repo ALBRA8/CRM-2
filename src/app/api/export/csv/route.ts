@@ -5,6 +5,7 @@ import { handle, json } from '@/lib/api-helpers'
 import { db } from '@/lib/db'
 import { buildCsv } from '@/lib/csv'
 import { auditAndTimeline } from '@/lib/api-helpers'
+import { stripForeignClients } from '../../_lib/clients'
 
 /**
  * GET /api/export/csv?type=clients|services|quotes|transactions — CSV con BOM UTF-8.
@@ -38,6 +39,8 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: 'desc' },
         include: { client: { select: { name: true } } },
       })
+      // B1/fase correctiva: referencias históricas inconsistentes no exportan PII de otra org.
+      await stripForeignClients(orgId, quotes)
       csv = buildCsv(
         ['number', 'client', 'status', 'subtotal', 'tax', 'total', 'currency', 'createdAt'],
         quotes.map((q) => [q.number, q.client?.name || '', q.status, q.subtotal, q.tax, q.total, q.currency, q.createdAt.toISOString()])
@@ -50,6 +53,8 @@ export async function GET(req: NextRequest) {
         orderBy: { date: 'desc' },
         include: { client: { select: { name: true } } },
       })
+      // B1/fase correctiva: referencias históricas inconsistentes no exportan PII de otra org.
+      await stripForeignClients(orgId, txs)
       csv = buildCsv(
         ['date', 'type', 'amount', 'currency', 'category', 'description', 'method', 'client', 'createdAt'],
         txs.map((t) => [t.date.toISOString().split('T')[0], t.type, t.amount, t.currency, t.category || '', t.description || '', t.method || '', t.client?.name || '', t.createdAt.toISOString()])

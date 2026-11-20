@@ -4,6 +4,7 @@ import { requireAuth, HttpError } from '@/lib/auth'
 import { handle } from '../../_lib/shared'
 import { quoteDiscountAmount } from '../../_lib/quotes'
 import { buildQuotePdf } from '../../_lib/pdf'
+import { stripForeignClients } from '../../_lib/clients'
 
 /**
  * GET /api/quotes/pdf?id=... — descarga la cotización en PDF.
@@ -28,6 +29,9 @@ export async function GET(req: NextRequest) {
       },
     })
     if (!quote) throw new HttpError(404, 'Cotización no encontrada')
+
+    // B1/fase correctiva: referencia histórica cross-org no filtra PII ajena al PDF.
+    await stripForeignClients(auth.orgId, [quote])
 
     const org = await db.organization.findUnique({
       where: { id: auth.orgId },

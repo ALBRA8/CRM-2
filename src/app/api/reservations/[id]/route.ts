@@ -4,6 +4,7 @@ import { requireAuth, HttpError } from '@/lib/auth'
 import { auditAndTimeline } from '@/lib/api-helpers'
 import { handle, json, readBody, str, dateOrNull, numOrNull } from '../../_lib/shared'
 import { buildResMeta, parseResMeta, serializeReservation } from '../../_lib/reservations'
+import { stripForeignClients } from '../../_lib/clients'
 
 /** PUT /api/reservations/:id — actualización parcial (estado, fecha, duración, etc.). */
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -62,6 +63,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         : {}),
     })
 
+    // B1/fase correctiva: referencia histórica cross-org no filtra PII ajena.
+    await stripForeignClients(auth.orgId, [updated])
     return json({ reservation: serializeReservation(updated) })
   })
 }
@@ -88,6 +91,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       details: { name: existing.title, cancelled: true },
       clientId: updated.clientId,
     })
+    // B1/fase correctiva: referencia histórica cross-org no filtra PII ajena.
+    await stripForeignClients(auth.orgId, [updated])
     return json({ success: true, reservation: serializeReservation(updated) })
   })
 }

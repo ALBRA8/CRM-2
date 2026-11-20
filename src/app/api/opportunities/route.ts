@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 import { requireAuth, HttpError } from '@/lib/auth'
 import { auditAndTimeline } from '@/lib/api-helpers'
 import { handle, json, readBody, requireFields, str, dateOrNull, numOrNull, qparam } from '../_lib/shared'
-import { loadClientAttrs } from '../_lib/clients'
+import { loadClientAttrs, stripForeignClients } from '../_lib/clients'
 import { buildOppMeta, oppAmountFrom, serializeOpportunity } from '../_lib/opportunities'
 
 /** GET /api/opportunities — listado con client y stage incluidos. */
@@ -32,6 +32,9 @@ export async function GET(req: NextRequest) {
       },
     })
 
+    // B1/fase correctiva: referencias históricas inconsistentes (NO producibles
+    // por la API) no filtran PII de otra org vía el include de cliente.
+    await stripForeignClients(auth.orgId, opportunities)
     const attrsMap = await loadClientAttrs(auth.orgId, opportunities.map((o) => o.client?.id).filter((x): x is string => Boolean(x)))
     return json({ opportunities: opportunities.map((o) => serializeOpportunity(o, o.client ? attrsMap.get(o.client.id) : undefined)) })
   })

@@ -4,7 +4,7 @@ import { requireAuth, HttpError } from '@/lib/auth'
 import { auditAndTimeline, parseIntParam } from '@/lib/api-helpers'
 import { runWorkflowsForTrigger } from '@/lib/workflow-engine'
 import { handle, json, readBody, requireFields, str, dateOrNull, numOrNull, clamp, qparam } from '../_lib/shared'
-import { loadClientAttrs } from '../_lib/clients'
+import { loadClientAttrs, stripForeignClients } from '../_lib/clients'
 import { computeQuoteTotals, itemsFromBody, nextQuoteNumber, quoteItemRows, serializeQuote, isUniqueViolation } from '../_lib/quotes'
 
 /** GET /api/quotes — filtros: status, clientId. */
@@ -30,6 +30,8 @@ export async function GET(req: NextRequest) {
       },
     })
 
+    // B1/fase correctiva: referencias históricas inconsistentes no filtran PII de otra org.
+    await stripForeignClients(auth.orgId, quotes)
     const attrsMap = await loadClientAttrs(auth.orgId, quotes.map((q) => q.client?.id).filter((x): x is string => Boolean(x)))
     return json({
       quotes: quotes.map((q) => serializeQuote(q, { clientAttrs: q.client ? attrsMap.get(q.client.id) : undefined })),

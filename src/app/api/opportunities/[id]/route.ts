@@ -6,7 +6,7 @@ import { recordTimelineEvent } from '@/lib/timeline'
 import { runWorkflowsForTrigger } from '@/lib/workflow-engine'
 import { handle, json, readBody, str, numOrNull } from '../../_lib/shared'
 import { notifyWhatspowerStageChange } from '@/lib/whatspower-bridge'
-import { loadClientAttrs } from '../../_lib/clients'
+import { loadClientAttrs, stripForeignClients } from '../../_lib/clients'
 import { buildOppMeta, oppAmountFrom, parseOppMeta, serializeOpportunity } from '../../_lib/opportunities'
 
 /** GET /api/opportunities/:id */
@@ -23,6 +23,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     })
     if (!opp) throw new HttpError(404, 'Oportunidad no encontrada')
 
+    // B1/fase correctiva: referencia histórica cross-org no filtra PII ajena.
+    await stripForeignClients(auth.orgId, [opp])
     const attrs = opp.client ? (await loadClientAttrs(auth.orgId, [opp.client.id])).get(opp.client.id) : undefined
     return json({ opportunity: serializeOpportunity(opp, attrs) })
   })
@@ -207,6 +209,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       })
     }
 
+    // B1/fase correctiva: referencia histórica cross-org no filtra PII ajena.
+    await stripForeignClients(auth.orgId, [updated])
     const attrs = updated.client ? (await loadClientAttrs(auth.orgId, [updated.client.id])).get(updated.client.id) : undefined
     return json({ opportunity: serializeOpportunity(updated, attrs) })
   })
