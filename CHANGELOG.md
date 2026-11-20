@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 2026-11-20 — Sesión 7: fix de entorno de preview (HMR dev bloqueado por origen)
+
+- **Síntoma**: en el sandbox de preview la SPA quedaba clavada en «Cargando CRM ALBRA...» — sin errores de página, chunks al 200 % y cero llamadas a `/api` desde el cliente; la hidratación nunca terminaba.
+- **Diagnóstico**: en Next 16 dev, la hidratación del App Router espera al WebSocket `/_next/hmr`; el handshake fallaba (`ERR_INVALID_HTTP_RESPONSE`) cuando la petición incluía cabecera `Origin` fuera de la lista blanca de `allowedDevOrigins`. Reproducido con curl: `Origin: http://127.0.0.1:3000` → respuesta vacía; `Origin: http://localhost:3000` → `101 Switching Protocols` OK.
+- **Fix**: `allowedDevOrigins: ['localhost', '127.0.0.1', '*.space-z.ai']` en `next.config.ts` (incluye el dominio del gateway de preview). Sin cambios de código de la aplicación; suite intacta (1104/1104 en 128).
+- **Verificación E2E en navegador**: landing → «INICIAR DEMO» → dashboard con KPIs reales de la organización demo (8 clientes activos, $4.000 de pipeline, $2.400 de ingresos del mes), pipeline kanban, gráfico de ingresos, próximas reservas y sugerencias de contacto; panel «Números WA» en Ajustes con estado real por número y sesión QR vía daemon (puerto 3002) operativo.
+
 ## 2026-11-20 — Sesión 6: consolidación total de ramas (A3/D2 completa) + kits de integración WP/ULTRA
 
 - **Consolidación de las 6 ramas con contenido único** (pendiente de decisión desde la sesión 4; acta `docs/actas/CIERRE-FINAL-SESION-6-2026-11-20.md` §2, decisión por rama con evidencia):
