@@ -228,6 +228,24 @@ class ApiClient {
     return this.request('/dashboard')
   }
 
+  // Tareas y recordatorios (cierre integral, bloque C)
+  async listTasks(params?: Record<string, string>) {
+    const query = params ? '?' + new URLSearchParams(params).toString() : ''
+    return this.request(`/tasks${query}`)
+  }
+
+  async createTask(data: { title: string; notes?: string; dueAt?: string; priority?: string; clientId?: string | null }) {
+    return this.request('/tasks', { method: 'POST', body: JSON.stringify(data) })
+  }
+
+  async updateTask(id: string, data: Record<string, unknown>) {
+    return this.request(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+  }
+
+  async deleteTask(id: string) {
+    return this.request(`/tasks/${id}`, { method: 'DELETE' })
+  }
+
   // Claves de API (hosts: MCP y acciones CRM)
   async getApiKeys() {
     return this.request('/settings/api-keys')

@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { api } from '@/lib/api'
 import { useAppStore } from '@/lib/store'
+import { QuoteFormDialog } from '@/components/quotes/quote-form-dialog'
+import { ReservationFormDialog } from '@/components/calendar/reservation-form-dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -288,6 +290,10 @@ export function ClientDetail() {
   const [oppLoading, setOppLoading] = useState(false)
   const [resLoading, setResLoading] = useState(false)
   const [quotesLoading, setQuotesLoading] = useState(false)
+
+  // Quick-actions de la ficha 360 (cierre integral, bloque C): diálogos reales
+  const [quoteDialogOpen, setQuoteDialogOpen] = useState(false)
+  const [reserveDialogOpen, setReserveDialogOpen] = useState(false)
 
   // Custom fields state
   const [customFieldValues, setCustomFieldValues] = useState<CustomFieldValueWithField[]>([])
@@ -626,7 +632,7 @@ export function ClientDetail() {
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="text-xs gap-1.5">
+                <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => setView('inbox')}>
                   <MessageSquare className="w-3.5 h-3.5" /> Enviar Mensaje
                 </Button>
               </TooltipTrigger>
@@ -634,7 +640,7 @@ export function ClientDetail() {
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="text-xs gap-1.5">
+                <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => setQuoteDialogOpen(true)}>
                   <FileText className="w-3.5 h-3.5" /> Crear Cotización
                 </Button>
               </TooltipTrigger>
@@ -642,7 +648,7 @@ export function ClientDetail() {
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="text-xs gap-1.5">
+                <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => setReserveDialogOpen(true)}>
                   <CalendarPlus className="w-3.5 h-3.5" /> Agendar Cita
                 </Button>
               </TooltipTrigger>
@@ -1447,6 +1453,19 @@ export function ClientDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Diálogos de quick-actions (cierre integral, bloque C): el cliente
+          llega preseleccionado; sin pasos extra para el usuario */}
+      <QuoteFormDialog
+        open={quoteDialogOpen}
+        onClose={() => setQuoteDialogOpen(false)}
+        defaultClientId={client?.id}
+      />
+      <ReservationFormDialog
+        open={reserveDialogOpen}
+        onClose={() => setReserveDialogOpen(false)}
+        defaultClientId={client?.id}
+      />
     </div>
   )
 }

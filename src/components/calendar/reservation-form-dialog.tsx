@@ -22,9 +22,11 @@ interface ReservationFormDialogProps {
   open: boolean
   onClose: () => void
   defaultDate?: Date
+  /** Cliente preseleccionado al abrir (cierre integral: quick-actions de la ficha 360). */
+  defaultClientId?: string
 }
 
-export function ReservationFormDialog({ open, onClose, defaultDate }: ReservationFormDialogProps) {
+export function ReservationFormDialog({ open, onClose, defaultDate, defaultClientId }: ReservationFormDialogProps) {
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
   const [form, setForm] = useState({
     clientId: '',
@@ -44,8 +46,11 @@ export function ReservationFormDialog({ open, onClose, defaultDate }: Reservatio
       if (defaultDate) {
         setForm((p) => ({ ...p, date: format(defaultDate, 'yyyy-MM-dd') }))
       }
+      if (defaultClientId) {
+        setForm((p) => ({ ...p, clientId: defaultClientId }))
+      }
     }
-  }, [open, defaultDate])
+  }, [open, defaultDate, defaultClientId])
 
   const loadClients = async () => {
     try {
