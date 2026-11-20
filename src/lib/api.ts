@@ -13,7 +13,12 @@ class ApiClient {
     return this.token
   }
 
-  private async request(path: string, options: RequestInit = {}) {
+  /**
+   * Petición autenticada genérica (pública desde F2: el panel de conexiones la
+   * usa para leer el panel agregado y ejecutar acciones contra rutas protegidas;
+   * los métodos específicos de abajo siguen siendo la API preferente).
+   */
+  async request(path: string, options: RequestInit = {}) {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string> || {}),
