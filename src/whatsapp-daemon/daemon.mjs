@@ -32,6 +32,7 @@ import fs from 'fs'
 import { authDirFor, planBootRestore, decideUnscopedSend, validateOrgId } from './session-registry.mjs'
 import { ensureIdempotencyTable, reserveDaemonSend, markDaemonSendDone, markDaemonSendFailed } from './idempotency.mjs'
 import { safeSecretEqual, normalizeOrigin, isOriginAllowed } from './security-helpers.mjs'
+import { MAX_AUDIO_BYTES, MAX_IMAGE_BYTES, assertStreamLimit, isAllowedImageMime, normalizeMime, audioMediaKind } from './media-guard.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const AUTH_ROOT = join(__dirname, '.wa-auth') // raíz: una carpeta por organización dentro
@@ -243,31 +244,79 @@ function generateId() {
   return 'c' + Date.now().toString(36) + Math.random().toString(36).substring(2, 8)
 }
 
-// ============ Notas de voz (ASR vía Next.js interno) ============
-// El daemon solo descarga el media (Baileys); la transcripción vive en el
-// servidor Next (POST /api/whatsapp/transcribe con X-Internal-Secret).
+// ============ Media (ASR y visión vía endpoints internos del CRM) ============
+// El daemon solo descarga el media (Baileys) con TECHO DURO de bytes (port de
+// fix/whatsapp-production-media): la transcripción vive en el servidor Next
+// (POST /api/whatsapp/transcribe) y la descripción de imágenes en
+// (POST /api/whatsapp/describe-image), ambos con X-Internal-Secret.
 
 async function downloadWaAudio(content) {
   // audioMessage y pttMessage son tipo 'audio'; documento de audio va como 'document'
-  const mediaType = content.mimetype && !content.mimetype.startsWith('audio/') ? 'document' : 'audio'
+  const mediaType = audioMediaKind(content.mimetype)
   const stream = await downloadContentFromMessage(content, mediaType)
   const chunks = []
-  for await (const chunk of stream) chunks.push(chunk)
+  let total = 0
+  for await (const chunk of stream) {
+    total += chunk.length
+    assertStreamLimit(total, MAX_AUDIO_BYTES, 'El audio')
+    chunks.push(chunk)
+  }
   return Buffer.concat(chunks)
 }
 
-async function transcribeViaApi(audioBuffer) {
+/** Descarga una imagen de WhatsApp con allowlist de formato y techo de 8 MiB. */
+async function downloadWaImage(content) {
+  const mime = normalizeMime(content?.mimetype)
+  if (!isAllowedImageMime(mime)) throw new Error('Formato de imagen no soportado')
+  const stream = await downloadContentFromMessage(content, 'image')
+  const chunks = []
+  let total = 0
+  for await (const chunk of stream) {
+    total += chunk.length
+    assertStreamLimit(total, MAX_IMAGE_BYTES, 'La imagen')
+    chunks.push(chunk)
+  }
+  const buffer = Buffer.concat(chunks)
+  if (!buffer.length) throw new Error('Imagen vacía')
+  return { buffer, mime }
+}
+
+async function transcribeViaApi(audioBuffer, orgId) {
   const internalSecret = process.env.INTERNAL_API_SECRET
   const agentUrl = process.env.NEXT_APP_URL || 'http://localhost:3000'
   const res = await fetch(`${agentUrl}/api/whatsapp/transcribe`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': internalSecret },
+    headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': internalSecret, 'X-WhatsApp-Org-Id': orgId },
     body: JSON.stringify({ audioBase64: audioBuffer.toString('base64'), mime: 'audio/ogg' }),
     signal: AbortSignal.timeout(90_000),
   })
   if (!res.ok) {
     const detail = await res.text().catch(() => '')
     throw new Error(`transcribe ${res.status}: ${detail.slice(0, 200)}`)
+  }
+  const data = await res.json()
+  return (data.text || '').trim() || null
+}
+
+/** Visión vía el endpoint interno del CRM: la imagen se valida (magic bytes,
+ * techo de píxeles) y se describe UNA vez; al agente solo llega TEXTO. */
+async function describeImageViaApi(buffer, mime, orgId, caption) {
+  const internalSecret = process.env.INTERNAL_API_SECRET
+  const agentUrl = process.env.NEXT_APP_URL || 'http://localhost:3000'
+  const res = await fetch(`${agentUrl}/api/whatsapp/describe-image`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': internalSecret },
+    body: JSON.stringify({
+      imageBase64: buffer.toString('base64'),
+      mime,
+      caption: caption ? String(caption).slice(0, 200) : undefined,
+      orgId,
+    }),
+    signal: AbortSignal.timeout(90_000),
+  })
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    throw new Error(`describe-image ${res.status}: ${detail.slice(0, 200)}`)
   }
   const data = await res.json()
   return (data.text || '').trim() || null
@@ -528,21 +577,28 @@ async function connectToWhatsApp(orgId) {
                           null
         let messageType = 'text'
         let voiceTranscribed = false // la IA solo responde a voz con transcripción
+        let imageAnalyzed = false // igual para imágenes: solo con análisis real
 
         // Notas de voz (audioMessage/ptt/documento de audio): antes se descartaban
-        // silenciosamente. Ahora se descargan, se transcriben vía el endpoint
-        // interno de ASR y se guardan como messageType='voice'.
+        // silenciosamente. Ahora se descargan (techo 25 MiB), se transcriben vía el
+        // endpoint interno de ASR (con la org de la sesión) y se guardan como
+        // messageType='voice'.
+        // Imágenes (port de fix/whatsapp-production-media): se descargan con
+        // allowlist de formato y techo de 8 MiB, se analizan UNA vez vía el
+        // endpoint interno de visión y se guardan como messageType='image'.
         if (!textContent) {
           const audioContent = msg.message?.audioMessage ||
                                msg.message?.pttMessage ||
                                (msg.message?.documentMessage?.mimetype?.startsWith('audio/') ? msg.message.documentMessage : null)
+          const imageContent = msg.message?.imageMessage ||
+                               (msg.message?.documentMessage?.mimetype?.startsWith('image/') ? msg.message.documentMessage : null)
 
           if (audioContent) {
             messageType = 'voice'
             let transcribed = null
             try {
               const buf = await downloadWaAudio(audioContent)
-              if (buf && buf.length > 0) transcribed = await transcribeViaApi(buf)
+              if (buf && buf.length > 0) transcribed = await transcribeViaApi(buf, orgId)
             } catch (err) {
               console.error('[WA] Nota de voz sin transcribir:', err?.message || err)
             }
@@ -556,8 +612,30 @@ async function connectToWhatsApp(orgId) {
               textContent = '🎤 Nota de voz (no se pudo transcribir automáticamente)'
               console.warn(`[WA:${orgId.slice(-6)}] Nota de voz de ${contactPhone} guardada sin transcripción`)
             }
+          } else if (imageContent) {
+            messageType = 'image'
+            let described = null
+            try {
+              const { buffer, mime } = await downloadWaImage(imageContent)
+              described = await describeImageViaApi(buffer, mime, orgId, imageContent.caption)
+            } catch (err) {
+              console.error('[WA] Imagen sin analizar:', err?.message || err)
+            }
+            if (described) {
+              textContent = `🖼 Imagen: ${described}`
+              imageAnalyzed = true
+              console.log(`[WA:${orgId.slice(-6)}] Imagen analizada de ${contactPhone}: ${described.substring(0, 50)}...`)
+            } else {
+              // Fail-open a humano, mismo patrón que la voz: el caption (si hay)
+              // da contexto mínimo y la IA NO inventa una descripción.
+              const caption = imageContent.caption ? String(imageContent.caption).slice(0, 200) : ''
+              textContent = caption
+                ? `🖼 Imagen (sin análisis automático), nota del cliente: "${caption}"`
+                : '🖼 Imagen (no se pudo analizar automáticamente)'
+              console.warn(`[WA:${orgId.slice(-6)}] Imagen de ${contactPhone} guardada sin análisis`)
+            }
           } else {
-            continue // ni texto ni audio: se ignora como antes (stickers, imágenes, etc.)
+            continue // ni texto ni audio ni imagen: se ignora como antes (stickers, etc.)
           }
         }
 
@@ -582,9 +660,12 @@ async function connectToWhatsApp(orgId) {
           db.prepare("UPDATE Client SET lastContactAt = datetime('now'), updatedAt = datetime('now') WHERE id = ?").run(conv.clientId)
         }
 
-        // Auto-respuesta con IA si está habilitada (voz: solo si se transcribió).
+        // Auto-respuesta con IA si está habilitada (voz: solo si se transcribió;
+        // imagen: solo si se analizó — el agente nunca inventa contenido de media).
         // JAMÁS para mensajes del dueño (fromMe): el bot no se responde a sí mismo.
-        if (!isOwner && conv.isAutoReply && conv.status === 'active' && (messageType !== 'voice' || voiceTranscribed)) {
+        if (!isOwner && conv.isAutoReply && conv.status === 'active' && (
+          (messageType !== 'voice' && messageType !== 'image') || voiceTranscribed || imageAnalyzed
+        )) {
           console.log(`[WA:${orgId.slice(-6)}] Auto-reply enabled for ${contactPhone}, calling agent...`)
           // FIX BARRERA 3 complemento (mismo GO): WhatsApp no siempre incluye
           // senderPn en el key del mensaje (verificado con mensaje real 19:49 UTC).

@@ -11,17 +11,29 @@ import { AsrError, MAX_AUDIO_BASE64_CHARS, transcribeAudioBase64 } from '@/lib/a
  * internos con el secreto compartido por .env.
  *
  * Body: { audioBase64: string (base64 crudo), mime?: string }
- * Respuesta: { text } | 400/401/413/502 con { error } descriptivo.
+ * Header: X-WhatsApp-Org-Id — organización dueña de la nota de voz (port de
+ * fix/whatsapp-production-media): permite al daemon declarar el tenant y a la
+ * capa ASR resolver el proveedor por organización. Sin org → 400 (fail-closed).
+ * Respuesta: { text } | 400/401/413/415/502 con { error } descriptivo.
  *
  * El daemon descarga la nota de voz (Baileys) y la envía aquí; la transcripción
  * se guarda como WhatsAppMessage messageType='voice' y alimenta al agente IA.
  */
+const ALLOWED_AUDIO_MIMES = new Set([
+  'audio/ogg', 'audio/mpeg', 'audio/mp4', 'audio/aac', 'audio/wav', 'audio/webm', 'audio/flac',
+])
+
 export async function POST(req: NextRequest) {
   const provided = req.headers.get('x-internal-secret') || ''
   const expected = process.env.INTERNAL_API_SECRET || ''
 
   if (!safeEquals(provided, expected)) {
     return json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const orgId = req.headers.get('x-whatsapp-org-id') || ''
+  if (!orgId || orgId.length > 128) {
+    return json({ error: 'Organización de WhatsApp requerida' }, { status: 400 })
   }
 
   let body: { audioBase64?: string; mime?: string }
@@ -38,9 +50,13 @@ export async function POST(req: NextRequest) {
   if (audioBase64.length > MAX_AUDIO_BASE64_CHARS) {
     return json({ error: 'El audio excede el tamaño máximo permitido (25 MB)' }, { status: 413 })
   }
+  const mime = (body.mime || 'audio/ogg').split(';')[0].toLowerCase()
+  if (!ALLOWED_AUDIO_MIMES.has(mime)) {
+    return json({ error: 'Formato de audio no soportado' }, { status: 415 })
+  }
 
   try {
-    const text = await transcribeAudioBase64(audioBase64)
+    const text = await transcribeAudioBase64(audioBase64, orgId, mime)
     return json({ text })
   } catch (err) {
     if (err instanceof AsrError) {

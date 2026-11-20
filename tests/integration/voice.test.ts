@@ -7,7 +7,8 @@ import { jsonBody } from '../helpers'
  * POST /api/whatsapp/transcribe — endpoint interno (daemon Baileys → Next).
  * Autenticación por X-Internal-Secret (sin sesión de usuario). Escenarios:
  *  - 401 sin header / con secreto equivocado.
- *  - 400 JSON inválido o sin audioBase64.
+ *  - 400 JSON inválido, sin audioBase64 o sin X-WhatsApp-Org-Id (port de
+ *    fix/whatsapp-production-media: la org viaja en header).
  *  - 413 audio demasiado grande.
  *  - 200 happy path con el SDK mockeado.
  *  - 502 cuando el servicio ASR falla.
@@ -24,9 +25,10 @@ vi.mock('z-ai-web-dev-sdk', () => ({
 const SECRET = 'internal-test-secret-0123456789abcdef'
 const AUDIO_B64 = Buffer.from('audio-falso-de-prueba-ogg').toString('base64')
 
-function internalReq(body: unknown | string, withSecret = true): NextRequest {
+function internalReq(body: unknown | string, withSecret = true, orgId = 'org-a'): NextRequest {
   const headers = new Headers({ 'content-type': 'application/json' })
   if (withSecret) headers.set('x-internal-secret', SECRET)
+  if (orgId) headers.set('x-whatsapp-org-id', orgId)
   return new NextRequest('http://localhost:3000/api/whatsapp/transcribe', {
     method: 'POST',
     headers,
@@ -67,10 +69,27 @@ describe('POST /api/whatsapp/transcribe', () => {
     expect(res.status).toBe(400)
   })
 
+  it('400 sin la organización vinculada del daemon (X-WhatsApp-Org-Id)', async () => {
+    const res = await transcribePOST(internalReq({ audioBase64: AUDIO_B64 }, true, ''))
+    expect(res.status).toBe(400)
+    expect((await jsonBody(res)).error).toContain('Organización')
+  })
+
   it('400 sin audioBase64', async () => {
     const res = await transcribePOST(internalReq({ mime: 'audio/ogg' }))
     expect(res.status).toBe(400)
     expect((await jsonBody(res)).error).toContain('audioBase64')
+  })
+
+  it('415 con MIME que no es un formato de audio permitido', async () => {
+    const res = await transcribePOST(internalReq({ audioBase64: AUDIO_B64, mime: 'image/png' }))
+    expect(res.status).toBe(415)
+  })
+
+  it('400 con base64 no canónico antes de llamar a ASR', async () => {
+    const res = await transcribePOST(internalReq({ audioBase64: '!!!no-es-base64###', mime: 'audio/ogg' }))
+    expect(res.status).toBe(400)
+    expect(asrCreate).not.toHaveBeenCalled()
   })
 
   it('413 con audio que excede el tamaño máximo', async () => {

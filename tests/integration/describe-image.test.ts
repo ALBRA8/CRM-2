@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeAll, afterAll } from 'vitest'
 import { NextRequest } from 'next/server'
+import sharp from 'sharp'
 import { POST as describeImagePOST } from '@/app/api/whatsapp/describe-image/route'
 import { jsonBody } from '../helpers'
 
@@ -7,29 +8,28 @@ import { jsonBody } from '../helpers'
  * POST /api/whatsapp/describe-image — endpoint interno (daemon Baileys → Next).
  * Autenticación por X-Internal-Secret (sin sesión de usuario). Escenarios:
  *  - 401 sin header / con secreto equivocado.
- *  - 400 JSON inválido, sin imageBase64 u orgId.
+ *  - 400 JSON inválido, sin imageBase64, sin orgId o base64 no canónico.
  *  - 413 imagen demasiado grande.
- *  - 200 happy path (capa de visión mockeada).
+ *  - 415 mime no soportado, firma binaria no coincidente o imagen corrupta
+ *    (endurecimiento portado de fix/whatsapp-production-media).
+ *  - 200 happy path (capa de visión mockeada, imagen real generada con sharp).
  *  - 502 cuando la capa de visión falla (VisionError tipado).
  */
 
 const { describeImage } = vi.hoisted(() => ({ describeImage: vi.fn() }))
 
-vi.mock('@/lib/vision', () => ({
-  MAX_IMAGE_BASE64_CHARS: 20 * 1024 * 1024,
-  VisionError: class VisionError extends Error {
-    status: number
-    constructor(message: string, status = 502) {
-      super(message)
-      this.name = 'VisionError'
-      this.status = status
-    }
-  },
-  describeImageBase64: describeImage,
-}))
+vi.mock('@/lib/vision', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/vision')>()
+  return {
+    ...actual,
+    describeImageBase64: describeImage,
+  }
+})
 
 const SECRET = 'internal-test-secret-0123456789abcdef'
 const IMG_B64 = Buffer.from('imagen-de-prueba').toString('base64')
+
+let REAL_PNG_B64 = ''
 
 function internalReq(body: unknown | string, withSecret = true): NextRequest {
   const headers = new Headers({ 'content-type': 'application/json' })
@@ -41,8 +41,11 @@ function internalReq(body: unknown | string, withSecret = true): NextRequest {
   })
 }
 
-beforeAll(() => {
+beforeAll(async () => {
   vi.stubEnv('INTERNAL_API_SECRET', SECRET)
+  // PNG real de 1x1: el happy path con mime declarado exige firma + integridad sharp.
+  const buf = await sharp({ create: { width: 1, height: 1, channels: 3, background: 'red' } }).png().toBuffer()
+  REAL_PNG_B64 = buf.toString('base64')
 })
 
 afterAll(() => {
@@ -91,17 +94,52 @@ describe('POST /api/whatsapp/describe-image', () => {
     expect(res.status).toBe(413)
   })
 
+  it('415 con mime declarado fuera de la allowlist', async () => {
+    const res = await describeImagePOST(
+      internalReq({ imageBase64: IMG_B64, mime: 'image/bmp', orgId: 'org-1' })
+    )
+    expect(res.status).toBe(415)
+    expect(describeImage).not.toHaveBeenCalled()
+  })
+
+  it('400 con base64 no canónico', async () => {
+    const res = await describeImagePOST(internalReq({ imageBase64: '!!!no-es-base64###', orgId: 'org-1' }))
+    expect(res.status).toBe(400)
+    expect(describeImage).not.toHaveBeenCalled()
+  })
+
+  it('415 cuando el contenido binario no coincide con el formato declarado', async () => {
+    // Bytes arbitrarios declarados como PNG: la firma (magic bytes) no coincide.
+    const res = await describeImagePOST(
+      internalReq({ imageBase64: IMG_B64, mime: 'image/png', orgId: 'org-1' })
+    )
+    expect(res.status).toBe(415)
+    expect((await jsonBody(res)).error).toContain('no coincide')
+    expect(describeImage).not.toHaveBeenCalled()
+  })
+
+  it('415 cuando la imagen está corrupta (cabecera válida, cuerpo roto)', async () => {
+    // Cabecera PNG real + basura posterior: firma correcta, sharp falla.
+    const head = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
+    const corrupt = Buffer.concat([head, Buffer.from('cuerpo-roto-no-es-un-png')])
+    const res = await describeImagePOST(
+      internalReq({ imageBase64: corrupt.toString('base64'), mime: 'image/png', orgId: 'org-1' })
+    )
+    expect(res.status).toBe(415)
+    expect(describeImage).not.toHaveBeenCalled()
+  })
+
   it('200 happy path con caption → { text }', async () => {
     describeImage.mockResolvedValueOnce('Camisa manga larga azul marino, algodón, nueva, 1 unidad')
 
     const res = await describeImagePOST(
-      internalReq({ imageBase64: IMG_B64, mime: 'image/jpeg', caption: 'busco algo así', orgId: 'org-1' })
+      internalReq({ imageBase64: REAL_PNG_B64, mime: 'image/png', caption: 'busco algo así', orgId: 'org-1' })
     )
 
     expect(res.status).toBe(200)
     expect(await jsonBody(res)).toEqual({ text: 'Camisa manga larga azul marino, algodón, nueva, 1 unidad' })
-    expect(describeImage).toHaveBeenCalledWith('org-1', IMG_B64, {
-      mime: 'image/jpeg',
+    expect(describeImage).toHaveBeenCalledWith('org-1', REAL_PNG_B64, {
+      mime: 'image/png',
       caption: 'busco algo así',
     })
   })

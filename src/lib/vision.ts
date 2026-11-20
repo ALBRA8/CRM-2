@@ -33,6 +33,25 @@ export const MAX_IMAGE_BYTES = 15 * 1024 * 1024
 /** Longitud máxima del string base64 (4 chars por cada 3 bytes). */
 export const MAX_IMAGE_BASE64_CHARS = Math.ceil(MAX_IMAGE_BYTES / 3) * 4
 
+/** Formatos de imagen aceptados por la capa de visión (port de fix/whatsapp-production-media). */
+export const IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+
+/** Techo de píxeles decodificables: bloquea bombas de descompresión (DoS de memoria). */
+export const MAX_IMAGE_PIXELS = 40_000_000
+
+/**
+ * Verifica que los bytes reales comiencen con la firma binaria (magic bytes)
+ * del formato declarado. El MIME declarado por el emisor NO es confianza:
+ * un JPEG renombrado a PNG (o un payload arbitrario) se rechaza aquí.
+ */
+export function verifyImageSignature(bytes: Buffer, mime: string): boolean {
+  if (mime === 'image/jpeg') return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff
+  if (mime === 'image/png') return bytes.length >= 8 && bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+  if (mime === 'image/gif') return bytes.length >= 6 && ['GIF87a', 'GIF89a'].includes(bytes.subarray(0, 6).toString('ascii'))
+  if (mime === 'image/webp') return bytes.length >= 12 && bytes.subarray(0, 4).toString('ascii') === 'RIFF' && bytes.subarray(8, 12).toString('ascii') === 'WEBP'
+  return false
+}
+
 /** Techo de salida del modelo de visión: descripciones compactas y baratas. */
 const MAX_OUTPUT_TOKENS = 300
 
