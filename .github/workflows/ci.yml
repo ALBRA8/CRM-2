@@ -1,9 +1,9 @@
 name: CI CRM-ALBRA
 on:
   push:
-    branches: [main, 'impl/**', 'fix/**', 'repair/**']
+    branches: [main, 'impl/**', 'fix/**', 'repair/**', 'cierre/**']
   pull_request:
-    branches: [main, 'impl/**', 'fix/**', 'repair/**']
+    branches: [main, 'impl/**', 'fix/**', 'repair/**', 'cierre/**']
 
 jobs:
   ci:

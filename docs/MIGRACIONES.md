@@ -231,3 +231,22 @@ como sustituto de backups, revisión del SQL o aprobación operativa.
 
 No considerar la migración aprobada hasta conservar evidencia de estas
 pruebas y del ensayo de restauración.
+
+## Convención de numeración (F2-T01, plan definitivo 2026-11-19)
+
+`prisma migrate deploy` aplica migraciones en ORDEN LEXICOGRÁFICO de nombre de
+directorio, no en orden de creación. Por eso:
+
+1. **Migraciones base**: `0_` a `9_` con nombre semántico (una sola vez; los
+   números de dos dígitos NUNCA se usan: `11_tareas` se aplicaría entre `1_`
+   y `2_`).
+2. **Migraciones nuevas**: prefijo `z` creciente (`z_`, `zz_`, `zzz_`, …) con
+   nombre semántico. Cada migración nueva añade UNA `z` más que la última
+   existente, garantizando orden determinista sin renombrar nada anterior.
+3. Antes de crear una migración, verificar la última existente:
+   `ls prisma/migrations | sort | tail -2`.
+4. Las migraciones son ADITIVAS: nunca borran datos; los backfill usan
+   sufijado/renombrado (ver Migración 1) y se reversan con `git revert`.
+
+Ejemplo (integración del PR #6): `11_tareas` → `zzzzzz_tareas`, porque la
+última migración previa era `zzzzz_channel_connection_refresh_lease`.
