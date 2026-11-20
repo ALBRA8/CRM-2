@@ -8,8 +8,9 @@
 - **F1 (F2-T03)**: PR #6 integrado (tareas y recordatorios + quick-actions de la ficha 360); migración `11_tareas` → `zzzzzz_tareas` (regla de z creciente); triggers CI `cierre/**`; `defaultTime` (F4) y `defaultClientId` (PR #6) conviven en el diálogo de reservas.
 - **F2 — endpoint agregado**: `GET /api/whatsapp/connections-panel` (una llamada: conexiones Cloud + veredicto real del daemon + plan) con modelo de vista puro `src/lib/wa-connections-view.ts` y +25 pruebas (fail-closed ante daemon caído; aislamiento cross-org; sin fuga de material sensible).
 - **U5 (F4-T05) — pulido visual (OPCIONAL del plan, ejecutada)**: tipografía mínima 13px como token `@utility` (barrido de 195 clases sub-13px en 30 archivos), dark mode completo bloqueado por invariante de CI, componente `EmptyState` reutilizable adoptado en 6 pantallas. +9 invariantes en `tests/unit/pulido-visual.test.ts`.
-- **Cifras conciliadas (E4/D4)**: bloque canónico recalculado — rutas_api=128, archivos_prueba=111, modelos_prisma=47, migraciones=18, componentes_ui=106; `CONTRATOS-ECOSISTEMA.md` con las 3 rutas nuevas (tasks ×2, connections-panel).
-- **Suite**: 955/955 → **995/995** pruebas en 111 archivos; `tsc --noEmit` 0 errores; eslint limpio; `next build` OK; `verify-doc-figures` en verde.
+- **O4 (F6-T06) — observabilidad mínima y unidades systemd (OPCIONAL del plan, ejecutada)**: worker pull continuo `scripts/outbox-worker.mjs` (backoff acotado, cierre limpio, sin cuerpos en logs; +11 pruebas) y unidades `deploy/systemd/` (app, daemon Baileys `Restart=always`, worker, monitor con timer de 10 min) con README de instalación y **kill test** pendiente del propietario (systemd no corre en el sandbox). Runbook y `.env.example` actualizados.
+- **Cifras conciliadas (E4/D4)**: bloque canónico recalculado — rutas_api=128, archivos_prueba=112, modelos_prisma=47, migraciones=18, componentes_ui=106; `CONTRATOS-ECOSISTEMA.md` con las 3 rutas nuevas (tasks ×2, connections-panel).
+- **Suite**: 955/955 → **1006/1006** pruebas en 112 archivos; `tsc --noEmit` 0 errores; eslint limpio; `next build` OK; `verify-doc-figures` en verde.
 
 ## 2026-11-20 — Construcción del plan definitivo v2.0 (oleadas F2→O2) y cifras conciliadas (E4)
 

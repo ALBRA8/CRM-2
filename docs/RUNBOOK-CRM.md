@@ -41,6 +41,12 @@ npm start &                          # app en :3000 (o PM2/systemd según tu má
 npm run wa:daemon:detached           # daemon en :3002, sobrevive al cierre de sesión
 ```
 
+**Recomendado (O4) — systemd en lugar de `&`/detached**: las unidades
+`deploy/systemd/` (app, daemon, worker de outbox, monitor con timer) reinician
+solas ante caídas y dejan evidencia en journald. Instalación y **kill test**
+(evidencia exigida por O4, pendiente del propietario en la máquina real):
+`deploy/systemd/README.md`.
+
 Con Docker (ver `DEPLOY.md` §1–4 para la instalación inicial):
 
 ```bash

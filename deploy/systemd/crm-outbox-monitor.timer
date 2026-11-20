@@ -1,0 +1,17 @@
+# crm-outbox-monitor.timer — Chequeo periódico de la salud de las outboxes
+# O4 (plan definitivo F6-T06): corre el monitor cada 10 minutos. El umbral de
+# alerta NO es un cron más agresivo (ruido) sino el propio evaluador
+# (scripts/monitor-outbox.mjs) con su webhook configurable.
+
+[Unit]
+Description=CRM-ALBRA — programación del monitor de outboxes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=10min
+# No acumular corridas si la máquina estuvo apagada:
+Persistent=false
+Unit=crm-outbox-monitor.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,36 @@
+# crm-daemon.service — Daemon Baileys multi-organización (puerto 3002)
+# O4 (plan definitivo F6-T06). Patrón del RUNBOOK de ULTRA §3.1 aplicado al
+# daemon del CRM: Restart=always — la sesión de WhatsApp se recupera sola.
+#
+# El daemon SOLO escucha en 127.0.0.1 (el CRM habla con él server-to-server
+# con INTERNAL_API_SECRET; jamás exponer 3002 a internet).
+#
+# Instalación: ver deploy/systemd/README.md. La sesión WhatsApp vive en
+# /opt/crm/.wa-auth (permisos 0700 del usuario crm; respaldo la cubre el
+# backup nocturno — ver docs/RUNBOOK-CRM.md).
+
+[Unit]
+Description=CRM-ALBRA — daemon Baileys de WhatsApp (127.0.0.1:3002)
+After=network-online.target crm-app.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=crm
+Group=crm
+WorkingDirectory=/opt/crm
+EnvironmentFile=/etc/crm/crm.env
+Environment=PORT=3002
+Environment=HOST=127.0.0.1
+ExecStart=/usr/bin/node src/whatsapp-daemon/daemon.mjs
+Restart=always
+RestartSec=10
+TimeoutStopSec=30
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/opt/crm
+
+[Install]
+WantedBy=multi-user.target

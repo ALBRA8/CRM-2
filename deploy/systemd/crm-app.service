@@ -1,0 +1,37 @@
+# crm-app.service — Aplicación Next.js del CRM (standalone, puerto 3000)
+# O4 (plan definitivo F6-T06): observabilidad mínima — reinicio automático.
+#
+# Instalación (propietario, ver deploy/systemd/README.md):
+#   sudo cp deploy/systemd/*.service deploy/systemd/*.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now crm-app.service
+#
+# El archivo de entorno /etc/crm/crm.env contiene el .env real del servicio
+# (DATABASE_URL, APP_SECRET, APP_ENCRYPTION_KEY, INTERNAL_API_SECRET, ...).
+# Jamás versionar ese archivo ni darle permisos de lectura amplios (0600 root).
+
+[Unit]
+Description=CRM-ALBRA — aplicación Next.js (puerto 3000)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=crm
+Group=crm
+WorkingDirectory=/opt/crm
+EnvironmentFile=/etc/crm/crm.env
+ExecStart=/usr/bin/node scripts/start-standalone.mjs
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+KillSignal=SIGTERM
+# Endurecimiento básico (compatible con Next standalone + SQLite local):
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/opt/crm
+# Puerto solo en loopback si hay proxy inverso delante (nginx/caddy):
+# Environment=HOSTNAME=127.0.0.1
+
+[Install]
+WantedBy=multi-user.target

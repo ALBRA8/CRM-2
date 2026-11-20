@@ -2,16 +2,16 @@
 
 **Fecha de actualización**: 2026-11-20 · **Sesión 3**: S1 (acta) + S2 (runbook GATED) + F1 (PR #6) + F2 endpoint agregado + **consolidación en línea maestra**
 **Documento rector**: `docs/plan-definitivo-2026-11-19/PLAN-DEFINITIVO-CRM-ALBRA.md` (48 tareas, 7 fases)
-**Línea maestra**: `impl/integracion-maestra-20261120` — cadena sesiones 1+2 (22 commits) + aportes de la sesión 3 · Suite **986/986** en 110 archivos
+**Línea maestra**: `impl/integracion-maestra-20261120` — cadena sesiones 1+2 (22 commits) + aportes de la sesión 3 · Suite **1006/1006** en 112 archivos
 **Matriz de trazabilidad**: `docs/MATRIZ-TRAZABILIDAD.md` (D4, con check en CI)
 
 ## Resumen por estado (48 tareas) — tras la sesión 3
 
 | Estado | Cantidad | Tareas |
 | --- | --- | --- |
-| ✅ Terminadas | **25** | M1, S5, E1, E2 · F2, M7, F3, M8, E7 · F4, F5, U1, U2, U3, U4, I3, O3, S6, O2, E4, D4, E3, I2 · **F1** (sesión 3) |
+| ✅ Terminadas | **27** | M1, S5, E1, E2 · F2, M7, F3, M8, E7 · F4, F5, U1, U2, U3, U4, I3, O3, S6, O2, E4, D4, E3, I2 · **F1, U5, O4** (sesión 3) |
 | 🔧 Parciales (construidas; falta decisión/ejecución del propietario) | 3 | **S1** (acta lista; revocación de PAT = propietario), **S2** (runbook+generador validados; ventana gated a S1), I1 (workflow E2E listo; corrida real requiere A7) · E7 (test listo; drill con acta requiere A8) |
-| ⏳ Pendientes | 2 | U5 (pulido visual, OPCIONAL), O4 (systemd, OPCIONAL) |
+| ⏳ Pendientes | 0 | (ninguna del lado construible: U5 y O4 ejecutadas en la sesión 3) |
 | 🔐 Requieren autorización específica | 2 | D1, O1 |
 | 🌐 Dependencia externa | 13 | S3, S4, S7, M2, M3, M4, M6, I4, I5, I6, E5, E6, F6 |
 | ❌ Descartadas | 2 | M5 (obsoleta), D3 (duplicada en E4) |
@@ -25,6 +25,8 @@
 | **S2** | Purga de historial — preparación validada, GATED (F1-T02) | `impl/s2-preparacion-purga` + maestra · `5575afa`,`cd399a0` | `scripts/security/build-purge-replace-text.mjs`, `docs/actas/VENTANA-PURGA-HISTORIAL-S2.md`, `.gitignore` | cobertura 35/35 huellas · dry-run completo: 0 pendientes post-purga · baseline reclasificada 310/0 · scan:history exit 0 | Dry-run real en clon desechable (filter-repo 2.47.0, ~1,6 s). **GATED**: el plan ordena purgar SOLO tras revocar los PAT (S1) y con bundle de respaldo del dueño |
 | **F1** | Integración del PR #6 (F2-T03) | `impl/f1-tareas-quickactions-v2` + maestra · `39f9a99`,`4077fd6` | `src/app/api/tasks/*`, `src/components/dashboard/tasks-card.tsx`, quick-actions ficha 360, migración `zzzzzz_tareas`, CI `cierre/**` | +6 integración · 986/986 · tsc 0 · build OK | Tareas/recordatorios operables desde dashboard y ficha; `defaultTime` (F4) y `defaultClientId` (PR #6) conviven; instalación limpia con orden z verificado |
 | **F2+** | Endpoint agregado del panel (mejora F2) | maestra · `8c459ac` | `GET /api/whatsapp/connections-panel`, `src/lib/wa-connections-view.ts` | +25 (unit + integración con stub del daemon) | Una llamada entrega Cloud + veredicto real Baileys + plan; fail-closed (UNKNOWN si daemon caído); aislamiento cross-org verificado; material sensible jamás expuesto |
+| **U5** | Pulido visual (F4-T05, OPCIONAL) — tipografía 13px token, dark mode con invariante CI, EmptyState en 6 pantallas | `impl/u5-pulido-visual` + maestra | `globals.css`, `empty-state.tsx`, `pulido-visual.test.ts` (9 invariantes) | +9 · 1006/1006 | Cero texto sub-13px en `src/`; tema completo no rompible sin que CI falle |
+| **O4** | Observabilidad + unidades systemd (F6-T06, OPCIONAL) | maestra | `scripts/outbox-worker.mjs` (+11 pruebas), `deploy/systemd/` (4 unidades + timer + README) | 1006/1006 · build OK | Worker pull con backoff y cierre limpio; daemon `Restart=always`; kill test = pendiente del dueño (sin systemd en sandbox) |
 | **Consol.** | Línea maestra única (base para D1/A3) | `impl/integracion-maestra-20261120` | CHANGELOG, PRODUCTION_READINESS (bloque canónico 128/110/47/18/105), CONTRATOS-ECOSISTEMA (128 rutas), MATRIZ-TRAZABILIDAD | 986/986 · verify-doc-figures verde · build OK | Las dos líneas paralelas de las sesiones 1+2 quedan fusionadas por MERGE (sin reescritura); cifras canónicas recalculadas y re-verificadas |
 
 ## Camino al piloto (recalculado tras la sesión 3)
@@ -33,9 +35,9 @@
 Terminadas 25/48 (todo el producto construible del lado CRM) ────────────
 Sesión 1: F2 → M7 → F3 → M8 → E7
 Sesión 2: F4 → F5 → U1 → U2 → U3 → U4 → I3 → O3 → S6 → O2 → E4 → D4 → E3 → I2(+I1 parcial)
-Sesión 3: S1 (acta) · S2 (runbook GATED) · F1 (PR #6) · F2 endpoint · LÍNEA MAESTRA
+Sesión 3: S1 (acta) · S2 (runbook GATED) · F1 (PR #6) · F2 endpoint · U5 · O4 · LÍNEA MAESTRA
 
-Resta construible: U5 y O4 (OPCIONALES) · U6 (pospuesta)
+Resta construible: nada (U5 y O4 ejecutadas) · U6 (pospuesta, opcional)
 Resto: propietario (revocar PAT→S1, ventana S2, D1, O1, A1/A3/A7/A8, SMTP)
        o dependencia externa (13 tareas en repos/máquinas externas)
 ```

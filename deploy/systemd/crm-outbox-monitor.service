@@ -1,0 +1,31 @@
+# crm-outbox-monitor.service — Chequeo de salud de las outboxes (una pasada)
+# O4 (plan definitivo F6-T06): lo dispara crm-outbox-monitor.timer. Falla
+# (exit 2) si hay alertas y notifica por OUTBOX_ALERT_WEBHOOK_URL (umbral del
+# propio evaluador; evitar ruido = ajustar umbrales o el webhook).
+#
+# Requiere en /etc/crm/crm.env:
+#   OUTBOX_MONITOR_BASE_URL            (https://… URL pública o interna del CRM)
+#   CHANNEL_OUTBOX_WORKER_SECRET       (>=32)
+#   WORKFLOW_OUTBOX_WORKER_SECRET      (>=32)
+#   OUTBOX_ALERT_WEBHOOK_URL           (webhook de alerta; opcional si solo se
+#                                       quiere el fallo del timer en journald)
+
+[Unit]
+Description=CRM-ALBRA — chequeo de salud de outboxes (canales y workflows)
+After=crm-app.service
+
+[Service]
+Type=oneshot
+User=crm
+Group=crm
+WorkingDirectory=/opt/crm
+EnvironmentFile=/etc/crm/crm.env
+# El evaluador exige HTTPS salvo que el destino sea loopback (ver monitor-outbox.mjs):
+ExecStart=/usr/bin/node scripts/monitor-outbox.mjs
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/opt/crm
+
+[Install]
+WantedBy=multi-user.target

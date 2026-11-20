@@ -1,0 +1,31 @@
+# crm-outbox-worker.service — Worker PULL de las outboxes (canales + workflows)
+# O4 (plan definitivo F6-T06): los mensajes en cola se despachan sin proceso
+# manual. Los kill-switches (CHANNEL_OUTBOUND_DISPATCH_ENABLED /
+# WORKFLOW_OUTBOX_DISPATCH_ENABLED) viven en /etc/crm/crm.env — el worker no
+# puede enviar nada si el servidor no está habilitado (fail-closed).
+#
+# Instalación: ver deploy/systemd/README.md.
+
+[Unit]
+Description=CRM-ALBRA — worker pull de outboxes (canales y workflows)
+After=network-online.target crm-app.service
+Wants=crm-app.service
+
+[Service]
+Type=simple
+User=crm
+Group=crm
+WorkingDirectory=/opt/crm
+EnvironmentFile=/etc/crm/crm.env
+ExecStart=/usr/bin/node scripts/outbox-worker.mjs
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/opt/crm
+
+[Install]
+WantedBy=multi-user.target
