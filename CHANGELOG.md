@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 2026-11-20 — Sesión 6: consolidación total de ramas (A3/D2 completa) + kits de integración WP/ULTRA
+
+- **Consolidación de las 6 ramas con contenido único** (pendiente de decisión desde la sesión 4; acta `docs/actas/CIERRE-FINAL-SESION-6-2026-11-20.md` §2, decisión por rama con evidencia):
+  - `fix/whatsapp-production-media` (56 commits): port del endurecimiento de media — ASR por organización con validación base64, `X-WhatsApp-Org-Id` obligatorio en transcribe, visión con firma binaria (magic bytes) + techo 40 MP (sharp), media-guard del daemon con techos duros (25 MiB audio / 8 MiB imagen) y pipeline de imágenes con fail-open a humano; checklist de producción WhatsApp. Las partes superadas por la maestra (outbox durable, ledger de webhook, analyze-image) descartadas con decisión escrita.
+  - `fix/fase-correctiva-final`: endurecimiento de referencias históricas cross-org (patrón B1 `stripForeignClients`) en las 9 rutas que faltaban (oportunidades, pipeline, cotizaciones+pdf, reservas, export CSV) + 6 tests de no-filtración.
+  - `cierre/a-estabilizacion-y-deuda` (PR #5): migración aditiva `zzzzzzz_quoteitem_org_backfill` + 3 tests (reparación, idempotencia, cero NULLs).
+  - `fix/migration-safety-audit`: test concurrente en-proceso del lease (complemento del caso multiproceso de D1).
+  - `docs/plan-maestro-cierre-2026-11-19` (plan v1): integrado por cherry-pick como archivo histórico.
+  - `docs/context-crm-reorganization-20261107`: NO fusionada (876 commits de desfase + arquitectura documental de la maestra ya cumple la función) — contenido preservado íntegro en su etiqueta de archivo.
+- **Archivo y borrado de las 6 ramas** con etiquetas `archive/20261120-*` (SHAs verificados en servidor antes de crear cada tag): CRM-ALBRA queda en **5 ramas + 28 etiquetas**. CRM-2 intacto como espejo completo.
+- **Kits de integración `integration-kits/wp-ultra/`** para las 13 dependencias externas (S3, S4, S7, M2, M3, M4, M6, I4, I5, I6, E5, E6, F6): 9 libs portables probadas (replay cache durable, crypto AES-256-GCM por org, bearer por org, bulk consent Ley 1581, guard de despacho Meta, pacing durable, guard destructivo de smoke-live, política de transporte por org, adaptador de pagos fail-closed) + README de aplicación por kit + paquete de decisiones I4/I5/E5/E6. Los repos WP/ULTRA no se tocan.
+- **Suite**: 1024/1024 → **1104/1104 pruebas en 128 archivos** (+80); cifras canónicas reconciliadas (128 archivos de prueba, 19 migraciones); `tsc --noEmit` 0; `next build` OK; `verify-doc-figures` verde.
+
 ## 2026-11-20 — Sesión 5: U6 (semillas sectoriales para demos reproducibles)
 
 - **U6 (F7-T06) — ejecutada** (estaba pospuesta; última tarea construible del plan): definiciones puras por sector en `scripts/demo-sectors.mjs` (restaurante, salud-estética, inmobiliaria) con validador integrado, y seeder idempotente `scripts/seed-demo-sector.mjs` que materializa la organización `demo-<sector>` con usuarios demo, pipeline sectorial, clientes, oportunidades, reservas, tareas, cotizaciones (+ítems, IVA 19 %) y conversaciones WhatsApp.

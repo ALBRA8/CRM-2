@@ -1,21 +1,21 @@
 # CONTROL DE AVANCE — PLAN DEFINITIVO CRM-ALBRA v2.0
 
-**Fecha de actualización**: 2026-11-20 · **Sesión 5**: U6 (semillas sectoriales para demos reproducibles) — última tarea construible del plan ejecutada
+**Fecha de actualización**: 2026-11-20 · **Sesión 6**: consolidación total de ramas (A3/D2 completa: 32→5) + kits de integración WP/ULTRA para las 13 dependencias externas
 **Documento rector**: `docs/plan-definitivo-2026-11-19/PLAN-DEFINITIVO-CRM-ALBRA.md` (48 tareas, 7 fases)
-**Línea maestra**: `impl/integracion-maestra-20261120` — cadena sesiones 1+2+3+4 · Suite **1024/1024** en 115 archivos
-**Matriz de trazabilidad**: `docs/MATRIZ-TRAZABILIDAD.md` (D4, con check en CI)
+**Línea maestra**: `impl/integracion-maestra-20261120` — cadena sesiones 1+2+3+4+5+6 · Suite **1104/1104** en 128 archivos
+**Matriz de trazabilidad**: `docs/MATRIZ-TRAZABILIDAD.md` (D4, con check en CI; ahora 30 filas)
 
-## Resumen por estado (48 tareas) — tras la sesión 5
+## Resumen por estado (48 tareas) — tras la sesión 6
 
 | Estado | Cantidad | Tareas |
 | --- | --- | --- |
-| ✅ Terminadas | **30** | M1, S5, E1, E2 · F2, M7, F3, M8, E7 · F4, F5, U1, U2, U3, U4, I3, O3, S6, O2, E4, D4, E3, I2 · F1, U5, O4 (sesión 3) · D1, D2 (sesión 4) · **U6** (sesión 5) |
+| ✅ Terminadas | **30** | M1, S5, E1, E2 · F2, M7, F3, M8, E7 · F4, F5, U1, U2, U3, U4, I3, O3, S6, O2, E4, D4, E3, I2 · F1, U5, O4 (sesión 3) · D1, D2 (sesión 4) · U6 (sesión 5) · **D2-ampliada: consolidación total de ramas** (sesión 6) |
 | 🔧 Parciales (construidas; falta decisión/ejecución del propietario) | 5 | **S1** (acta lista; revocación de PAT = propietario), **S2** (runbook+generador validados; ventana gated a S1), I1 (workflow E2E listo; corrida real requiere A7), E7 (test listo; drill con acta requiere A8), **O1** (verificación estática completa; build+healthchecks reales en la máquina del propietario) |
 | ⏳ Pendientes | 0 | (ninguna del lado construible) |
-| 🔐 Requieren autorización específica | 0 | (D1, O1, D2 autorizadas y ejecutadas/archivadas en la sesión 4) |
-| 🌐 Dependencia externa | 13 | S3, S4, S7, M2, M3, M4, M6, I4, I5, I6, E5, E6, F6 |
+| 🔐 Requieren autorización específica | 0 | |
+| 🌐 Dependencia externa **con kit listo para aplicar** | 13 | S3, S4, S7, M2, M3, M4, M6, I4, I5, I6, E5, E6, F6 → `integration-kits/wp-ultra/` (9 libs probadas + 9 READMEs + paquete de decisiones); la tarea se cierra con el PR aplicado en el repo destino |
 | ❌ Descartadas | 2 | M5 (obsoleta), D3 (duplicada en E4) |
-| ⏸ Pospuesta | 0 | (U6 ejecutada en la sesión 5) |
+| ⏸ Pospuesta | 0 | |
 
 ## Detalle de la SESIÓN 3 (2026-11-20) — sobre la línea maestra
 
@@ -29,7 +29,7 @@
 | **O4** | Observabilidad + unidades systemd (F6-T06, OPCIONAL) | maestra | `scripts/outbox-worker.mjs` (+11 pruebas), `deploy/systemd/` (4 unidades + timer + README) | 1006/1006 · build OK | Worker pull con backoff y cierre limpio; daemon `Restart=always`; kill test = pendiente del dueño (sin systemd en sandbox) |
 | **Consol.** | Línea maestra única (base para D1/A3) | `impl/integracion-maestra-20261120` | CHANGELOG, PRODUCTION_READINESS (bloque canónico 128/110/47/18/105), CONTRATOS-ECOSISTEMA (128 rutas), MATRIZ-TRAZABILIDAD | 986/986 · verify-doc-figures verde · build OK | Las dos líneas paralelas de las sesiones 1+2 quedan fusionadas por MERGE (sin reescritura); cifras canónicas recalculadas y re-verificadas |
 
-## Camino al piloto (recalculado tras la sesión 5)
+## Camino al piloto (recalculado tras la sesión 6)
 
 ```
 Terminadas 30/48 (todo el producto construible del lado CRM, incluida la opcional U6) ─
@@ -38,10 +38,22 @@ Sesión 2: F4 → F5 → U1 → U2 → U3 → U4 → I3 → O3 → S6 → O2 →
 Sesión 3: S1 (acta) · S2 (runbook GATED) · F1 (PR #6) · F2 endpoint · U5 · O4 · LÍNEA MAESTRA
 Sesión 4: D1 (PR #4 + tests multiproceso en la maestra) · D2 (32→11 ramas, 22 etiquetas) · O1 (estática)
 Sesión 5: U6 (semillas sectoriales: 3 sectores, seeder idempotente + guard de producción)
+Sesión 6: A3/D2 COMPLETA (6 ramas revisadas+portadas/archivadas: 11→5 ramas, +6 etiquetas)
+          · kits WP/ULTRA para las 13 externas (+51 pruebas) · suite 1104/1104
 
-Resta: solo el propietario (revocar PAT→S1, ventana S2, docker compose O1, A1/A3/A7/A8, SMTP)
-       o dependencia externa (13 tareas en repos/máquinas WP/ULTRA — fuera de alcance)
+Resta: solo el propietario (revocar PAT→S1, ventana S2, docker compose O1, A1/A3-fusion/A7/A8, SMTP)
+       y la aplicación de los kits en los repos WP/ULTRA (fuera del alcance de este repo)
 ```
+
+## Detalle de la SESIÓN 6 (2026-11-20) — sobre la línea maestra
+
+Acta completa: `docs/actas/CIERRE-FINAL-SESION-6-2026-11-20.md` (decisión por rama con evidencia).
+
+| ID | Trabajo | Commits | Resultado | Pruebas |
+| --- | --- | --- | --- | --- |
+| **A3/D2** | Revisión e integración de las 6 ramas con contenido único | `b934eec`, `c3665ab`, `b855b9a`, `ac3f642`, `677f4cc`+`828b49f` | 5 ramas portadas (media hardening, referencias históricas en 9 rutas, backfill PR #5, test concurrente de lease, plan v1) · 1 rama NO fusionada con decisión escrita (reorganización CONTEXTO CRM, superada) · 6 etiquetas `archive/20261120-*` y ramas eliminadas → CRM-ALBRA en 5 ramas + 28 etiquetas | +37 (22 media + 6 históricas + 3 backfill + 1 lease + 5 preexistentes ampliadas) |
+| **Kits** | Código portable probado para las 13 dependencias externas | `a920ba6` | `integration-kits/wp-ultra/`: 9 libs (S4 replay durable, S7 crypto por org, S3 bearer por org, M2 bulk consent Ley 1581, M3 guard Meta, M4 pacing durable, M6 guard destructivo, I6 política de transporte, F6 adaptador de pagos) + READMEs + decisiones I4/I5/E5/E6 | +51 (tests/kits, 9 archivos) |
+| **Cifras** | Conciliación documental | `97c0b85` | Bloque canónico 128/128/47/19/106; MATRIZ con 5 filas nuevas (26–30) | verify-doc-figures verde |
 
 ## Detalle de la SESIÓN 5 (2026-11-20) — sobre la línea maestra
 
@@ -95,12 +107,13 @@ Cada tarea: rama de construcción → pruebas en verde (Vitest completo, tsc, es
 
 ## Desbloqueos que solo el propietario puede hacer
 
-1. **URGENTE — revocar el token `ghp_w2tw…`** (re-expuesto en el chat de la sesión 3) y el de la sesión 2026-11-17 (`ghp_M9w5…`): procedimiento exacto en `docs/actas/ROTACION-CREDENCIALES-2026-11-20.md` (S1). Entregar el token nuevo por variable de entorno, jamás por el chat.
+1. **URGENTE — revocar el token `ghp_w2tw…`** (re-expuesto en el chat de las sesiones 3–6) y el de la sesión 2026-11-17 (`ghp_M9w5…`): procedimiento exacto en `docs/actas/ROTACION-CREDENCIALES-2026-11-20.md` (S1). Entregar el token nuevo por variable de entorno, jamás por el chat.
 2. **A1**: PAT + `PII_PEPPER` como secretos de GitHub Actions.
 3. **A2 (S2)**: acordar la ventana y crear el bundle de respaldo; luego ejecutar `docs/actas/VENTANA-PURGA-HISTORIAL-S2.md` (GATED: solo tras revocar los PAT).
-4. **A3**: revisar y fusionar la línea maestra `impl/integracion-maestra-20261120` hacia `main` (D1 y D2 ya ejecutadas: PR #4/#6 integrados con decisión escrita; 22 ramas archivadas con etiquetas; destino de `fix/migration-safety-audit` y `fix/whatsapp-production-media` documentado en el acta — revisión del propietario pendiente).
+4. **A3 (fusión final)**: revisar y fusionar la línea maestra `impl/integracion-maestra-20261120` hacia `main`. **Ya no queda nada por revisar**: las 6 ramas con contenido único fueron portadas/archivadas con decisión escrita en la sesión 6 (acta §2).
 5. **A7/A8**: worker de outbox en el despliegue real y drill de backup con acta firmada (E7).
 6. Credenciales SMTP reales (notificaciones) — opcional para el piloto.
+7. **Aplicación de los kits** en WP/ULTRA (S3, S4, S7, M2, M3, M4, M6, I6, F6) y decisiones I4/I5/E5/E6: guías exactas en `integration-kits/wp-ultra/`.
 
 ## Reglas de esta construcción (cumplidas)
 

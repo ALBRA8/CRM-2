@@ -19,7 +19,7 @@ runs de CI). El check `scripts/verify-doc-figures.mjs` corre en CI tras la suite
 
 | # | Afirmación | Evidencia | Re-verificación |
 | --- | --- | --- | --- |
-| 1 | La documentación cita cifras reales (128 rutas, 110 archivos de prueba, 47 modelos, 18 migraciones, 105 componentes) | Bloque canónico en `PRODUCTION_READINESS.md` (sección «Verificación 2026-11-20») | `node scripts/verify-doc-figures.mjs` (en CI) |
+| 1 | La documentación cita cifras reales (128 rutas, 128 archivos de prueba, 47 modelos, 19 migraciones, 106 componentes) | Bloque canónico en `PRODUCTION_READINESS.md` (sección «Verificación 2026-11-20») | `node scripts/verify-doc-figures.mjs` (en CI) |
 | 2 | Las 128 rutas API están documentadas con archivo y protección reales | `docs/CONTRATOS-ECOSISTEMA.md` (tabla generada contra el código) | `scripts/gen_contratos_ecosistema.py` + fila 1 |
 | 3 | Menú 5+1 con UNA sola bandeja; nada queda inaccesible | `src/lib/nav.ts` + `tests/unit/nav.test.ts` (14 pruebas) | suite |
 | 4 | Bandeja unificada sin duplicados (canónico primero, legacy respaldo) | `src/lib/inbox.ts` (`dedupeInboxConversations`) + `tests/unit/inbox.test.ts`; criterio en `docs/CRITERIO-BANDEJA-UNICA.md` | suite |
@@ -43,7 +43,12 @@ runs de CI). El check `scripts/verify-doc-figures.mjs` corre en CI tras la suite
 | 22 | Instalador idempotente: doble pasada no toca .env ni datos | `scripts/instalar-crm.sh` (hashes idénticos tras doble pasada; commit O3 2026-11-20) | re-ejecutar 2× |
 | 23 | Runbook único operativo | `docs/RUNBOOK-CRM.md` (enlazado desde README; drill de restauración guiado por él) | revisión manual en cada PR de operación |
 | 24 | Migraciones versionadas deterministas en instalación limpia | `prisma/migrations/` (convención documentada en `docs/MIGRACIONES.md`) + paso CI «Migraciones Prisma en SQLite temporal» | CI |
-| 25 | Suite en verde antes de cada commit de construcción (850→868→884→898→907→920→930→935→955) | histórico de commits por tarea (git log de ramas `impl/*`) + paso CI «Suite de tests» | CI |
+| 25 | Suite en verde antes de cada commit de construcción (850→868→884→898→907→920→930→935→955→986→1008→1024) | histórico de commits por tarea (git log de ramas `impl/*`) + paso CI «Suite de tests» | CI |
+| 26 | Media de WhatsApp endurecida en producción: ASR por org, techos duros de descarga, visión con firma binaria + techo de píxeles | `src/lib/asr.ts`, `src/whatsapp-daemon/media-guard.mjs`, `src/lib/vision.ts` (`verifyImageSignature`), `tests/unit/daemon-media-guard.test.ts` (6), `tests/unit/vision-signature.test.ts` (6), voice/describe-image endurecidos | suite |
+| 27 | Referencias históricas cross-org neutralizadas en TODAS las lecturas con include de cliente (no solo dashboard) | `stripForeignClients` aplicado en opportunities/pipeline/quotes/pdf/reservations/export-csv + `tests/integration/historical-references.test.ts` (6 casos) | suite |
+| 28 | Backfill de QuoteItem legado con org del padre (aditivo, idempotente) | `prisma/migrations/zzzzzzz_quoteitem_org_backfill/migration.sql` + `tests/integration/quote-item-org-backfill.test.ts` (3 casos, SQL de la migración como fuente de verdad) | suite + CI migraciones |
+| 29 | Kits WP/ULTRA: lógica portable probada del lado CRM para las 13 dependencias externas | `integration-kits/wp-ultra/` (9 libs) + `tests/kits/` (9 archivos, 51 pruebas) + READMEs de aplicación | suite |
+| 30 | Consolidación de ramas completa: ninguna rama remota del CRM contiene trabajo único sin consolidar o etiquetar | `docs/actas/CIERRE-FINAL-SESION-6-2026-11-20.md` §2 (decisión por rama) + 28 etiquetas `archive/20261120-*` (SHAs verificados en servidor) | `git ls-remote` + acta |
 
 ## Fuera de alcance de esta matriz (dependencias externas)
 

@@ -57,7 +57,7 @@ componentes_ui: 106
 
 Estado verificado en esta fecha (repositorio CRM-ALBRA, rama de construcción):
 
-- Suite completa en verde: **1006/1006 pruebas en 112 archivos**; `tsc --noEmit` 0 errores; eslint limpio; `next build` OK.
+- Suite completa en verde: **1104/1104 pruebas en 128 archivos**; `tsc --noEmit` 0 errores; eslint limpio; `next build` OK.
 - Las cifras históricas de entradas anteriores (475, 569, 781… 920) son el registro de SU fecha y no se reescriben: la historia no se miente, se ancla.
 - Las secciones de WP/ULTRA de este documento corresponden a sus propios repos (dependencia externa); sus suites no se cuentan aquí.
 - Re-ejecutar en cada release: `node scripts/verify-doc-figures.mjs` (o `--print` para actualizar el bloque).
