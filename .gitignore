@@ -70,6 +70,10 @@ wa-auth/
 # Artefactos locales de desarrollo
 /tool-results/
 /repo-compare/
+# S2 — expresiones de purga (contienen secretos literales SOLO en local;
+# las genera scripts/security/build-purge-replace-text.mjs y se BORRAN al
+# cerrar la ventana: jamás se versionan)
+scripts/security/.purge-replace-text.txt
 # Plantilla de entorno SÍ se commitea
 !.env.example
 # Sesión WhatsApp — variantes (daemon en cualquier subcarpeta)
