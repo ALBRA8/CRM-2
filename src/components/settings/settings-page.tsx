@@ -33,10 +33,6 @@ import {
   AlertTriangle,
   RefreshCw,
   MessageCircle,
-  Wifi,
-  WifiOff,
-  Smartphone,
-  QrCode,
   Unplug,
   Building2,
   Plus,
@@ -53,7 +49,6 @@ import {
   ToggleRight,
   Database,
   ArrowRightLeft,
-  Clock,
   Users,
   Shield,
   UserPlus,
@@ -70,6 +65,7 @@ import { CustomFieldsTab } from './custom-fields-tab'
 import { CurrencySelector } from './currency-selector'
 import { InstagramTab } from './instagram-tab'
 import { TikTokTab } from './tiktok-tab'
+import { WhatsAppConnectionsTab, WhatsAppSystemStatusRow } from './whatsapp-connections-tab'
 import { FacebookTab, MessengerIcon } from './facebook-tab'
 import { PushNotificationsCard } from './push-notifications-card'
 import { TwoFactorCard } from './two-factor-card'
@@ -77,7 +73,8 @@ import { KnowledgeCard } from './knowledge-card'
 // Force recompile trigger
 
 // Use the Next.js API proxy to reach WhatsApp daemon (works from any hostname)
-const DAEMON_PROXY = '/api/whatsapp/daemon-proxy'
+// F3-T02: el proxy del daemon se consume ahora SOLO desde
+// whatsapp-connections-tab.tsx; aquí ya no se usa.
 
 interface TeamMember {
   id: string
@@ -143,20 +140,6 @@ interface MemoryResult {
   score: number | null
 }
 
-interface WaStatus {
-  status: string // disconnected, connecting, waiting_qr, connected
-  phone: string | null
-  lastUpdate: string | null
-  lastError?: string | null
-}
-
-interface WaQrData {
-  status: string
-  qr: string | null // base64 data URL
-  qrText?: string | null
-  phone?: string | null
-  ttlSeconds?: number
-}
 
 const PROVIDERS = [
   {
@@ -365,34 +348,7 @@ export function SettingsPage() {
   const [dealAiEnabled, setDealAiEnabled] = useState(true)
   const [savingDealAi, setSavingDealAi] = useState(false)
 
-  // WhatsApp state
-  const [waStatus, setWaStatus] = useState<WaStatus>({ status: 'disconnected', phone: null, lastUpdate: null })
-  const [waQr, setWaQr] = useState<WaQrData>({ status: 'disconnected', qr: null })
-  const [waLoading, setWaLoading] = useState(false)
-  const [waPolling, setWaPolling] = useState(false)
-  // Intento de conexión en curso: mantiene el polling aunque el status sea
-  // 'disconnected' (daemon arrancando tarde, QR generándose, etc.). ANTES el
-  // polling solo corría con waiting_qr/connecting y si el daemon no respondía
-  // al primer intento la UI se quedaba quieta para siempre: "no genera el QR".
-  const [waConnectAttempted, setWaConnectAttempted] = useState(false)
-  const [waLastError, setWaLastError] = useState<string | null>(null)
-  const [qrSecondsLeft, setQrSecondsLeft] = useState<number>(25)
 
-  useEffect(() => {
-    if (waQr.ttlSeconds !== undefined) {
-      setQrSecondsLeft(waQr.ttlSeconds)
-    } else if (waQr.qr) {
-      setQrSecondsLeft(25)
-    }
-  }, [waQr.qr, waQr.ttlSeconds])
-
-  useEffect(() => {
-    if (!waQr.qr || qrSecondsLeft <= 0) return
-    const timer = setInterval(() => {
-      setQrSecondsLeft((prev) => Math.max(0, prev - 1))
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [waQr.qr, qrSecondsLeft])
 
   // Nicho / Negocio state
   const [nichoBrand, setNichoBrand] = useState('')
@@ -449,7 +405,6 @@ export function SettingsPage() {
 
   useEffect(() => {
     loadSettings()
-    loadWaStatus()
     loadNicho()
     loadTelegramConfig()
     loadGoogleConfig()
@@ -460,24 +415,6 @@ export function SettingsPage() {
   // Auto-poll QR mientras haya algo que esperar: waiting_qr/connecting, o un
   // intento de conexión activo aunque siga 'disconnected' (el daemon puede
   // tardar en generar el QR o estar reintentando con backoff).
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null
-    const shouldPoll =
-      (waStatus.status === 'waiting_qr' ||
-      waStatus.status === 'connecting' ||
-      (waConnectAttempted && waStatus.status !== 'connected')) &&
-      waStatus.status !== 'qr_expired'
-    if (shouldPoll) {
-      interval = setInterval(() => {
-        loadWaQr()
-        loadWaStatus()
-      }, 3000)
-      setWaPolling(true)
-    } else {
-      setWaPolling(false)
-    }
-    return () => { if (interval) clearInterval(interval) }
-  }, [waStatus.status, waConnectAttempted])
 
   const loadSettings = async () => {
     try {
@@ -499,99 +436,7 @@ export function SettingsPage() {
     }
   }
 
-  const loadWaStatus = async () => {
-    try {
-      // El proxy ahora exige JWT (auditoría Antigravity #4): mandamos el token
-      const token = api.getToken()
-      const res = await fetch(`${DAEMON_PROXY}?path=/status`, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined)
-      const data = await res.json() as WaStatus
-      setWaStatus(data)
-      setWaLastError(data.lastError ?? null)
-      if (data.status === 'connected') {
-        setWaConnectAttempted(false)
-      }
-      // El daemon puede volver a waiting_qr por sí solo (sesión restaurada del
-      // disco, QR expirado y reintentado con backoff). Sin intento del usuario
-      // el polling no corre, así que al detectar el estado hacemos UN fetch del
-      // QR para mostrarlo sin exigir otro click.
-      if (data.status === 'waiting_qr') {
-        loadWaQr()
-      }
-    } catch {
-      setWaStatus({ status: 'disconnected', phone: null, lastUpdate: null })
-    }
-  }
 
-  const loadWaQr = async () => {
-    try {
-      const token = api.getToken()
-      const res = await fetch(`${DAEMON_PROXY}?path=/qr`, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined)
-      const data = await res.json() as WaQrData
-      setWaQr(data)
-      if (data.status === 'connected') {
-        setWaStatus(prev => ({ ...prev, status: 'connected', phone: data.phone ?? null }))
-      } else if (data.status === 'qr_expired') {
-        setWaStatus(prev => ({ ...prev, status: 'qr_expired' }))
-      }
-    } catch {
-      // Daemon not reachable
-    }
-  }
-
-  const handleWaConnect = async (force: boolean | unknown = false) => {
-    const isForce = force === true
-    setWaLoading(true)
-    try {
-      const token = api.getToken()
-      const res = await fetch(DAEMON_PROXY, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ path: '/connect', force: isForce }),
-      })
-      // ANTES se ignoraba la respuesta: si el daemon estaba apagado, el proxy
-      // devuelve { success: false, note: 'Daemon de WhatsApp no disponible' } y
-      // la UI mostraba igualmente "Generando código QR..." (mentira) y ningún
-      // QR llegaba nunca. Ahora el error es explícito y accionable.
-      const data = await res.json().catch(() => null) as ({ success?: boolean; note?: string; error?: string; status?: string } | null)
-      if (!res.ok || (data && (data.success === false || data.note || data.error))) {
-        const reason = data?.note || data?.error || `Error ${res.status}`
-        toast.error(`No se pudo iniciar la conexión: ${reason}`)
-        return
-      }
-      setWaConnectAttempted(true)
-      setWaLastError(null)
-      // Wait a moment then start polling
-      await new Promise(r => setTimeout(r, 2000))
-      await loadWaStatus()
-      await loadWaQr()
-      toast.success(isForce ? 'Regenerando código QR...' : 'Generando código QR...')
-    } catch {
-      toast.error('Error al conectar con WhatsApp')
-    } finally {
-      setWaLoading(false)
-    }
-  }
-
-  const handleWaDisconnect = async () => {
-    setWaLoading(true)
-    try {
-      const token = api.getToken()
-      await fetch(DAEMON_PROXY, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ path: '/disconnect' }),
-      })
-      setWaStatus({ status: 'disconnected', phone: null, lastUpdate: null })
-      setWaQr({ status: 'disconnected', qr: null })
-      setWaConnectAttempted(false)
-      setWaLastError(null)
-      toast.success('WhatsApp desconectado')
-    } catch {
-      toast.error('Error al desconectar')
-    } finally {
-      setWaLoading(false)
-    }
-  }
 
   const loadNicho = async () => {
     try {
@@ -1029,9 +874,6 @@ export function SettingsPage() {
 
   const currentProvider = PROVIDERS.find(p => p.id === selectedProvider)
   const isConfigured = settings?.llm.apiKeyConfigured
-  const isWaConnected = waStatus.status === 'connected'
-  const isWaWaitingQr = waStatus.status === 'waiting_qr' || waStatus.status === 'qr_expired'
-  const isWaConnecting = waStatus.status === 'connecting'
 
   if (loading) {
     return (
@@ -1343,239 +1185,10 @@ export function SettingsPage() {
 
         {/* ============ TAB: WhatsApp ============ */}
         <TabsContent value="whatsapp" className="space-y-6 mt-4">
-          {/* Connection Status Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card className={`border-0 shadow-sm ${isWaConnected ? 'bg-emerald-50/50' : isWaWaitingQr ? 'bg-amber-50/50' : 'bg-slate-50/50'}`}>
-              <CardContent className="p-5">
-                <div className="flex items-start gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    isWaConnected ? 'bg-emerald-100' : isWaWaitingQr ? 'bg-amber-100' : 'bg-slate-100'
-                  }`}>
-                    {isWaConnected ? (
-                      <Wifi className="w-6 h-6 text-emerald-600" />
-                    ) : isWaWaitingQr ? (
-                      <QrCode className="w-6 h-6 text-amber-600" />
-                    ) : (
-                      <WifiOff className="w-6 h-6 text-slate-400" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className={`font-semibold ${
-                      isWaConnected ? 'text-emerald-900' : isWaWaitingQr ? 'text-amber-900' : 'text-slate-700'
-                    }`}>
-                      {isWaConnected
-                        ? 'WhatsApp Conectado'
-                        : isWaWaitingQr
-                          ? 'Esperando Escaneo de QR'
-                          : 'WhatsApp Desconectado'}
-                    </h3>
-                    <p className={`text-sm mt-1 ${
-                      isWaConnected ? 'text-emerald-700' : isWaWaitingQr ? 'text-amber-700' : 'text-slate-500'
-                    }`}>
-                      {isWaConnected
-                        ? `Conectado como ${waStatus.phone}. La auto-respuesta IA puede responder automáticamente.`
-                        : isWaWaitingQr
-                          ? 'Escanea el código QR con tu WhatsApp para conectar.'
-                          : 'Conecta tu WhatsApp escaneando un código QR. Sin necesidad de API de Meta.'}
-                    </p>
-                    {waStatus.lastUpdate && (
-                      <p className="text-xs text-slate-400 mt-1">
-                        Última actualización: {new Date(waStatus.lastUpdate).toLocaleTimeString('es')}
-                      </p>
-                    )}
-                  </div>
-                  <Badge variant="outline" className={
-                    isWaConnected
-                      ? 'border-emerald-200 text-emerald-700 bg-emerald-50'
-                      : isWaWaitingQr
-                        ? 'border-amber-200 text-amber-700 bg-amber-50'
-                        : 'border-slate-200 text-slate-500'
-                  }>
-                    {isWaConnected ? 'Online' : waStatus.status === 'qr_expired' ? 'QR Expirado' : isWaWaitingQr ? 'QR Listo' : isWaConnecting ? 'Conectando...' : 'Offline'}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+          {/* F3-T02: conexiones multi-número (Cloud API + Baileys QR) */}
+          <WhatsAppConnectionsTab />
 
-          {/* QR Code / Connection Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.06 }}
-          >
-            <Card className="border-0 shadow-sm">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
-                    <Smartphone className="w-5 h-5 text-emerald-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">Conexión por QR</CardTitle>
-                    <CardDescription>Escanea con tu WhatsApp Web para conectar</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center">
-                  {isWaConnected ? (
-                    /* Connected state */
-                    <div className="text-center py-6">
-                      <div className="w-20 h-20 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <CheckCircle className="w-10 h-10 text-emerald-600" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-emerald-900 mb-1">Conectado</h3>
-                      <p className="text-sm text-emerald-700 mb-1">{waStatus.phone}</p>
-                      <p className="text-xs text-slate-400 mb-4">Tu WhatsApp está vinculado al CRM</p>
-                      <Button
-                        variant="outline"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 gap-2"
-                        onClick={handleWaDisconnect}
-                        disabled={waLoading}
-                      >
-                        <Unplug className="w-4 h-4" />
-                        Desconectar WhatsApp
-                      </Button>
-                    </div>
-                  ) : isWaWaitingQr || isWaConnecting ? (
-                    /* QR Code display */
-                    <div className="text-center py-4">
-                      {waQr.qr ? (
-                        <>
-                          <div className="relative inline-block mb-3">
-                            <div className={`bg-white p-4 rounded-2xl shadow-lg border border-slate-200 transition-all ${qrSecondsLeft <= 0 ? 'opacity-20 blur-[1px]' : ''}`}>
-                              <img
-                                src={waQr.qr}
-                                alt="WhatsApp QR Code"
-                                className="w-64 h-64 select-none pointer-events-none"
-                              />
-                            </div>
-                            {qrSecondsLeft <= 0 && (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-white/85 rounded-2xl">
-                                <Clock className="w-8 h-8 text-amber-600 mb-2" />
-                                <p className="text-sm font-semibold text-slate-800 mb-1">Código QR expirado</p>
-                                <p className="text-xs text-slate-500 mb-3 text-center max-w-[210px]">
-                                  WhatsApp renueva el código periódicamente por seguridad
-                                </p>
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleWaConnect(true)}
-                                  disabled={waLoading}
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-sm"
-                                >
-                                  <RefreshCw className={`w-3.5 h-3.5 ${waLoading ? 'animate-spin' : ''}`} />
-                                  Generar nuevo QR
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                          {qrSecondsLeft > 0 ? (
-                            <>
-                              <p className="text-sm text-slate-700 font-medium mb-1">
-                                Escanea este código con WhatsApp
-                              </p>
-                              <div className="flex items-center justify-center gap-2 text-xs text-slate-400 mb-4">
-                                <span className="inline-flex items-center gap-1.5 text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                  Activo ({qrSecondsLeft}s)
-                                </span>
-                                <span>•</span>
-                                <span>Renovación automática</span>
-                              </div>
-                            </>
-                          ) : null}
-                        </>
-                      ) : (
-                        <div className="py-10">
-                          <Loader2 className="w-8 h-8 animate-spin text-emerald-600 mx-auto mb-3" />
-                          <p className="text-sm text-slate-500">Generando código QR...</p>
-                          {waLastError && (
-                            <p className="text-xs text-amber-600 mt-3 max-w-xs mx-auto">{waLastError}</p>
-                          )}
-                        </div>
-                      )}
-                      <div className="flex gap-2 justify-center">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleWaConnect(true)}
-                          disabled={waLoading}
-                          className="gap-1.5"
-                        >
-                          <RefreshCw className={`w-3.5 h-3.5 ${waLoading ? 'animate-spin' : ''}`} />
-                          Refrescar QR
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 gap-1.5"
-                          onClick={handleWaDisconnect}
-                          disabled={waLoading}
-                        >
-                          Cancelar
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Disconnected state */
-                    <div className="text-center py-6">
-                      <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <QrCode className="w-10 h-10 text-slate-300" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-slate-700 mb-2">Sin conexión</h3>
-                      <p className="text-sm text-slate-400 max-w-sm mx-auto mb-4">
-                        Haz clic en Conectar para generar un código QR. Escanea con tu WhatsApp para vincular.
-                      </p>
-                      <Button
-                        onClick={() => handleWaConnect(false)}
-                        disabled={waLoading}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/25 gap-2"
-                      >
-                        {waLoading ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Wifi className="w-4 h-4" />
-                        )}
-                        Conectar WhatsApp
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Steps guide */}
-                {!isWaConnected && (
-                  <>
-                    <Separator className="my-4" />
-                    <div className="space-y-2.5">
-                      <h4 className="text-sm font-semibold text-slate-700">Cómo conectar:</h4>
-                      <div className="flex gap-3">
-                        <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
-                        <p className="text-sm text-slate-600">Haz clic en <strong>"Conectar WhatsApp"</strong></p>
-                      </div>
-                      <div className="flex gap-3">
-                        <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
-                        <p className="text-sm text-slate-600">Abre <strong>WhatsApp</strong> en tu teléfono</p>
-                      </div>
-                      <div className="flex gap-3">
-                        <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
-                        <p className="text-sm text-slate-600">Ve a <strong>Dispositivos vinculados</strong> → Vincular dispositivo</p>
-                      </div>
-                      <div className="flex gap-3">
-                        <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold flex-shrink-0">4</span>
-                        <p className="text-sm text-slate-600"><strong>Escanea el código QR</strong> que aparece en pantalla</p>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* WhatsApp Features Card */}
+          {/* Capacidades del WhatsApp Agentic */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -2679,15 +2292,7 @@ export function SettingsPage() {
                   Habilitado
                 </Badge>
               </div>
-              <div className="flex items-center justify-between py-2">
-                <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${isWaConnected ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                  <span className="text-sm text-slate-700">WhatsApp</span>
-                </div>
-                <Badge variant="outline" className={`text-xs ${isWaConnected ? 'border-emerald-200 text-emerald-700' : ''}`}>
-                  {isWaConnected ? `Conectado (${waStatus.phone})` : 'Desconectado'}
-                </Badge>
-              </div>
+              <WhatsAppSystemStatusRow />
               <div className="flex items-center justify-between py-2">
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-emerald-500" />
