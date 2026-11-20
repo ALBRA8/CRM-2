@@ -27,6 +27,8 @@ export interface InboxConversation {
   key: string
   /** Nombre seguro de la cuenta conectada; solo presente en conversaciones canónicas. */
   connectionName?: string | null
+  /** Id de la conexión canónica (ChannelConnection) que origina la conversación. */
+  connectionId?: string | null
   channel: InboxChannel
   channelLabel: 'WhatsApp' | 'Telegram' | 'Instagram' | 'Messenger' | 'TikTok'
   contactName: string
@@ -145,6 +147,100 @@ export function timelineToMessages(
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
 }
 
+// ---------- criterio de UNIFICACIÓN de la doble bandeja (F3-T03 / M7) ----------
+
+/**
+ * CRITERIO DE UNIFICACIÓN (decisión de producto, plan definitivo F3-T03):
+ *
+ *  1. El CONTACTO se identifica por (canal + handle normalizado): el teléfono
+ *     en dígitos para WhatsApp, el handle exacto (chatId/senderId) para el resto.
+ *  2. GANA la conversación canónica (ChannelConversation, key "cc:"): es el
+ *     modelo que mueve el producto (lease, outbox, idempotencia, multi-número).
+ *     Sin canónica, gana la legacy que tenga cliente enlazado (mejor ficha 360).
+ *  3. El historial de la fuente perdedora NO SE BORRA NI SE MIGRA: sigue
+ *     completo en la ficha 360 del cliente (merge read-only, cero riesgo).
+ *  4. Los no leídos se SUMAN entre duplicados: la señal de atención nunca
+ *     se pierde por el dedup.
+ *  5. MATIZ MULTI-NÚMERO: dos cuentas conectadas DISTINTAS que conversan con
+ *     el mismo contacto son conversaciones aparte (cada cuenta mantiene su
+ *     hilo); el dedup solo fusiona cuando en el grupo hay al menos una fila
+ *     legacy (key wa:/tg:/ig:/fb: sin conexión) — el caso de la doble bandeja
+ *     histórico. cc y cc de la misma conexión sí se fusionan (duplicado real).
+ *
+ * Devuelve la lista sin duplicados por contacto, conservando el orden de
+ * entrada (el llamador ordena por actividad).
+ */
+function inboxHandleKey(channel: InboxChannel, handle: string): string | null {
+  const raw = (handle || '').trim()
+  if (!raw) return null
+  if (channel === 'whatsapp') return normalizeWaPhone(raw)
+  return raw
+}
+
+export function dedupeInboxConversations(rows: InboxConversation[]): InboxConversation[] {
+  const byContact = new Map<string, InboxConversation>()
+  const winnerRank = (c: InboxConversation): number => {
+    if (c.key.startsWith('cc:')) return 0 // canónica siempre gana
+    if (c.clientId) return 1 // legacy con cliente enlazado
+    return 2 // legacy sin cliente
+  }
+  for (const row of rows) {
+    const contactKey = inboxHandleKey(row.channel, row.contactHandle)
+    if (!contactKey) {
+      // Sin handle no se puede agrupar ni enviar: se conserva (fail-open de
+      // visualización; el envío sigue siendo fail-closed por key).
+      byContact.set(`solo:${row.key}`, row)
+      continue
+    }
+    let groupKey = `${row.channel}:${contactKey}`
+    const current = byContact.get(groupKey)
+    if (current) {
+      // Regla 5: dos canónicas de cuentas DISTINTAS no se fusionan.
+      const bothCanonical = current.key.startsWith('cc:') && row.key.startsWith('cc:')
+      const distinctAccounts = Boolean(current.connectionId && row.connectionId && current.connectionId !== row.connectionId)
+      if (bothCanonical && distinctAccounts) {
+        groupKey = `${groupKey}:${row.connectionId}`
+      } else {
+        const winner = winnerRank(row) < winnerRank(current) ? row : current
+        const loser = winner === row ? current : row
+        // La señal de atención se suma; el cliente se hereda si faltaba.
+        byContact.set(groupKey, {
+          ...winner,
+          unreadCount: winner.unreadCount + loser.unreadCount,
+          clientId: winner.clientId ?? loser.clientId ?? null,
+        })
+        continue
+      }
+    }
+    byContact.set(groupKey, row)
+  }
+  return [...byContact.values()]
+}
+
+// ---------- filtros de la bandeja (F3-T04) ----------
+
+export interface InboxFilters {
+  channel?: InboxChannel | null
+  /** Solo conversaciones canónicas de ESTA conexión (ChannelConnection id). */
+  connectionId?: string | null
+  /** Búsqueda por nombre, teléfono o último mensaje (case-insensitive). */
+  search?: string | null
+}
+
+function matchesFilters(row: InboxConversation, f: InboxFilters): boolean {
+  if (f.channel && row.channel !== f.channel) return false
+  if (f.connectionId && row.connectionId !== f.connectionId) return false
+  if (f.search) {
+    const q = f.search.trim().toLowerCase()
+    if (q) {
+      // Busca en contacto, handle, cuenta conectada y último mensaje (F3-T04)
+      const haystack = `${row.contactName} ${row.contactHandle} ${row.connectionName ?? ''} ${row.lastMessage}`.toLowerCase()
+      if (!haystack.includes(q)) return false
+    }
+  }
+  return true
+}
+
 // ---------- listado unificado ----------
 
 async function listWhatsAppConversations(orgId: string, limit: number): Promise<InboxConversation[]> {
@@ -255,7 +351,7 @@ async function listCanonicalChannelConversations(orgId: string, limit: number): 
     const rows = await db.channelConversation.findMany({
       where: { organizationId: orgId, status: 'active', connection: { is: { organizationId: orgId } } },
       include: {
-        connection: { select: { organizationId: true, displayName: true, status: true, channel: true } },
+        connection: { select: { id: true, organizationId: true, displayName: true, status: true, channel: true } },
         messages: { orderBy: { createdAt: 'desc' }, take: 1, select: { direction: true } },
       },
       orderBy: [{ lastMessageAt: 'desc' }, { updatedAt: 'desc' }],
@@ -269,6 +365,7 @@ async function listCanonicalChannelConversations(orgId: string, limit: number): 
         channel: row.channel as InboxChannel,
         channelLabel: CHANNEL_LABELS[row.channel as InboxChannel] || 'WhatsApp',
         connectionName: row.connection.displayName || null,
+        connectionId: row.connection.id,
         contactName: row.contactName || row.externalContactKey,
         contactHandle: row.externalContactKey,
         clientId: null,
@@ -284,8 +381,11 @@ async function listCanonicalChannelConversations(orgId: string, limit: number): 
   }
 }
 
-/** Lista unificada, ordenada por actividad reciente. Las fuentes legacy siguen visibles durante expand. */
-export async function listInbox(orgId: string, limit = 100): Promise<InboxConversation[]> {
+/**
+ * Lista unificada, deduplicada por contacto (criterio F3-T03) y filtrable
+ * (F3-T04). Ordenada por actividad reciente.
+ */
+export async function listInbox(orgId: string, limit = 100, filters: InboxFilters = {}): Promise<InboxConversation[]> {
   const [canonical, wa, tg, ig, fb] = await Promise.all([
     listCanonicalChannelConversations(orgId, limit),
     listWhatsAppConversations(orgId, limit),
@@ -293,7 +393,8 @@ export async function listInbox(orgId: string, limit = 100): Promise<InboxConver
     listTimelineConversations(orgId, 'instagram', limit),
     listTimelineConversations(orgId, 'facebook', limit),
   ])
-  return [...canonical, ...wa, ...tg, ...ig, ...fb]
+  return dedupeInboxConversations([...canonical, ...wa, ...tg, ...ig, ...fb])
+    .filter((row) => matchesFilters(row, filters))
     .sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''))
     .slice(0, limit)
 }

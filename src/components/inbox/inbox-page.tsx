@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Inbox as InboxIcon, MessageCircle, Send as SendIcon, Instagram, RefreshCw, Loader2, Mic, Music2 } from 'lucide-react'
+import { Inbox as InboxIcon, MessageCircle, Send as SendIcon, Instagram, RefreshCw, Loader2, Mic, Music2, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -63,20 +63,33 @@ export function InboxPage() {
   const [sending, setSending] = useState(false)
   const [draft, setDraft] = useState('')
   const [filter, setFilter] = useState<ChannelFilter>('all')
+  // F3-T04: búsqueda y filtro por cuenta conectada (servidor, con debounce)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [connectionFilter, setConnectionFilter] = useState('all')
   const threadRef = useRef<HTMLDivElement>(null)
   const canonicalRequestRef = useRef<{ key: string; text: string; id: string } | null>(null)
+
+  // Debounce de 300 ms para no martillar la API en cada tecla.
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(searchTerm.trim()), 300)
+    return () => clearTimeout(t)
+  }, [searchTerm])
 
   const loadList = useCallback(async (silent = false) => {
     if (!silent) setLoadingList(true)
     try {
-      const res = (await api.getInbox()) as { conversations?: InboxConversation[] }
+      const params: Record<string, string> = {}
+      if (connectionFilter !== 'all') params.connection = connectionFilter
+      if (searchQuery) params.search = searchQuery
+      const res = (await api.getInbox(params)) as { conversations?: InboxConversation[] }
       setConversations(res.conversations || [])
     } catch {
       if (!silent) toast.error('No se pudo cargar la bandeja')
     } finally {
       setLoadingList(false)
     }
-  }, [])
+  }, [connectionFilter, searchQuery])
 
   const openConversation = useCallback(async (conv: InboxConversation) => {
     setSelected(conv)
@@ -196,6 +209,15 @@ export function InboxPage() {
     { id: 'tiktok', label: 'TikTok' },
   ]
 
+  // F3-T04: cuentas conectadas presentes en la bandeja (para el filtro por cuenta)
+  const connectionOptions = useMemo(() => {
+    const seen = new Map<string, string>()
+    for (const c of conversations) {
+      if (c.connectionId && c.connectionName) seen.set(c.connectionId, c.connectionName)
+    }
+    return [...seen.entries()]
+  }, [conversations])
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between px-4 md:px-8 py-4 border-b border-slate-100">
@@ -226,6 +248,33 @@ export function InboxPage() {
                 {f.label}
               </button>
             ))}
+          </div>
+          <div className="px-3 pb-2.5 border-b border-slate-50 space-y-2">
+            {/* F3-T04: búsqueda por nombre, teléfono o último mensaje (servidor, debounce) */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar por nombre, teléfono o mensaje…"
+                className="w-full pl-8 pr-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 focus:border-emerald-400"
+                aria-label="Buscar conversaciones"
+              />
+            </div>
+            {connectionOptions.length > 1 && (
+              <select
+                value={connectionFilter}
+                onChange={(e) => setConnectionFilter(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                aria-label="Filtrar por cuenta conectada"
+              >
+                <option value="all">Todas las cuentas conectadas</option>
+                {connectionOptions.map(([id, name]) => (
+                  <option key={id} value={id}>{name}</option>
+                ))}
+              </select>
+            )}
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">
             {loadingList ? (
