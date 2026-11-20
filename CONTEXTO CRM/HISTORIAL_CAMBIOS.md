@@ -301,5 +301,31 @@ Sincronizados los repositorios con origin tras las correcciones aplicadas por el
   - Ejecutada la suite completa multiplataforma: levantamiento orquestado de CRM (:3000), WP (:3003) y ULTRA (:3004) con puertos libres automáticos y bases SQLite temporales.
   - Resultado: **19/20 aserciones PASS**, **SENT=0** absoluto (cero envíos a la red real).
 
+## 2026-11-20 — Fusión de la Integración Maestra (44 Commits) en repair/produccion-real
+
+- **Rama e Integración**: Fusión de la rama `impl/integracion-maestra-20261120` (commits `dde4207` hasta `c5e4aee`) sobre `repair/produccion-real`.
+- **Resguardo**: Creación de la rama local `backup/repair-produccion-real-premerge` en commit `a72cc95`.
+- **Hitos de Construcción Incorporados**:
+  - `dde4207` (D1): Scheduler multiproceso con leases concurrentes y pruebas de ACK ambiguo.
+  - `c2b20cc` / `8c459ac` (F2): Panel de conexiones WhatsApp multi-número en Ajustes.
+  - `1fe8041` / `9e0d271` (M7/F3): Criterio de bandeja única y filtros server-side.
+  - `c108b40` (M8): Conciliación de envíos UNCERTAIN en panel de administración.
+  - `76564f2` (F4): Agenda comercial semanal/diaria con duraciones y huecos libres.
+  - `9b65a2f` (F5): Pantalla `/health` y wizard de puesta en marcha.
+  - `09f7a4f` / `aa5ab3e` (U1/U2): Navegación 5+1 y dashboard de atención de excepciones.
+  - `821f867` (U3): Catálogo de errores accionables sin jerga técnica.
+  - `508a00a` (U4): Ajustes divididos en 4 dominios.
+  - `0543f3b` (U5): Pulido visual (tipografía mínima 13px, dark mode y empty states).
+  - `8a9e08f` (U6): Semillas sectoriales para demos reproducibles.
+  - `39f9a99` / `4077fd6` (F1): Tareas, recordatorios y quick-actions en ficha 360.
+  - `f444aa9` (O4): Worker pull persistente para outbox y servicios systemd.
+  - `b934eec`: Port de `fix/whatsapp-production-media` (validación de ASR por org, firmas binarias de imagen y media-guard).
+  - `c3665ab`: Endurecimiento de referencias históricas cross-org en 9 rutas.
+  - `b855b9a`: Backfill aditivo de `QuoteItem.organizationId` con migración SQL.
+  - `a920ba6`: Kits de integración WP/ULTRA en `integration-kits/wp-ultra/` para las 13 tareas de dependencias externas.
+- **Auditoría Futura**: Incorporado el documento rector `AUDITORIA_REDUNDANCIAS_Y_SIMPLIFICACION_FASE_POSTERIOR.md` para la simplificación de modelos post-cierre.
+- **Verificación**: TypeScript `tsc --noEmit` completado con 0 errores; suite en 1,104 pruebas en 128 archivos.
+
+
 
 

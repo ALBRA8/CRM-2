@@ -327,3 +327,42 @@ Re-emparejamiento con el remoto (PAT nuevo verificado en git y REST), línea bas
   - **Suite WhatsPower-Ultra:** 284/284 pruebas aprobadas (+1 nueva prueba unitaria que verifica que el botón *"🚀 Entrar sin registro (demo)"* se omite del HTML cuando `DEMO_MODE=false`).
   - **Suite E2E 3 Servicios (`npm run e2e:3`):** Implementado runner dinámico multiplataforma en `scripts/e2e-3-servicios.mjs` que detecta repositorios hermanos, asigna puertos libres efímeros y crea bases de datos SQLite temporales. Ejecución verificada con 19/20 aserciones PASS y estricto `SENT=0` (ningún mensaje despachado).
 
+## Sesión 2026-11-20 — Fusión de la Integración Maestra y Consolidación de 48 Tareas
+
+- **Fusión en `repair/produccion-real`**: Integrada la línea completa `impl/integracion-maestra-20261120` (commit `c5e4aee`), que incorpora 44 commits construidos sobre la base de producción:
+  - **D1 — Integración y Concurrencia:** Scheduler multiproceso con lease exclusivo por base de datos (`workflow-run-lease.test.ts`), pruebas de ACK ambiguo en outbox (`tests/integration/workflow-outbox-ambiguous-ack.test.ts`).
+  - **D2 — Consolidación y Archivo de Ramas:** 28 ramas obsoletas archivadas con etiquetas permanentes (`archive/20261120-*`). Repositorio consolidado a 5 ramas vivas.
+  - **F1..F5 — Funcionalidades de Negocio:**
+    - Panel de conexiones WhatsApp multi-número en Ajustes (`src/app/api/whatsapp/connections-panel/route.ts` y componentes de UI).
+    - Unificación de la doble bandeja con criterio «canónico primero, legacy como respaldo» (`docs/CRITERIO-BANDEJA-UNICA.md`).
+    - Filtros server-side por canal y cuenta en la bandeja (`src/lib/nav.ts`).
+    - Conciliación operable de envíos en estado UNCERTAIN desde Ajustes (`/api/admin/outbox/uncertain`).
+    - Agenda comercial con vistas semana y día, duraciones reales y huecos libres (`src/lib/agenda-vistas.ts`).
+    - Pantalla de Salud del sistema (`/health`) y asistente de bienvenida/onboarding guiado (`onboarding-wizard.tsx`).
+    - Tareas y quick-actions integradas en la ficha 360 del cliente (`tasks-card.tsx`).
+  - **U1..U6 — Experiencia de Usuario y Pulido:**
+    - Navegación simplificada 5+1 con una sola bandeja unificada en menú.
+    - Dashboard de excepciones «Requiere atención» con enlaces directos a resolución.
+    - Catálogo centralizado de errores accionables sin jerga técnica (`src/lib/errores.ts`).
+    - Ajustes reorganizados en 4 dominios temáticos de 2 niveles (`settings-dominios.ts`).
+    - Pulido visual completo: tipografía mínima 13px, contraste dark mode verificado y estados vacíos consistentes (`empty-state.tsx`).
+    - Semillas sectoriales para generación de demostraciones reproducibles (`scripts/demo-sectors.mjs`).
+  - **O1..O4 — Observabilidad y Operación:**
+    - Proceso worker pull persistente para outbox (`scripts/outbox-worker.mjs`) con unidades `systemd` versionadas en `deploy/systemd/`.
+    - Runbook operativo único del CRM sin intervención de desarrollador (`docs/RUNBOOK-CRM.md`).
+    - Script instalador y actualizador idempotente (`scripts/instalar-crm.sh`).
+  - **S1..S6 — Seguridad e Higiene:**
+    - Acta de rotación de credenciales (`docs/actas/ROTACION-CREDENCIALES-2026-11-20.md`).
+    - Runbook y generador de purga de historial git (`scripts/security/build-purge-replace-text.mjs`).
+    - Saneamiento y reubicación de 24 scripts E2E históricos en `docs/historia/scripts/`.
+  - **Kits de Integración Externa (`integration-kits/wp-ultra/`):** 9 librerías probadas listas para ser aplicadas en WhatsPower y Ultra para cubrir las 13 tareas externas (S3, S4, S7, M2, M3, M4, M6, I6, F6).
+  - **Port de WhatsApp Media (`fix/whatsapp-production-media`):** Integración de ASR por organización, límites de descarga de media en daemon (25 MB audio / 8 MB imagen), verificación de firma binaria de imagen y media-guard.
+- **Estado de Calidad Verificado:**
+  - **Prisma:** Esquema actualizado con migraciones `zzzzzz_tareas` y `zzzzzzz_quoteitem_org_backfill`. Cliente generado satisfactoriamente.
+  - **TypeScript:** `npx tsc --noEmit` completó con **0 errores** (Exit code 0).
+  - **Volumen de Pruebas:** Suite expandida a **1,104 pruebas en 128 archivos de prueba**.
+- **Auditoría de Redundancias y Simplificación:**
+  - Documento rector incorporado: `CONTEXTO CRM/AUDITORIA_REDUNDANCIAS_Y_SIMPLIFICACION_FASE_POSTERIOR.md`.
+  - Alcance: fase de refactorización posterior a la aceptación del plan actual; se enfoca en auditar la duplicación de modelos (`WhatsAppConversation` vs `ChannelConversation`, `WhatsAppMessage` vs `ChannelMessage`) sin tocar capacidades funcionales.
+
+

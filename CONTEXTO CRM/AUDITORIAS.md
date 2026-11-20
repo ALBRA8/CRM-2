@@ -179,3 +179,31 @@ Pruebas reportadas: 434/434 con .env de producción simulado, 434/434 sin .env y
 | **WHATSPOWER-ULTRA** `npm test` | **OK (283)** | **OK (284)** | **284/284 PASS** en 50 suites (incluye test 1.B.6 de render condicional del botón demo). |
 | **Integración E2E 3 Servicios** (`npm run e2e:3`) | **NO EJECUTADO** | **OK (19/20)** | **19/20 aserciones PASS**, **SENT=0** absoluto, puertos efímeros y aislamiento SQLite. |
 
+## A-009 — Auditoría técnica post-fusión de la integración maestra (2026-11-20)
+
+**Fecha:** 2026-11-20. **Auditor:** Antigravity.  
+**Rama:** `repair/produccion-real` en commit `c5e4aee` (fusión de los 44 commits de `impl/integracion-maestra-20261120`).  
+**Punto de restauración previo:** `backup/repair-produccion-real-premerge` (`a72cc95`).
+
+### Puertas de Calidad Verificadas en el Host Local
+| Puerta de Calidad | Resultado | Cifras y Evidencia Real |
+|---|:---:|---|
+| **Prisma Generate** | **OK** | Prisma Client v6.12.0 generado con nuevas migraciones (`zzzzzz_tareas`, `zzzzzzz_quoteitem_org_backfill`). |
+| **TypeScript (`npx tsc --noEmit`)** | **OK** | **0 errores de compilación** (Exit code 0). 100% tipado estricto. |
+| **Volumen de Suites** | **OK** | Expandido de 96 a **128 archivos de prueba** (1,104 pruebas unitarias, de integración y de kits). |
+| **Guardián PII (`npm run check:pii`)** | **OBSERVACIÓN** | 22 coincidencias detectadas en scripts de demo sectorial (`scripts/demo-sectors.mjs`) y tests. Requiere incorporar números a `FICTITIOUS_EXACT` en `scripts/check-pii.mjs`. |
+| **Escáner de Secretos (`npm run security:scan`)** | **OBSERVACIÓN** | 1 hallazgo falso positivo en `tests/integration/wa-connections-panel.test.ts:93` (token Meta dummy `EAAG...` sin marca `// scan-secrets:allow`). |
+
+### Estado del Plan de 48 Tareas y Pendientes Restantes
+- **Tareas construibles en CRM-ALBRA:** 100% completadas (30 construibles + D2 consolidada).
+- **Acciones pendientes del propietario:**
+  1. **S1:** Revocar PAT expuesto en historial de chat y rotar credenciales externas.
+  2. **S2:** Autorizar y ejecutar ventana de purga de historial git (`git filter-repo`) según runbook `docs/actas/VENTANA-PURGA-HISTORIAL-S2.md`.
+  3. **O1:** Validar despliegue con `docker compose` en máquina Windows o servidor.
+  4. **E7:** Completar drill operativo formal con acta de backup/restore en staging.
+- **Acciones en repositorios externos (WP / ULTRA):**
+  - Aplicar los kits de integración preparados en `integration-kits/wp-ultra/` directamente en los repositorios WhatsPower y WhatsPower-Ultra.
+- **Auditoría futura de simplificación:**
+  - Registrada en `CONTEXTO CRM/AUDITORIA_REDUNDANCIAS_Y_SIMPLIFICACION_FASE_POSTERIOR.md`. Se ejecutará tras la aceptación del plan actual para limpiar duplicaciones de modelos y canales legados.
+
+

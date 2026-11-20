@@ -387,3 +387,39 @@ Correcciones entregadas por el constructor (z.ai) y verificadas por Antigravity 
   - `renderDashboardLoginHtml(opts.demoEnabled)` renderiza el botón únicamente si el backend concedería la sesión (`DEMO_MODE=true` fuera de producción). Con `DEMO_MODE=false`, el botón no se incluye en el HTML. Suite ULTRA: 284/284 PASS.
 - [ ] **Ajuste de timeout en webhook bridge para E2E en Windows dev**:
   - En `scripts/e2e-3-servicios.mjs` bajo Windows con Turbopack dev compilando bajo demanda, la llamada de vuelta a CRM en `E5b` puede requerir elevar `INBOUND_TIMEOUT_MS` en `whatspower-bridge.ts` o margen en polling para alcanzar 20/20 PASS. Actualmente 19/20 PASS confirmados.
+
+## Estado Consolidado tras Fusión de la Integración Maestra (2026-11-20)
+
+### Tareas del Plan Construidas y Cerradas en CRM-ALBRA
+- [x] **D1 — Integración y ACK ambiguo**: Scheduler multiproceso con leases en SQLite y tests de concurrencia.
+- [x] **D2 — Consolidación de ramas**: 28 etiquetas de archivo creadas; repositorio unificado a 5 ramas vivas.
+- [x] **F1 — Tareas y quick-actions en ficha 360**: Integración en CRM (`tasks-card.tsx`).
+- [x] **F2 — Panel de conexiones WhatsApp multi-número**: Pantalla y API operativa en Ajustes.
+- [x] **F3 — Filtros server-side en bandeja**: Búsqueda libre y filtrado por canal/cuenta.
+- [x] **F4 — Agenda comercial con vistas semana y día**: Duraciones visibles y cálculo de huecos libres.
+- [x] **F5 — Pantalla /health y asistente de bienvenida**: Wizard guiado para puesta en marcha.
+- [x] **U1..U6 — Navegación, Dashboard de Atención y Pulido UI**: Menú 5+1, catálogo de errores sin jerga, ajustes por dominios, tipografía 13px y semillas de demostración sectorial.
+- [x] **M7/M8 — Unificación de bandeja y reconciliación de envíos**: Pantalla de administración para resolución de envíos en estado UNCERTAIN.
+- [x] **O2..O4 — Runbook, instalador y worker de outbox**: `docs/RUNBOOK-CRM.md`, `scripts/instalar-crm.sh` y `scripts/outbox-worker.mjs` con servicios systemd.
+- [x] **Port de fix/whatsapp-production-media**: ASR por org, media-guard y firmas binarias de imágenes.
+- [x] **Kits de Integración WP/ULTRA**: 9 paquetes portables listos en `integration-kits/wp-ultra/` para cubrir las 13 tareas externas.
+
+### Pendientes Restantes (Bloqueados en Acciones del Propietario)
+- [ ] **S1 — Rotación de Credenciales**: Revocar el PAT de GitHub expuesto en el chat y rotar claves de servicios externos (Meta, OpenAI, SMTP, etc.).
+- [ ] **S2 — Ventana de Purga del Historial Git**: Ejecutar `git filter-repo` según el runbook `docs/actas/VENTANA-PURGA-HISTORIAL-S2.md` con force-push coordinado y aviso al equipo.
+- [ ] **O1 — Despliegue con Docker Compose**: Validar arranque de servicios con `docker compose` en el host Windows o servidor.
+- [ ] **E7 — Drill Operativo Formal de Backup/Restore**: Ejecutar ensayo de respaldo y restauración con acta formal en staging.
+- [ ] **A7 — PAT de lectura para CI**: Suministrar credencial para pipelines automatizados.
+
+### Pendientes en Repositorios Hermanos (WhatsPower / WhatsPower-Ultra)
+- [ ] Aplicar los kits de integración de `integration-kits/wp-ultra/` en clones independientes de WP y Ultra con sus respectivas suites en verde (tareas S3, S4, S7, M2, M3, M4, M6, I6, F6).
+
+### Fase Posterior: Auditoría de Redundancias y Simplificación
+- [ ] **Auditoría de Redundancias (`AUDITORIA_REDUNDANCIAS_Y_SIMPLIFICACION_FASE_POSTERIOR.md`)**:
+  - Planificada para ejecutarse una vez aceptado el plan actual.
+  - Objetivo: evaluar y unificar modelos legados (`WhatsAppConversation` vs `ChannelConversation`, `WhatsAppMessage` vs `ChannelMessage`, `Integration` vs `WhatsAppConnection`) para reducir complejidad sin perder datos ni compatibilidad.
+
+### Hallazgos de Higiene Inmediatos en CI
+- [ ] **check:pii**: Incorporar a `FICTITIOUS_EXACT` en `scripts/check-pii.mjs` los números ficticios colombianos añadidos en `scripts/demo-sectors.mjs` y pruebas de integración.
+- [ ] **security:scan**: Añadir marcador `// scan-secrets:allow` en el token falso de Meta en `tests/integration/wa-connections-panel.test.ts:93`.
+
