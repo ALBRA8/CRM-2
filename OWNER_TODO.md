@@ -1,9 +1,11 @@
 # OWNER_TODO — Acciones que SOLO el dueño puede ejecutar
 
-**Actualizado:** 2026-11-17 · **Rama:** `repair/produccion-real`
+**Actualizado:** 2026-11-20 · **Ramas:** `repair/produccion-real` + plan definitivo (S1/S2 en curso)
 
-## 0. Nuevas tareas de esta sesión (reparación 2026-11-17)
-- [ ] **Rotar el PAT de GitHub** usado en esta sesión (estuvo en texto de chat) tras validar el push.
+## 0. Nuevas tareas de esta sesión (plan definitivo 2026-11-20)
+- [ ] **URGENTE — Revocar el PAT de GitHub `…bnhik`** (re-expuesto en el chat de la sesión 2026-11-20) **y el PAT de la sesión 2026-11-17 (`ghp_M9w5…`) si sigue vivo. Procedimiento completo en `docs/actas/ROTACION-CREDENCIALES-2026-11-20.md`** (acta S1). Generar el nuevo token con alcance mínimo y entregarlo al sandbox por variable de entorno, NUNCA por el chat.
+- [ ] **A1 — Secretos de Actions**: `PII_PEPPER` (requisito de S5) y PAT de CI en Settings → Secrets and variables → Actions del repositorio.
+- [ ] **A2 — Ventana de purga** (S2): autorizar `git filter-repo` + force-push DESPUÉS de revocar los PAT (orden registrado en el acta S1 §5).
 - [ ] **Docker compose build + up en el PC** (sin docker en el entorno de trabajo): CRM + daemon; verificar migrate deploy y arranque del standalone.
 - [ ] **Instalar el unit systemd del daemon** (RUNBOOK del repo ULTRA §3.1 aplica al daemon del CRM en :3002): `Restart=always`, `RestartSec=10`.
 - [ ] **Confirmar el HOST del daemon en producción**: si el CRM corre en la misma máquina, NO definir HOST (default 127.0.0.1); solo con contenedores separados definir el HOST del red interior.
@@ -11,15 +13,9 @@
 
 ---
 
-
-
-Este archivo lista lo que NO se puede automatizar desde el entorno de trabajo:
-requiere cuentas externas, decisiones de negocio o acceso físico al PC/despliegue.
-Nada de lo siguiente se simuló ni se fingió completado.
-
 ## 1. Credenciales y seguridad (prioridad máxima)
-- [ ] **Rotar el PAT de GitHub usado en esta sesión** (`ghp_M9w5…` se compartió en chat para poder operar los repos). Tras el merge de las ramas `repair/produccion-real`, revocarlo y generar uno nuevo con alcance mínimo (repo + workflow).
-- [ ] **Purgar el historial git con `git filter-repo`** (secretos históricos: 82 entradas del baseline con estado `ROTACION-PENDIENTE` + artefactos E2E antiguos). Requiere force-push y coordinación de clones: decisión del dueño. El escáner (`npm run security:scan:history`) queda en verde para hallazgos NUEVOS; el historial NO se purgó (regla de la misión: reportar sin purgar).
+- [ ] **Rotar el PAT de GitHub usado en la sesión 2026-11-20** (`…bnhik`, re-enviado al chat) **y el de 2026-11-17** (`ghp_M9w5…`). Acta de rotación con inventario completo y procedimiento paso a paso: `docs/actas/ROTACION-CREDENCIALES-2026-11-20.md`. El sandbox sigue operando con el token viejo hasta que el dueño lo revoque y entregue el nuevo por canal seguro.
+- [ ] **Purgar el historial git con `git filter-repo`** (secretos históricos: 78 entradas del baseline con estado `ROTACION-PENDIENTE` + artefactos E2E antiguos). Requiere force-push y coordinación de clones: decisión del dueño (A2). **Solo tras revocar los PAT** (acta S1 §5). El escáner (`npm run security:scan:history`) queda en verde para hallazgos NUEVOS; el historial NO se purgó (regla de la misión: reportar sin purgar).
 - [ ] Rotar cualquier credencial real que haya aparecido en chats de sesiones anteriores (API keys de WP/ULTRA históricas ya verificadas muertas; rotación preventiva recomendada).
 
 ## 2. Canal oficial de WhatsApp (FASE 1)
